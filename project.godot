@@ -1,0 +1,89 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=4
+
+_global_script_classes=[ {
+"base": "Reference",
+"class": "SVGDrawing",
+"language": "GDScript",
+"path": "res://addons/godot_svg/utility/svg_drawing.gd"
+}, {
+"base": "Resource",
+"class": "SVGLengthPercentage",
+"language": "GDScript",
+"path": "res://addons/godot_svg/resource/svg_length_percentage.gd"
+}, {
+"base": "Resource",
+"class": "SVGPaint",
+"language": "GDScript",
+"path": "res://addons/godot_svg/resource/svg_paint.gd"
+}, {
+"base": "SVGRenderElement",
+"class": "SVGRenderCircle",
+"language": "GDScript",
+"path": "res://addons/godot_svg/render/svg_render_circle.gd"
+}, {
+"base": "Resource",
+"class": "SVGRenderElement",
+"language": "GDScript",
+"path": "res://addons/godot_svg/render/svg_render_element.gd"
+}, {
+"base": "SVGRenderElement",
+"class": "SVGRenderViewport",
+"language": "GDScript",
+"path": "res://addons/godot_svg/render/svg_render_viewport.gd"
+}, {
+"base": "Resource",
+"class": "SVGSource",
+"language": "GDScript",
+"path": "res://addons/godot_svg/resource/svg_source.gd"
+}, {
+"base": "Resource",
+"class": "SVGSourceElement",
+"language": "GDScript",
+"path": "res://addons/godot_svg/resource/svg_source_element.gd"
+}, {
+"base": "Reference",
+"class": "SVGValueConstant",
+"language": "GDScript",
+"path": "res://addons/godot_svg/resource/svg_value_constant.gd"
+} ]
+_global_script_class_icons={
+"SVGDrawing": "",
+"SVGLengthPercentage": "",
+"SVGPaint": "",
+"SVGRenderCircle": "",
+"SVGRenderElement": "",
+"SVGRenderViewport": "",
+"SVGSource": "",
+"SVGSourceElement": "",
+"SVGValueConstant": ""
+}
+
+[application]
+
+config/name="SVG"
+run/main_scene="res://tests/basic_circle/basic_circle.tscn"
+config/icon="res://icon.png"
+
+[editor_plugins]
+
+enabled=PoolStringArray( "res://addons/godot_svg/plugin.cfg" )
+
+[gui]
+
+common/drop_mouse_on_gui_input_disabled=true
+
+[physics]
+
+common/enable_pause_aware_picking=true
+
+[rendering]
+
+environment/default_environment="res://default_env.tres"
