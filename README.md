@@ -18,136 +18,136 @@ The advantage of using this plugin is you don't have to compile Godot to install
 
 | Name | Support Level | Notes |
 |:-----|:--------------|:------|
-| a | Not Yet Supported | |
-| altGlyph | Will Not Support | Deprecated |
-| altGlyphDef | Will Not Support | Deprecated |
-| altGlyphItem | Will Not Support | Deprecated |
-| animate | Not Yet Supported | |
-| animateMotion | Not Yet Supported | |
-| animateTransform | Not Yet Supported | |
-| circle | Not Yet Supported |  |
-| clipPath | Not Yet Supported | |
-| color-profile | Will Not Support | Deprecated |
-| cursor | Will Not Support | Deprecated |
-| defs | Supported | |
-| desc | Supported | Not rendered |
-| ellipse | Not Yet Supported | |
-| feBlend | Not Yet Supported | |
-| feColorMatrix | Not Yet Supported | |
-| feComponentTransfer | Not Yet Supported | |
-| feComposite | Not Yet Supported | |
-| feConvolveMatrix | Not Yet Supported | |
-| feDiffuseLighting | Not Yet Supported | |
-| feDisplacementMap | Not Yet Supported | |
-| feDistantLight | Not Yet Supported | |
-| feFlood | Not Yet Supported | |
-| feFuncA | Not Yet Supported | |
-| feFuncB | Not Yet Supported | |
-| feFuncG | Not Yet Supported | |
-| feFuncR | Not Yet Supported | |
-| feGaussianBlur | Not Yet Supported | |
-| feImage | Not Yet Supported | |
-| feMerge | Not Yet Supported | |
-| feMergeNode | Not Yet Supported | |
-| feMorphology | Not Yet Supported | |
-| feOffset | Not Yet Supported | |
-| fePointLight | Not Yet Supported | |
-| feSpecularLighting | Not Yet Supported | |
-| feSpotLight | Not Yet Supported | |
-| feTile | Not Yet Supported | |
-| feTurbulence | Not Yet Supported | |
-| filter | Not Yet Supported | |
-| font | Will Not Support | Deprecated |
-| font-face | Will Not Support | Deprecated |
-| font-face-format | Will Not Support | Deprecated |
-| font-face-name | Will Not Support | Deprecated |
-| font-face-src | Will Not Support | Deprecated |
-| font-face-uri | Will Not Support | Deprecated |
-| foreignObject | Will Not Support | No use case |
-| g | Supported | |
-| glyph | Will Not Support | Deprecated |
-| glyphRef | Will Not Support | Deprecated |
-| hkern | Will Not Support | Deprecated |
-| image | Not Yet Supported | |
-| line | Not Yet Supported | |
-| linearGradient | Not Yet Supported | |
-| marker | Not Yet Supported | |
-| mask | Not Yet Supported | |
-| metadata | Not Yet Supported | |
-| missing-glyph | Will Not Support | Deprecated |
-| mpath | Not Yet Supported | |
-| path | Not Yet Supported | |
-| pattern | Not Yet Supported | |
-| polygon | Not Yet Supported | |
-| polyline | Not Yet Supported | |
-| radialGradient | Not Yet Supported | |
-| rect | Not Yet Supported | |
-| script | Will Not Support | No use case |
-| set | Not Yet Supported | |
-| stop | Supported | |
-| style | Partial Support | Currently element, id, class, descendant selectors are recognized. |
-| svg | Partial Support | Need to implement: preserveAspectRatio |
-| switch | Not Yet Supported | |
-| symbol | Not Yet Supported | |
-| text | Not Yet Supported | |
-| textPath | Not Yet Supported | |
-| title | Supported | Not rendered |
-| tref | Will Not Support | Deprecated |
-| tspan | Not Yet Supported | |
-| use | Not Yet Supported | |
-| view | Not Yet Supported | |
-| vkern | Will Not Support | Deprecated |
+| a | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| altGlyph | ![Status](/docs/not_supported_x.png) Will Not Support | Deprecated |
+| altGlyphDef | ![Status](/docs/not_supported_x.png) Will Not Support | Deprecated |
+| altGlyphItem | ![Status](/docs/not_supported_x.png) Will Not Support | Deprecated |
+| animate | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| animateMotion | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| animateTransform | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| circle | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported |  |
+| clipPath | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| color-profile | ![Status](/docs/not_supported_x.png) Will Not Support | Deprecated |
+| cursor | ![Status](/docs/not_supported_x.png) Will Not Support | Deprecated |
+| defs | ![Status](/docs/supported_checkmark.png) Supported | |
+| desc | ![Status](/docs/supported_checkmark.png) Supported | Not rendered |
+| ellipse | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| feBlend | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| feColorMatrix | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| feComponentTransfer | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| feComposite | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| feConvolveMatrix | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| feDiffuseLighting | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| feDisplacementMap | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| feDistantLight | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| feFlood | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| feFuncA | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| feFuncB | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| feFuncG | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| feFuncR | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| feGaussianBlur | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| feImage | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| feMerge | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| feMergeNode | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| feMorphology | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| feOffset | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| fePointLight | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| feSpecularLighting | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| feSpotLight | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| feTile | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| feTurbulence | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| filter | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| font | ![Status](/docs/not_supported_x.png) Will Not Support | Deprecated |
+| font-face | ![Status](/docs/not_supported_x.png) Will Not Support | Deprecated |
+| font-face-format | ![Status](/docs/not_supported_x.png) Will Not Support | Deprecated |
+| font-face-name | ![Status](/docs/not_supported_x.png) Will Not Support | Deprecated |
+| font-face-src | ![Status](/docs/not_supported_x.png) Will Not Support | Deprecated |
+| font-face-uri | ![Status](/docs/not_supported_x.png) Will Not Support | Deprecated |
+| foreignObject | ![Status](/docs/not_supported_x.png) Will Not Support | No use case |
+| g | ![Status](/docs/supported_checkmark.png) Supported | |
+| glyph | ![Status](/docs/not_supported_x.png) Will Not Support | Deprecated |
+| glyphRef | ![Status](/docs/not_supported_x.png) Will Not Support | Deprecated |
+| hkern | ![Status](/docs/not_supported_x.png) Will Not Support | Deprecated |
+| image | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| line | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| linearGradient | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| marker | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| mask | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| metadata | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| missing-glyph | ![Status](/docs/not_supported_x.png) Will Not Support | Deprecated |
+| mpath | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| path | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| pattern | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| polygon | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| polyline | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| radialGradient | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| rect | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| script | ![Status](/docs/not_supported_x.png) Will Not Support | No use case |
+| set | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| stop | ![Status](/docs/supported_checkmark.png) Supported | |
+| style | ![Status](/docs/partial_support_exclamation.png) Partial Support | Currently element, id, class, descendant selectors are recognized. |
+| svg | ![Status](/docs/partial_support_exclamation.png) Partial Support | Need to implement: preserveAspectRatio |
+| switch | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| symbol | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| text | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| textPath | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| title | ![Status](/docs/supported_checkmark.png) Supported | Not rendered |
+| tref | ![Status](/docs/not_supported_x.png) Will Not Support | Deprecated |
+| tspan | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| use | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| view | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| vkern | ![Status](/docs/not_supported_x.png) Will Not Support | Deprecated |
 
 **CORE ATTRIBUTES**
 
 | Name | Support Level | Notes |
 |:-----|:--------------|:------|
-| id | Supported | |
-| lang | Not Yet Supported | |
-| tabindex | Will Not Support | No use case |
+| id | ![Status](/docs/supported_checkmark.png) Supported | |
+| lang | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| tabindex | ![Status](/docs/not_supported_x.png) Will Not Support | No use case |
 
 **STYLING ATTRIBUTES**
 
 | Name | Support Level | Notes |
 |:-----|:--------------|:------|
-| class | Supported | |
-| style | Supported | |
+| class | ![Status](/docs/supported_checkmark.png) Supported | |
+| style | ![Status](/docs/supported_checkmark.png) Supported | |
 
 **CONDITIONAL PROCESSING ATTRIBUTES**
 
 | Name | Support Level | Notes |
 |:-----|:--------------|:------|
-| requiredExtensions | Not Yet Supported | |
-| requiredFeatures | Will Not Support | Deprecated |
-| systemLanguage | Not Yet Supported | |
+| requiredExtensions | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| requiredFeatures | ![Status](/docs/not_supported_x.png) Will Not Support | Deprecated |
+| systemLanguage | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
 
 **PRESENTATION ATTRIBUTES**
 
 | Name | Support Level | Notes |
 |:-----|:--------------|:------|
-| clip-path | Not Yet Supported | |
-| clip-rule | Not Yet Supported | |
-| color | Not Yet Supported | |
-| color-interpolation | Not Yet Supported | |
-| color-rendering | Not Yet Supported | |
-| cursor | Not Yet Supported | |
-| display | Not Yet Supported | |
-| fill | Supported | |
-| fill-opacity | Not Yet Supported | |
-| fill-rule | Not Yet Supported | |
-| filter | Not Yet Supported | |
-| mask | Not Yet Supported | |
-| opacity | Not Yet Supported | |
-| pointer-events | Not Yet Supported | |
-| shape-rendering | Not Yet Supported | |
-| stroke | Supported | |
-| stroke-dasharray | Not Yet Supported | |
-| stroke-dashoffset | Not Yet Supported | |
-| stroke-linecap | Not Yet Supported | |
-| stroke-linejoin | Partial Support | "arcs" and "miter-clip" is converted to "miter" |
-| stroke-miterlimit | Supported | |
-| stroke-opacity | Not Yet Supported | |
-| stroke-width | Supported | |
-| transform | Partial Support | 3D transforms are not supported |
-| vector-effect | Not Yet Supported | |
-| visibility | Not Yet Supported | |
+| clip-path | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| clip-rule | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| color | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| color-interpolation | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| color-rendering | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| cursor | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| display | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| fill | ![Status](/docs/supported_checkmark.png) Supported | |
+| fill-opacity | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| fill-rule | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| filter | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| mask | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| opacity | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| pointer-events | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| shape-rendering | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| stroke | ![Status](/docs/supported_checkmark.png) Supported | |
+| stroke-dasharray | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| stroke-dashoffset | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| stroke-linecap | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| stroke-linejoin | ![Status](/docs/supported_checkmark.png) Supported | SVG2 spec "arcs" not yet implemented |
+| stroke-miterlimit | ![Status](/docs/supported_checkmark.png) Supported | |
+| stroke-opacity | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| stroke-width | ![Status](/docs/supported_checkmark.png) Supported | |
+| transform | ![Status](/docs/partial_support_exclamation.png) Partial Support | 3D transforms are not supported |
+| vector-effect | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| visibility | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |

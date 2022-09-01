@@ -163,12 +163,10 @@ func draw_shape(updates):
 			if stroke_index < point_lists.size():
 				_shape_stroke.points = point_lists[stroke_index]
 			_shape_stroke.color = updates.stroke_color
+			_shape_stroke.cap_mode = attr_stroke_linecap
 			_shape_stroke.joint_mode = attr_stroke_linejoin
 			_shape_stroke.antialiased = true
-			if [SVGValueConstant.MITER, SVGValueConstant.ARCS].has(attr_stroke_linejoin):
-				_shape_stroke.sharp_limit = INF
-			else:
-				_shape_stroke.sharp_limit = attr_stroke_miterlimit
+			_shape_stroke.sharp_limit = attr_stroke_miterlimit
 			if updates.has("stroke_width") and updates.has("scale_factor"):
 	#			var applied_stroke_width = updates.stroke_width * updates.scale_factor.x
 	#			if applied_stroke_width >= 2:

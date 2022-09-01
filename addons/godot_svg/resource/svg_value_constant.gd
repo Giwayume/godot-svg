@@ -28,11 +28,14 @@ const PAD = "pad"
 const REFLECT = "reflect"
 const REPEAT = "repeat"
 
+const BUTT = "butt"
+const ROUND = "round"
+const SQUARE = "square"
+
 const ARCS = "arcs"
 const BEVEL = "bevel"
 const MITER = "miter"
 const MITER_CLIP = "miter-clip"
-const ROUND = "round"
 
 enum PathCommand {
 	MOVE_TO,
