@@ -1,0 +1,12 @@
+[gd_scene load_steps=3 format=2]
+
+[ext_resource path="res://addons/godot_svg/node/svg_2d.gd" type="Script" id=1]
+[ext_resource path="res://tests/style/style.svg" type="Resource" id=2]
+
+[node name="StyleTest" type="Node2D"]
+
+[node name="SVG2D" type="Node2D" parent="."]
+script = ExtResource( 1 )
+svg = ExtResource( 2 )
+
+[node name="Camera2D" type="Camera2D" parent="."]

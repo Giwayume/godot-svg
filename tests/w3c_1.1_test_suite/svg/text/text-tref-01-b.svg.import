@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/text-tref-01-b.svg-11a9a320b6c7f2f34a3cc922dda0ef59.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/text/text-tref-01-b.svg"
+dest_files=[ "res://.import/text-tref-01-b.svg-11a9a320b6c7f2f34a3cc922dda0ef59.gdsvg" ]
+
+[params]
+

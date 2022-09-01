@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/fonts-glyph-02-t.svg-7a69e18805f60022238a6767e340561b.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/fonts/fonts-glyph-02-t.svg"
+dest_files=[ "res://.import/fonts-glyph-02-t.svg-7a69e18805f60022238a6767e340561b.gdsvg" ]
+
+[params]
+

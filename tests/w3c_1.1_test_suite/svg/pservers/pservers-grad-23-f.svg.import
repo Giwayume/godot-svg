@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/pservers-grad-23-f.svg-a8f1559e4428c1bf87e06419d1fd3f26.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/pservers/pservers-grad-23-f.svg"
+dest_files=[ "res://.import/pservers-grad-23-f.svg-a8f1559e4428c1bf87e06419d1fd3f26.gdsvg" ]
+
+[params]
+

@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/painting-control-04-f.svg-14f26afc52e3e8c5fbc5ad332549f601.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/painting/painting-control-04-f.svg"
+dest_files=[ "res://.import/painting-control-04-f.svg-14f26afc52e3e8c5fbc5ad332549f601.gdsvg" ]
+
+[params]
+

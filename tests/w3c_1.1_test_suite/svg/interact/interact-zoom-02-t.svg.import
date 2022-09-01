@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/interact-zoom-02-t.svg-704032925e6c8d9bc7efe43a0c6cf55f.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/interact/interact-zoom-02-t.svg"
+dest_files=[ "res://.import/interact-zoom-02-t.svg-704032925e6c8d9bc7efe43a0c6cf55f.gdsvg" ]
+
+[params]
+

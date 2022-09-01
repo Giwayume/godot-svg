@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/shapes-line-02-f.svg-861d4b8f32421d87eafbb7d15d4119d9.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/shapes/shapes-line-02-f.svg"
+dest_files=[ "res://.import/shapes-line-02-f.svg-861d4b8f32421d87eafbb7d15d4119d9.gdsvg" ]
+
+[params]
+

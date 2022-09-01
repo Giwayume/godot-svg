@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/fonts-overview-201-t.svg-83e38839259f991f3c0b75efb1724b23.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/fonts/fonts-overview-201-t.svg"
+dest_files=[ "res://.import/fonts-overview-201-t.svg-83e38839259f991f3c0b75efb1724b23.gdsvg" ]
+
+[params]
+

@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/animate-elem-26-t.svg-9c103fe7e8151e60b75fa5c79768cc41.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/animate/animate-elem-26-t.svg"
+dest_files=[ "res://.import/animate-elem-26-t.svg-9c103fe7e8151e60b75fa5c79768cc41.gdsvg" ]
+
+[params]
+

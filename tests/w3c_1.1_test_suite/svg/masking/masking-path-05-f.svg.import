@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/masking-path-05-f.svg-b39f3910bc713a2ca3dfb1060ebe5426.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/masking/masking-path-05-f.svg"
+dest_files=[ "res://.import/masking-path-05-f.svg-b39f3910bc713a2ca3dfb1060ebe5426.gdsvg" ]
+
+[params]
+

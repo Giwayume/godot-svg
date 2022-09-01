@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/animate-interact-pevents-03-t.svg-1541495eb15231c295d618b0a5019ec7.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/animate/animate-interact-pevents-03-t.svg"
+dest_files=[ "res://.import/animate-interact-pevents-03-t.svg-1541495eb15231c295d618b0a5019ec7.gdsvg" ]
+
+[params]
+

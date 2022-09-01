@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/struct-dom-07-f.svg-877fa971514d8fe78f0aa00b24b26b87.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/struct/struct-dom-07-f.svg"
+dest_files=[ "res://.import/struct-dom-07-f.svg-877fa971514d8fe78f0aa00b24b26b87.gdsvg" ]
+
+[params]
+

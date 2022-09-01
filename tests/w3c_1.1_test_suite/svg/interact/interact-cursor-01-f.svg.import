@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/interact-cursor-01-f.svg-ad0d3156590a11b0966d1f1f729aa315.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/interact/interact-cursor-01-f.svg"
+dest_files=[ "res://.import/interact-cursor-01-f.svg-ad0d3156590a11b0966d1f1f729aa315.gdsvg" ]
+
+[params]
+

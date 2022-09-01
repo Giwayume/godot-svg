@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/color-prop-01-b.svg-52c0296c5c1c0d647076ae7aa866b677.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/color/color-prop-01-b.svg"
+dest_files=[ "res://.import/color-prop-01-b.svg-52c0296c5c1c0d647076ae7aa866b677.gdsvg" ]
+
+[params]
+

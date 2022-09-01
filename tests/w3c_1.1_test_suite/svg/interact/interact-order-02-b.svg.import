@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/interact-order-02-b.svg-0b3cf13bc8c91b7d73142e12f2a05bed.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/interact/interact-order-02-b.svg"
+dest_files=[ "res://.import/interact-order-02-b.svg-0b3cf13bc8c91b7d73142e12f2a05bed.gdsvg" ]
+
+[params]
+

@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/coords-trans-07-t.svg-d04802dc38fa4c893529593d670b0066.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/coords/coords-trans-07-t.svg"
+dest_files=[ "res://.import/coords-trans-07-t.svg-d04802dc38fa4c893529593d670b0066.gdsvg" ]
+
+[params]
+

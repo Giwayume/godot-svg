@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/text-ws-03-t.svg-1752d302aee8329d9f7c71c0e3de86a9.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/text/text-ws-03-t.svg"
+dest_files=[ "res://.import/text-ws-03-t.svg-1752d302aee8329d9f7c71c0e3de86a9.gdsvg" ]
+
+[params]
+

@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/filters-morph-01-f.svg-75b15b0ea952cbcd1ee1a4b4f21ab5bb.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/filters/filters-morph-01-f.svg"
+dest_files=[ "res://.import/filters-morph-01-f.svg-75b15b0ea952cbcd1ee1a4b4f21ab5bb.gdsvg" ]
+
+[params]
+

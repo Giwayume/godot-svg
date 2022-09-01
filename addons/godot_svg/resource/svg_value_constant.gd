@@ -21,12 +21,76 @@ const NON_SCALING_SIZE = "non-scaling-size"
 const NON_ROTATION = "non-rotation"
 const FIXED_POSITION = "fixed-position"
 
+const USER_SPACE_ON_USE = "userSpaceOnUse"
+const OBJECT_BOUNDING_BOX = "objectBoundingBox"
+
+const PAD = "pad"
+const REFLECT = "reflect"
+const REPEAT = "repeat"
+
+const ARCS = "arcs"
+const BEVEL = "bevel"
+const MITER = "miter"
+const MITER_CLIP = "miter-clip"
+const ROUND = "round"
+
+enum PathCommand {
+	MOVE_TO,
+	LINE_TO,
+	HORIZONTAL_LINE_TO,
+	VERTICAL_LINE_TO,
+	CUBIC_BEZIER_CURVE,
+	SMOOTH_CUBIC_BEZIER_CURVE,
+	QUADRATIC_BEZIER_CURVE,
+	SMOOTH_QUADRATIC_BEZIER_CURVE,
+	ELLIPTICAL_ARC_CURVE,
+	CLOSE_PATH
+}
+enum PathCoordinate {
+	ABSOLUTE,
+	RELATIVE
+}
+
 const GLOBAL_ATTRIBUTE_NAMES = [
 	"id",
 	"lang",
 	"tabindex",
 	"class",
 	"style",
+	"required_extensions",
+	"required_features",
+	"system_language",
+	"clip_path",
+	"clip_rule",
+	"color",
+	"color_interpolation",
+	"color_rendering",
+	"cursor",
+	"display",
+	"fill",
+	"fill_opacity",
+	"fill_rule",
+	"filter",
+	"mask",
+	"opacity",
+	"pointer_events",
+	"shape_rendering",
+	"stroke",
+	"stroke_dasharray",
+	"stroke_dashoffset",
+	"stroke_linecap",
+	"stroke_linejoin",
+	"stroke_miterlimit",
+	"stroke_opacity",
+	"stroke_width",
+	"transform",
+	"vector_effect",
+	"visibility",
+]
+
+const GLOBAL_INHERITED_ATTRIBUTE_NAMES = [
+	"lang",
+	"tabindex",
 	"required_extensions",
 	"required_features",
 	"system_language",

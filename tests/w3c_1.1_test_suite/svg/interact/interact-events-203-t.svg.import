@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/interact-events-203-t.svg-e1d227844cac56b0d1ccfba9182c9196.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/interact/interact-events-203-t.svg"
+dest_files=[ "res://.import/interact-events-203-t.svg-e1d227844cac56b0d1ccfba9182c9196.gdsvg" ]
+
+[params]
+

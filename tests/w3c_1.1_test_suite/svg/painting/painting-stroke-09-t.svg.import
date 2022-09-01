@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/painting-stroke-09-t.svg-4c952da0e8196c19bdde58347c2a35f6.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/painting/painting-stroke-09-t.svg"
+dest_files=[ "res://.import/painting-stroke-09-t.svg-4c952da0e8196c19bdde58347c2a35f6.gdsvg" ]
+
+[params]
+

@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/shapes-polyline-02-t.svg-7a1d9d6c725fc2df67d80bc9e9213543.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/shapes/shapes-polyline-02-t.svg"
+dest_files=[ "res://.import/shapes-polyline-02-t.svg-7a1d9d6c725fc2df67d80bc9e9213543.gdsvg" ]
+
+[params]
+

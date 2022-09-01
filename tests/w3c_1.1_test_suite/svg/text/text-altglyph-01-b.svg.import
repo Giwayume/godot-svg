@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/text-altglyph-01-b.svg-4bd91d6ead5af9495f81d3355c83bcc1.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/text/text-altglyph-01-b.svg"
+dest_files=[ "res://.import/text-altglyph-01-b.svg-4bd91d6ead5af9495f81d3355c83bcc1.gdsvg" ]
+
+[params]
+

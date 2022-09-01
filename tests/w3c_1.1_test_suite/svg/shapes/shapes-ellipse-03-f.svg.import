@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/shapes-ellipse-03-f.svg-ad0e5aea2f6c05a2d772ceb2652079d6.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/shapes/shapes-ellipse-03-f.svg"
+dest_files=[ "res://.import/shapes-ellipse-03-f.svg-ad0e5aea2f6c05a2d772ceb2652079d6.gdsvg" ]
+
+[params]
+

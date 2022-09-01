@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/text-spacing-01-b.svg-1116320a313636debcf97387afb342b4.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/text/text-spacing-01-b.svg"
+dest_files=[ "res://.import/text-spacing-01-b.svg-1116320a313636debcf97387afb342b4.gdsvg" ]
+
+[params]
+

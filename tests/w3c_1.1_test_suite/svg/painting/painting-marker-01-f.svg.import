@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/painting-marker-01-f.svg-d9fd557925a368cb301ec64010e5b159.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/painting/painting-marker-01-f.svg"
+dest_files=[ "res://.import/painting-marker-01-f.svg-d9fd557925a368cb301ec64010e5b159.gdsvg" ]
+
+[params]
+

@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/styling-pres-05-f.svg-7cc9c9a954ffdf3316bdebfee1c62b53.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/styling/styling-pres-05-f.svg"
+dest_files=[ "res://.import/styling-pres-05-f.svg-7cc9c9a954ffdf3316bdebfee1c62b53.gdsvg" ]
+
+[params]
+

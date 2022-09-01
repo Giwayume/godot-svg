@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/linking-a-05-t.svg-3b0251556faa42195fc07814cd0b29bd.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/linking/linking-a-05-t.svg"
+dest_files=[ "res://.import/linking-a-05-t.svg-3b0251556faa42195fc07814cd0b29bd.gdsvg" ]
+
+[params]
+

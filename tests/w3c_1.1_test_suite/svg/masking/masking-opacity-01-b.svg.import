@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/masking-opacity-01-b.svg-91ae3c8e4b9eaec0894833ca84d93132.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/masking/masking-opacity-01-b.svg"
+dest_files=[ "res://.import/masking-opacity-01-b.svg-91ae3c8e4b9eaec0894833ca84d93132.gdsvg" ]
+
+[params]
+

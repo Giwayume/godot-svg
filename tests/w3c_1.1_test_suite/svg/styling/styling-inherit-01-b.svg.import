@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/styling-inherit-01-b.svg-a2fbc43490a836298f35a09b1655b7a7.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/styling/styling-inherit-01-b.svg"
+dest_files=[ "res://.import/styling-inherit-01-b.svg-a2fbc43490a836298f35a09b1655b7a7.gdsvg" ]
+
+[params]
+

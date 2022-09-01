@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/shapes-polygon-02-t.svg-2e2eed9576bdb4034e840441f256e0b1.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/shapes/shapes-polygon-02-t.svg"
+dest_files=[ "res://.import/shapes-polygon-02-t.svg-2e2eed9576bdb4034e840441f256e0b1.gdsvg" ]
+
+[params]
+

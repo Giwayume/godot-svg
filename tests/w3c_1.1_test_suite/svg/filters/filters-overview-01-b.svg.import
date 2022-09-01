@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/filters-overview-01-b.svg-b2f98d76da459dc3a366f0ae8b42e584.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/filters/filters-overview-01-b.svg"
+dest_files=[ "res://.import/filters-overview-01-b.svg-b2f98d76da459dc3a366f0ae8b42e584.gdsvg" ]
+
+[params]
+

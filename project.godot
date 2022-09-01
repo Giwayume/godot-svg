@@ -10,34 +10,44 @@ config_version=4
 
 _global_script_classes=[ {
 "base": "Reference",
+"class": "SVGAttributeParser",
+"language": "GDScript",
+"path": "res://addons/godot_svg/utility/svg_attribute_parser.gd"
+}, {
+"base": "Reference",
 "class": "SVGDrawing",
 "language": "GDScript",
 "path": "res://addons/godot_svg/utility/svg_drawing.gd"
+}, {
+"base": "Reference",
+"class": "SVGHelper",
+"language": "GDScript",
+"path": "res://addons/godot_svg/utility/svg_helper.gd"
 }, {
 "base": "Resource",
 "class": "SVGLengthPercentage",
 "language": "GDScript",
 "path": "res://addons/godot_svg/resource/svg_length_percentage.gd"
 }, {
+"base": "Reference",
+"class": "SVGMath",
+"language": "GDScript",
+"path": "res://addons/godot_svg/utility/svg_math.gd"
+}, {
 "base": "Resource",
 "class": "SVGPaint",
 "language": "GDScript",
 "path": "res://addons/godot_svg/resource/svg_paint.gd"
 }, {
-"base": "SVGRenderElement",
-"class": "SVGRenderCircle",
+"base": "ResourceFormatLoader",
+"class": "SVGResourceFormatLoader",
 "language": "GDScript",
-"path": "res://addons/godot_svg/render/svg_render_circle.gd"
+"path": "res://addons/godot_svg/import/svg_resource_loader.gd"
 }, {
-"base": "Resource",
-"class": "SVGRenderElement",
+"base": "ResourceFormatSaver",
+"class": "SVGResourceFormatSaver",
 "language": "GDScript",
-"path": "res://addons/godot_svg/render/svg_render_element.gd"
-}, {
-"base": "SVGRenderElement",
-"class": "SVGRenderViewport",
-"language": "GDScript",
-"path": "res://addons/godot_svg/render/svg_render_viewport.gd"
+"path": "res://addons/godot_svg/import/svg_resource_saver.gd"
 }, {
 "base": "Resource",
 "class": "SVGSource",
@@ -55,12 +65,14 @@ _global_script_classes=[ {
 "path": "res://addons/godot_svg/resource/svg_value_constant.gd"
 } ]
 _global_script_class_icons={
+"SVGAttributeParser": "",
 "SVGDrawing": "",
+"SVGHelper": "",
 "SVGLengthPercentage": "",
+"SVGMath": "",
 "SVGPaint": "",
-"SVGRenderCircle": "",
-"SVGRenderElement": "",
-"SVGRenderViewport": "",
+"SVGResourceFormatLoader": "",
+"SVGResourceFormatSaver": "",
 "SVGSource": "",
 "SVGSourceElement": "",
 "SVGValueConstant": ""
@@ -69,8 +81,12 @@ _global_script_class_icons={
 [application]
 
 config/name="SVG"
-run/main_scene="res://tests/basic_circle/basic_circle.tscn"
+run/main_scene="res://tests/w3c_1.1_test_suite/test_scene.tscn"
 config/icon="res://icon.png"
+
+[autoload]
+
+SVGLine2DTexture="*res://addons/godot_svg/render/polygon/svg_line_texture.gd"
 
 [editor_plugins]
 
