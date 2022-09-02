@@ -12,6 +12,48 @@ The advantage of using this plugin is you don't have to compile Godot to install
 
 2. Now in a 2D scene, add a SVG2D node. Drag & drop your SVG file to the "SVG" property of this node, and you will see the SVG rendered in realtime!
 
+### The SVG2D Node
+
+**PROPERTIES**
+
+| Name | Value Type | Notes |
+|:-----|:--------------|:------|
+| svg | SVG Resource (Import As: SVG) | If you try to add a SVG imported as "Texture" here, it will not work. Use Sprite instead for that. |
+| fixed_scaling_ratio | float | If the value is 0, the SVG will be redrawn every time the scale changes so jagged edges are not visible. Setting the value above 0 bakes the resolution of the paths so they are not redrawn at runtime. A value of 1 means it is drawn to look perfect at 100% scale (1:1), and if you zoom in further than that you will see jagged edges. |
+
+
+## Performance Considerations
+
+**Scaling**
+
+Be aware that by default, when the scale of your SVG changes, or the scale of your Camera's viewport changes, the SVG's mesh vertices are recalculated so you do not see jaggy edges. There is a performance cost associated with this. If your game uses a lot of scaling operations, look there first for optimization (set fixed_scaling_ratio to a value above 0).
+
+**Stylesheets**
+
+Avoid SVGs that use stylesheets (`<style>` element) like the plague. It is technically supported, but it is very expensive to compute. Set inline attributes instead; the inline style attribute (e.g. `<rect style="fill:red">`) is OK to use.
+
+**Animation**
+
+Animating styling attributes that cause the shape of an element to change (such as `stroke-dasharray`, `d`, `r`) will cause the entire shape to be recalculated which can become expensive on a large scale.
+
+## Use Cases
+
+1. Drawing charts and graphs in-game (recommended)
+
+   Using SVG can drastically improve the simplicity of this worflow, compared to setting up these graphics manually in-engine. And static charts aren't too performance intensive.
+
+2. Complex menu and UI graphics, such as buttons, that can't be achieved through control nodes (recommended)
+
+   This is another area where SVG shines and isn't too performance intensive.
+
+3. Creating animated characters
+
+   You may find that there's a bit of a performance overhead using SVG as opposed to setting up Mesh2D manually and animating them with AnimationPlayer. Be cautious of performance when going this route.
+
+4. Creating large backgrounds
+
+   It is recommended to split up very large assets that are larger than the size of the screen so you can hide them when they are off-screen. If your game's camera does a lot of zooming in and out, consider setting the "fixed_scaling_ratio" property to a value above 0 to disable resolution-dependent scaling.
+
 ## Support Table
 
 **ELEMENTS**
@@ -141,9 +183,9 @@ The advantage of using this plugin is you don't have to compile Godot to install
 | pointer-events | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
 | shape-rendering | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
 | stroke | ![Status](/docs/supported_checkmark.png) Supported | |
-| stroke-dasharray | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
-| stroke-dashoffset | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
-| stroke-linecap | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| stroke-dasharray | ![Status](/docs/supported_checkmark.png) Supported | |
+| stroke-dashoffset | ![Status](/docs/supported_checkmark.png) Supported | |
+| stroke-linecap | ![Status](/docs/supported_checkmark.png) Supported | |
 | stroke-linejoin | ![Status](/docs/supported_checkmark.png) Supported | SVG2 spec "arcs" not yet implemented |
 | stroke-miterlimit | ![Status](/docs/supported_checkmark.png) Supported | |
 | stroke-opacity | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |

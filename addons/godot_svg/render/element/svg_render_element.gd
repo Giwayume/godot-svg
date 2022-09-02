@@ -2,6 +2,7 @@ extends Node2D
 
 const SVGLine2D = preload("../polygon/svg_line_2d.gd")
 const SVGPolygonLine2D = preload("../polygon/svg_polygon_line_2d.gd")
+const SVGPolygonLines2D = preload("../polygon/svg_polygon_lines_2d.gd")
 
 export(Resource) var element_resource = null setget _set_element_resource
 export(Rect2) var inherited_view_box = Rect2()
@@ -45,8 +46,8 @@ var attr_opacity = null
 var attr_pointer_events = null
 var attr_shape_rendering = null
 var attr_stroke = SVGPaint.new("#00000000") setget _set_attr_stroke
-var attr_stroke_dasharray = null
-var attr_stroke_dashoffset = null
+var attr_stroke_dasharray = [] setget _set_attr_stroke_dasharray
+var attr_stroke_dashoffset = SVGLengthPercentage.new("0") setget _set_attr_stroke_dashoffset
 var attr_stroke_linecap = null
 var attr_stroke_linejoin = SVGValueConstant.MITER setget _set_attr_stroke_linejoin
 var attr_stroke_miterlimit = 4.0 setget _set_attr_stroke_miterlimit
@@ -66,6 +67,9 @@ var _shape_strokes = []
 
 func _init():
 	apply_attributes()
+
+func _ready():
+	connect("visibility_changed", self, "_on_visibility_changed")
 
 func _process(_delta):
 	var canvas_transform_scale = get_viewport().canvas_transform.get_scale()
@@ -100,6 +104,8 @@ func get_style(attribute_name, default_value):
 	return value
 
 func draw_shape(updates):
+	if not visible:
+		return
 	
 	if updates.has("fill_color") and updates.fill_color.a > 0:
 		var polygon_lists = []
@@ -154,32 +160,44 @@ func draw_shape(updates):
 			_shape_strokes = SVGHelper.array_slice(_shape_strokes, 0, point_lists.size())
 			# Create new
 			for point_list_index in range(_shape_strokes.size(), point_lists.size()):
-				var shape = SVGPolygonLine2D.new()
+				var shape = SVGPolygonLines2D.new()
 				add_child(shape)
 				_shape_strokes.push_back(shape)
 		
 		var stroke_index = 0
 		for _shape_stroke in _shape_strokes:
+			var _stroke_attrs = {}
 			if stroke_index < point_lists.size():
 				_shape_stroke.points = point_lists[stroke_index]
-			_shape_stroke.color = updates.stroke_color
-			_shape_stroke.cap_mode = attr_stroke_linecap
-			_shape_stroke.joint_mode = attr_stroke_linejoin
-			_shape_stroke.antialiased = true
-			_shape_stroke.sharp_limit = attr_stroke_miterlimit
+			else:
+				_shape_stroke.points = []
+			if attr_stroke_dasharray.size() > 0:
+				var full_percentage_size = sqrt((pow(inherited_view_box.size.x, 2) + pow(inherited_view_box.size.y, 2)) / 2)
+				var dash_array = []
+				for size in attr_stroke_dasharray:
+					dash_array.push_back(size.get_length(full_percentage_size))
+				_shape_stroke.dash_offset = attr_stroke_dashoffset.get_length(full_percentage_size)
+				_shape_stroke.dash_array = dash_array
+			_stroke_attrs.color = updates.stroke_color
+			_stroke_attrs.cap_mode = attr_stroke_linecap
+			_stroke_attrs.joint_mode = attr_stroke_linejoin
+			_stroke_attrs.antialiased = true
+			_stroke_attrs.sharp_limit = attr_stroke_miterlimit
 			if updates.has("stroke_width") and updates.has("scale_factor"):
 	#			var applied_stroke_width = updates.stroke_width * updates.scale_factor.x
 	#			if applied_stroke_width >= 2:
 	#				applied_stroke_width += 2
 	#			elif applied_stroke_width > 1:
 	#				applied_stroke_width = applied_stroke_width + ((applied_stroke_width - 1) * 2)
-	#			_shape_stroke.width = applied_stroke_width / max(0.0001, updates.scale_factor.x)
-				_shape_stroke.width = updates.stroke_width
+	#			_stroke_attrs.width = applied_stroke_width / max(0.0001, updates.scale_factor.x)
+				_stroke_attrs.width = updates.stroke_width
 			if updates.has("stroke_closed"):
 				if typeof(updates.stroke_closed) == TYPE_ARRAY and stroke_index < updates.stroke_closed.size():
-					_shape_stroke.closed = updates.stroke_closed[stroke_index]
+					_stroke_attrs.closed = updates.stroke_closed[stroke_index]
 				else:
-					_shape_stroke.closed = updates.stroke_closed
+					_stroke_attrs.closed = updates.stroke_closed
+			
+			_shape_stroke.line_attributes = _stroke_attrs
 			_shape_stroke.show()
 			stroke_index += 1
 	else:
@@ -259,6 +277,31 @@ func _set_attr_stroke(stroke):
 			attr_stroke = SVGPaint.new(stroke)
 	update()
 
+func _set_attr_stroke_dasharray(stroke_dasharray):
+	stroke_dasharray = get_style("stroke_dasharray", stroke_dasharray)
+	if typeof(stroke_dasharray) != TYPE_STRING:
+		attr_stroke_dasharray = stroke_dasharray
+	else:
+		if stroke_dasharray == SVGValueConstant.NONE:
+			attr_stroke_dasharray = []
+		else:
+			var values = []
+			var number_split = stroke_dasharray.split(" ", false)
+			for number_string in number_split:
+				values.push_back(SVGLengthPercentage.new(number_string))
+			if values.size() % 2 == 1:
+				values.append_array(values.duplicate())
+			attr_stroke_dasharray = values
+	update()
+
+func _set_attr_stroke_dashoffset(stroke_dashoffset):
+	stroke_dashoffset = get_style("stroke_dashoffset", stroke_dashoffset)
+	if typeof(stroke_dashoffset) != TYPE_STRING:
+		attr_stroke_dashoffset = stroke_dashoffset
+	else:
+		attr_stroke_dashoffset = SVGLengthPercentage.new(stroke_dashoffset)
+	update()
+
 func _set_attr_stroke_linejoin(stroke_linejoin):
 	stroke_linejoin = get_style("stroke_linejoin", stroke_linejoin)
 	attr_stroke_linejoin = stroke_linejoin
@@ -305,3 +348,10 @@ func _set_attr_transform(transform):
 	transform = get_style("transform", transform)
 	attr_transform = SVGAttributeParser.parse_transform_list(transform)
 	update()
+
+# Signal Callbacks
+
+func _on_visibility_changed():
+	if visible:
+		update()
+

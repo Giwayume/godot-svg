@@ -22,6 +22,9 @@ func _create_polygon():
 		call_deferred("_create_polygon_deferred")
 
 func _create_polygon_deferred():
+	if not _is_creating_polygon:
+		return
+	
 	var left_points = []
 	var right_points = []
 	
@@ -180,10 +183,6 @@ func _create_polygon_deferred():
 						false
 					)
 					var half_mark = floor(curve_points.size() / 2)
-#					for point_index in range(half_mark - 1, -1, -1):
-#						right_points.push_back(curve_points[point_index])
-#					for point_index in range(half_mark, curve_points.size()):
-#						left_points.push_back(curve_points[point_index])
 					for point_index in range(curve_points.size() - 1, half_mark - 1, -1):
 						right_points.push_back(curve_points[point_index])
 					for point_index in range(0, half_mark):
@@ -194,6 +193,9 @@ func _create_polygon_deferred():
 	right_points.invert()
 	all_points.append_array(right_points)
 	polygon = all_points
+	
+	_is_creating_polygon = false
+	
 	update()
 
 func _generate_curve_points(start_point, end_point, start_direction, end_direction, point_width, angle, include_ends = true):
@@ -222,6 +224,12 @@ func _generate_curve_points(start_point, end_point, start_direction, end_directi
 	if include_ends:
 		points.push_back(end_point)
 	return points
+
+# Public Methods
+
+func draw_now():
+	_is_creating_polygon = true
+	_create_polygon_deferred()
 
 # Getters / Setters
 

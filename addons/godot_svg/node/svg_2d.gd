@@ -14,9 +14,10 @@ const SVGRenderStyle = preload("../render/element/svg_render_style.gd")
 const SVGRenderViewport = preload("../render/element/svg_render_viewport.gd")
 
 export(Resource) var svg = null setget _set_svg, _get_svg
-export(bool) var toggle_render setget _set_toggle_render
+export(float) var fixed_scaling_ratio = 0 setget _set_fixed_scaling_ratio, _get_fixed_scaling_ratio
 
 var _editor_plugin = null
+var _fixed_scaling_ratio = 0
 var _svg = null
 var _renderer_map = {}
 var _global_stylesheet = []
@@ -203,5 +204,9 @@ func _set_svg(svg):
 func _get_svg():
 	return _svg
 
-func _set_toggle_render(new_toggle_render):
-	_set_svg(_svg)
+func _set_fixed_scaling_ratio(fixed_scaling_ratio):
+	_fixed_scaling_ratio = fixed_scaling_ratio
+	update()
+
+func _get_fixed_scaling_ratio():
+	return _fixed_scaling_ratio
