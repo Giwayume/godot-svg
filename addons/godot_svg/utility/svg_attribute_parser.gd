@@ -64,6 +64,14 @@ static func parse_css_color(attribute):
 		color = SVGValueConstant.CSS_COLOR_NAMES[attribute]
 	return color
 
+static func parse_number_list(number_list_string):
+	var values = []
+	var space_split = number_list_string.split(" ", false)
+	for space_split_str in space_split:
+		var comma_split = space_split_str.split(",", false)
+		for value_str in comma_split:
+			values.push_back(value_str.to_float())
+	return values
 
 static func parse_transform_list(transform_attr):
 	var transform = Transform2D()
@@ -73,33 +81,40 @@ static func parse_transform_list(transform_attr):
 		if SVGValueConstant.NONE == transform_attr:
 			transform = Transform2D()
 		else:
-			var split = transform_attr.split(" ", false)
+			var split = transform_attr.split(")", false)
 			var transform_matrix = Transform()
-			for transform_command in split:
+			for command_index in range(split.size() - 1, -1, -1):
+				var transform_command = split[command_index]
 				transform_command = transform_command.strip_edges()
 				if transform_command.begins_with("rotate("):
-					var values = transform_command.replace("rotate(", "").rstrip(")").strip_edges().split(" ", false)
+					var values = parse_number_list(transform_command.replace("rotate(", "").rstrip(")"))
 					if values.size() == 1:
-						transform_matrix = transform_matrix.rotated(Vector3(0, 0, 1), deg2rad(values[0].to_float()))
+						transform_matrix = transform_matrix.rotated(Vector3(0, 0, 1), deg2rad(values[0]))
 					elif values.size() == 3:
-						transform_matrix = transform_matrix.rotated(Vector3(1, 0, 0), deg2rad(values[0].to_float()))
-						transform_matrix = transform_matrix.rotated(Vector3(0, 1, 0), deg2rad(values[1].to_float()))
-						transform_matrix = transform_matrix.rotated(Vector3(0, 0, 1), deg2rad(values[2].to_float()))
+						transform_matrix = transform_matrix.rotated(Vector3(1, 0, 0), deg2rad(values[0]))
+						transform_matrix = transform_matrix.rotated(Vector3(0, 1, 0), deg2rad(values[1]))
+						transform_matrix = transform_matrix.rotated(Vector3(0, 0, 1), deg2rad(values[2]))
 				elif transform_command.begins_with("translate("):
-					var values = transform_command.replace("translate(", "").rstrip(")").strip_edges().split(" ", false)
+					var values = parse_number_list(transform_command.replace("translate(", "").rstrip(")"))
 					if values.size() >= 2:
-						transform_matrix = transform_matrix.translated(
-							values[0].to_float(),
-							values[1].to_float(),
-							-values[2].to_float() if values.size() == 3 else 0.0
+						transform_matrix.origin += Vector3(
+							values[0],
+							values[1],
+							-values[2] if values.size() == 3 else 0.0
 						)
 				elif transform_command.begins_with("scale("):
-					var values = transform_command.replace("scale(", "").rstrip(")").strip_edges().split(" ", false)
+					var values = parse_number_list(transform_command.replace("scale(", "").rstrip(")"))
+					if values.size() == 1:
+						transform_matrix = transform_matrix.scaled(Vector3(
+							values[0],
+							values[0],
+							values[0]
+						))
 					if values.size() >= 2:
-						transform_matrix = transform_matrix.scaled(
-							values[0].to_float(),
-							values[1].to_float(),
-							values[2].to_float() if values.size() == 3 else 0.0
-						)
+						transform_matrix = transform_matrix.scaled(Vector3(
+							values[0],
+							values[1],
+							values[2] if values.size() == 3 else 1.0
+						))
 			transform = Transform2D(transform_matrix)
 	return transform

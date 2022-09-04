@@ -120,7 +120,6 @@ const GLOBAL_INHERITED_ATTRIBUTE_NAMES = [
 	"stroke_miterlimit",
 	"stroke_opacity",
 	"stroke_width",
-	"transform",
 	"vector_effect",
 	"visibility",
 ]

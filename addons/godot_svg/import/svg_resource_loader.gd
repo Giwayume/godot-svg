@@ -2,7 +2,7 @@ tool
 extends ResourceFormatLoader
 class_name SVGResourceFormatLoader
 
-const SVGSource = preload("../resource/svg_source.gd")
+const SVGResource = preload("../resource/svg_resource.gd")
 
 func get_recognized_extensions() -> PoolStringArray:
 	return PoolStringArray(["gdsvg"])
@@ -22,10 +22,10 @@ func load(path: String, original_path: String):
 	if error != OK:
 		return error
 	
-	var svg_source = SVGSource.new()
+	var svg_resource = SVGResource.new()
 	
 	var parent_stack = [{
-		"resource": svg_source,
+		"resource": svg_resource,
 		"global_attributes": {},
 	}]
 	while xml_parser.read() == OK:
@@ -35,14 +35,14 @@ func load(path: String, original_path: String):
 			var new_resource
 			match node_name:
 				"svg":
-					if parent_stack[0].resource == svg_source:
-						svg_source.viewport = SVGSourceElement.new()
-						new_resource = svg_source.viewport
+					if parent_stack[0].resource == svg_resource:
+						svg_resource.viewport = SVGResourceElement.new()
+						new_resource = svg_resource.viewport
 					else:
-						new_resource = SVGSourceElement.new()
+						new_resource = SVGResourceElement.new()
 						parent_stack[0].resource.add_child(new_resource)
 				_:
-					new_resource = SVGSourceElement.new()
+					new_resource = SVGResourceElement.new()
 					parent_stack[0].resource.add_child(new_resource)
 			new_resource.node_name = node_name
 			new_resource.children = []
@@ -77,4 +77,4 @@ func load(path: String, original_path: String):
 			pass
 			
 	
-	return svg_source
+	return svg_resource

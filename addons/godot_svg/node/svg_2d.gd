@@ -1,13 +1,16 @@
 tool
 extends Node2D
 
-const SVGSource = preload("../resource/svg_source.gd")
+const SVGResource = preload("../resource/svg_resource.gd")
 const SVGRenderCircle = preload("../render/element/svg_render_circle.gd")
+const SVGRenderDefs = preload("../render/element/svg_render_defs.gd")
 const SVGRenderElement = preload("../render/element/svg_render_element.gd")
 const SVGRenderEllipse = preload("../render/element/svg_render_ellipse.gd")
 const SVGRenderG = preload("../render/element/svg_render_g.gd")
+const SVGRenderLine = preload("../render/element/svg_render_line.gd")
 const SVGRenderLinearGradient = preload("../render/element/svg_render_linear_gradient.gd")
 const SVGRenderPath = preload("../render/element/svg_render_path.gd")
+const SVGRenderPolyline = preload("../render/element/svg_render_polyline.gd")
 const SVGRenderRect = preload("../render/element/svg_render_rect.gd")
 const SVGRenderStop = preload("../render/element/svg_render_stop.gd")
 const SVGRenderStyle = preload("../render/element/svg_render_style.gd")
@@ -40,10 +43,13 @@ func _exit_tree():
 func _get_svg_element_renderer(node_name):
 	match node_name:
 		"circle": return SVGRenderCircle
+		"defs": return SVGRenderDefs
 		"ellipse": return SVGRenderEllipse
 		"g": return SVGRenderG
+		"line": return SVGRenderLine
 		"linearGradient": return SVGRenderLinearGradient
 		"path": return SVGRenderPath
+		"polyline": return SVGRenderPolyline
 		"rect": return SVGRenderRect
 		"stop": return SVGRenderStop
 		"style": return SVGRenderStyle
@@ -128,7 +134,7 @@ func _apply_stylesheet_recursive(children, rule_state = null):
 			_apply_stylesheet_recursive(child.children, rule_state.duplicate(true))
 
 func _resolve_resource_locator(url: String, parent_resource = null):
-	if parent_resource == null and _svg is SVGSource and _svg.viewport != null:
+	if parent_resource == null and _svg is SVGResource and _svg.viewport != null:
 		parent_resource = _svg.viewport
 	var located_resource = {
 		"resource": null,
@@ -147,7 +153,7 @@ func _resolve_resource_locator(url: String, parent_resource = null):
 	return located_resource
 
 func _find_elements_by_name(name: String, parent_resource = null):
-	if parent_resource == null and _svg is SVGSource and _svg.viewport != null:
+	if parent_resource == null and _svg is SVGResource and _svg.viewport != null:
 		parent_resource = _svg.viewport
 	var found_resources = []
 	for child_resource in parent_resource.children:
@@ -165,13 +171,13 @@ func _find_elements_by_name(name: String, parent_resource = null):
 func _get_configuration_warning():
 	if _svg is Texture:
 		return "You added an SVG file that is imported as \"Texture\". In the Import tab, choose \"Import As: SVG\" instead!"
-	elif _svg != null and not _svg is SVGSource:
+	elif _svg != null and not _svg is SVGResource:
 		return "You must import your SVG file as \"GodotSVG\" in the import settings!"
 	return ""
 
 func _get_item_rect():
 	var edit_rect = Rect2()
-	if _svg is SVGSource and _svg.viewport != null:
+	if _svg is SVGResource and _svg.viewport != null:
 			var viewport_renderer = _renderer_map[_svg.viewport]
 			if viewport_renderer != null:
 				edit_rect = viewport_renderer.calc_view_box()
@@ -194,7 +200,7 @@ func _set_svg(svg):
 	_svg = svg
 	
 	# Create renderers
-	if svg is SVGSource and svg.viewport != null:
+	if svg is SVGResource and svg.viewport != null:
 		_create_renderers_recursive(self, [svg.viewport], null)
 		if _global_stylesheet.size() > 0:
 			_apply_stylesheet_recursive([svg.viewport])

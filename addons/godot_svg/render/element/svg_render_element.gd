@@ -36,8 +36,8 @@ var attr_color = null
 var attr_color_interpolation = null
 var attr_color_rendering = null
 var attr_cursor = null
-var attr_display = null
-var attr_fill = SVGPaint.new("#00000000") setget _set_attr_fill
+var attr_display = "inline" setget _set_attr_display
+var attr_fill = SVGPaint.new("#000000") setget _set_attr_fill
 var attr_fill_opacity = null
 var attr_fill_rule = null
 var attr_filter = null
@@ -51,7 +51,7 @@ var attr_stroke_dashoffset = SVGLengthPercentage.new("0") setget _set_attr_strok
 var attr_stroke_linecap = null
 var attr_stroke_linejoin = SVGValueConstant.MITER setget _set_attr_stroke_linejoin
 var attr_stroke_miterlimit = 4.0 setget _set_attr_stroke_miterlimit
-var attr_stroke_opacity = null
+var attr_stroke_opacity = SVGLengthPercentage.new("100%") setget _set_attr_stroke_opacity
 var attr_stroke_width = SVGLengthPercentage.new("1px") setget _set_attr_stroke_width
 var attr_transform = Transform2D() setget _set_attr_transform
 var attr_vector_effect = SVGValueConstant.NONE
@@ -105,6 +105,17 @@ func get_style(attribute_name, default_value):
 
 func draw_shape(updates):
 	if not visible:
+		return
+	
+	if attr_display == SVGValueConstant.NONE or attr_visibility == SVGValueConstant.HIDDEN:
+		for shape_fill in _shape_fills:
+			shape_fill.get_parent().remove_child(shape_fill)
+			shape_fill.queue_free()
+		_shape_fills = []
+		for shape_stroke in _shape_strokes:
+			shape_stroke.get_parent().remove_child(shape_stroke)
+			shape_stroke.queue_free()
+		_shape_strokes = []
 		return
 	
 	if updates.has("fill_color") and updates.fill_color.a > 0:
@@ -183,6 +194,7 @@ func draw_shape(updates):
 			_stroke_attrs.joint_mode = attr_stroke_linejoin
 			_stroke_attrs.antialiased = true
 			_stroke_attrs.sharp_limit = attr_stroke_miterlimit
+			_stroke_attrs.opacity = attr_stroke_opacity.get_length(1)
 			if updates.has("stroke_width") and updates.has("scale_factor"):
 	#			var applied_stroke_width = updates.stroke_width * updates.scale_factor.x
 	#			if applied_stroke_width >= 2:
@@ -191,6 +203,12 @@ func draw_shape(updates):
 	#				applied_stroke_width = applied_stroke_width + ((applied_stroke_width - 1) * 2)
 	#			_stroke_attrs.width = applied_stroke_width / max(0.0001, updates.scale_factor.x)
 				_stroke_attrs.width = updates.stroke_width
+				var applied_stroke_width = updates.stroke_width * updates.scale_factor.x
+				if applied_stroke_width < 1:
+					_shape_stroke.modulate = Color(1, 1, 1, applied_stroke_width)
+				else:
+					_shape_stroke.modulate = Color(1, 1, 1, 1)
+				
 			if updates.has("stroke_closed"):
 				if typeof(updates.stroke_closed) == TYPE_ARRAY and stroke_index < updates.stroke_closed.size():
 					_stroke_attrs.closed = updates.stroke_closed[stroke_index]
@@ -255,6 +273,11 @@ func _set_element_resource(new_element_resource):
 		set_name(element_resource.node_name)
 	update()
 
+func _set_attr_display(display):
+	display = get_style("display", display)
+	attr_display = display
+	update()
+
 func _set_attr_fill(fill):
 	fill = get_style("fill", fill)
 	if typeof(fill) != TYPE_STRING:
@@ -265,6 +288,13 @@ func _set_attr_fill(fill):
 		else:
 			attr_fill = SVGPaint.new(fill)
 	update()
+
+func _set_attr_stroke_opacity(stroke_opacity):
+	stroke_opacity = get_style("stroke_opacity", stroke_opacity)
+	if typeof(stroke_opacity) != TYPE_STRING:
+		attr_stroke_opacity = stroke_opacity
+	else:
+		attr_stroke_opacity = SVGLengthPercentage.new(stroke_opacity)
 
 func _set_attr_stroke(stroke):
 	stroke = get_style("stroke", stroke)
@@ -286,9 +316,11 @@ func _set_attr_stroke_dasharray(stroke_dasharray):
 			attr_stroke_dasharray = []
 		else:
 			var values = []
-			var number_split = stroke_dasharray.split(" ", false)
-			for number_string in number_split:
-				values.push_back(SVGLengthPercentage.new(number_string))
+			var space_split = stroke_dasharray.split(" ", false)
+			for space_split_string in space_split:
+				var comma_split = space_split_string.split(",", false)
+				for number_string in comma_split:
+					values.push_back(SVGLengthPercentage.new(number_string))
 			if values.size() % 2 == 1:
 				values.append_array(values.duplicate())
 			attr_stroke_dasharray = values
@@ -344,9 +376,10 @@ func _set_applied_stylesheet_style(style):
 				self["attr_" + attr_name] = self["attr_" + attr_name]
 	update()
 
-func _set_attr_transform(transform):
-	transform = get_style("transform", transform)
-	attr_transform = SVGAttributeParser.parse_transform_list(transform)
+func _set_attr_transform(new_transform):
+	new_transform = get_style("transform", new_transform)
+	attr_transform = SVGAttributeParser.parse_transform_list(new_transform)
+	self.transform = attr_transform
 	update()
 
 # Signal Callbacks

@@ -2,7 +2,7 @@
 
 [ext_resource path="res://addons/godot_svg/node/svg_2d.gd" type="Script" id=1]
 [ext_resource path="res://tests/_test_scene_control.gd" type="Script" id=2]
-[ext_resource path="res://tests/w3c_1.1_test_suite/svg/painting/painting-stroke-04-t.svg" type="Resource" id=3]
+[ext_resource path="res://tests/w3c_1.1_test_suite/svg/painting/painting-control-05-f.svg" type="Resource" id=3]
 
 [node name="SVGTestScene" type="Node2D"]
 script = ExtResource( 2 )

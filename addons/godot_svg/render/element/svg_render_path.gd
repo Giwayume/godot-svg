@@ -57,6 +57,26 @@ func _draw():
 				current_point = (current_point if is_relative else Vector2()) + Vector2(values[0], values[1])
 				fill_points.push_back(current_point)
 				stroke_points.push_back(current_point)
+			PathCommand.HORIZONTAL_LINE_TO:
+				current_point = Vector2((current_point.x if is_relative else 0.0) + values[0], current_point.y)
+				fill_points.push_back(current_point)
+				stroke_points.push_back(current_point)
+			PathCommand.VERTICAL_LINE_TO:
+				current_point = Vector2(current_point.x, (current_point.y if is_relative else 0.0) + values[0])
+				fill_points.push_back(current_point)
+				stroke_points.push_back(current_point)
+			PathCommand.CUBIC_BEZIER_CURVE:
+				var relative_offset = (current_point if is_relative else Vector2())
+				var p0 = current_point
+				var p1 = relative_offset + Vector2(values[0], values[1])
+				var p2 = relative_offset + Vector2(values[2], values[3])
+				var p3 = relative_offset + Vector2(values[4], values[5])
+				var bezier_length = SVGMath.cubic_bezier_length(p0, p1, p2, p3)
+				var bezier_steps = float(max(4, (bezier_length * scale_factor.x) / 5)) # point every 5 pixels
+				for bezier_step_index in range(1, bezier_steps):
+					current_point = SVGMath.cubic_bezier(p0, p1, p2, p3, float(bezier_step_index) / bezier_steps)
+					fill_points.push_back(current_point)
+					stroke_points.push_back(current_point)
 			PathCommand.CLOSE_PATH:
 				if not current_stroke_start_point.is_equal_approx(current_point):
 					fill_points.push_back(current_stroke_start_point)
@@ -68,7 +88,9 @@ func _draw():
 					stroke_point_lists.push_back(stroke_points)
 					strokes_closed.push_back(true)
 					stroke_points = PoolVector2Array()
-				
+	
+	if fill_points.size() > 0:
+		fill_point_lists.push_back(fill_points)
 	if stroke_points.size() > 0:
 		stroke_point_lists.push_back(stroke_points)
 	
@@ -76,7 +98,7 @@ func _draw():
 		"scale_factor": scale_factor,
 		"fill_color": fill_color,
 		"fill_texture": fill_texture,
-		"fill_polygon": fill_points,
+		"fill_polygon": fill_point_lists,
 		"fill_uv": [], # TODO
 		"stroke_color": stroke_color,
 		"stroke_texture": stroke_texture,

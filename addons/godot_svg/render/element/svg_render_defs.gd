@@ -6,4 +6,5 @@ func _init():
 	node_name = "defs"
 
 func _draw():
+	modulate = Color(1, 1, 1, 0)
 	hide()

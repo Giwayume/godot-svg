@@ -2,13 +2,13 @@ tool
 extends ResourceFormatSaver
 class_name SVGResourceFormatSaver
 
-const SVGSource = preload("../resource/svg_source.gd")
+const SVGResource = preload("../resource/svg_resource.gd")
 
 func get_recognized_extensions(resource: Resource) -> PoolStringArray:
 	return PoolStringArray(["gdsvg"])
 
 func recognize(resource: Resource) -> bool:
-	resource = resource as SVGSource
+	resource = resource as SVGResource
 	if resource:
 		return true
 	return false

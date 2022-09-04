@@ -6,6 +6,7 @@ const circular_handle_offset_90 = 0.552284749831
 export(String) var cap_mode = SVGValueConstant.BUTT setget _set_cap_mode
 export(bool) var closed = false setget _set_closed
 export(String) var joint_mode = SVGValueConstant.MITER setget _set_joint_mode
+export(float) var opacity = 1 setget _set_opacity
 export(PoolVector2Array) var points = PoolVector2Array() setget _set_points
 export(float) var sharp_limit = 4.0 setget _set_sharp_limit
 export(float) var width = 10.0 setget _set_width
@@ -13,6 +14,9 @@ export(float) var width = 10.0 setget _set_width
 var _is_creating_polygon = false
 
 # Lifecycle
+
+func _init():
+	name = "SVGPolygonLine2D"
 
 # Internal methods
 
@@ -24,6 +28,8 @@ func _create_polygon():
 func _create_polygon_deferred():
 	if not _is_creating_polygon:
 		return
+	
+	self_modulate = Color(1, 1, 1, opacity)
 	
 	var left_points = []
 	var right_points = []
@@ -51,6 +57,11 @@ func _create_polygon_deferred():
 				previous_direction = points[point_count - 2].direction_to(points[point_count - 1])
 			else:
 				previous_direction = current_direction
+		
+		if previous_direction.length() == 0:
+			previous_direction = Vector2(1.0, 0.0)
+		if current_direction.length() == 0:
+			current_direction = Vector2(1.0, 0.0)
 		
 		var point_width = width
 		
@@ -192,6 +203,7 @@ func _create_polygon_deferred():
 	all_points.append_array(left_points)
 	right_points.invert()
 	all_points.append_array(right_points)
+	
 	polygon = all_points
 	
 	_is_creating_polygon = false
@@ -243,6 +255,10 @@ func _set_closed(new_closed):
 
 func _set_joint_mode(new_joint_mode):
 	joint_mode = new_joint_mode
+	_create_polygon()
+
+func _set_opacity(new_opacity):
+	opacity = max(0, min(1, new_opacity))
 	_create_polygon()
 
 func _set_points(new_points):

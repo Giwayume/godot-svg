@@ -8,7 +8,14 @@ var inherited_view_box = Rect2(0, 0, 1, 1) setget _set_inherited_view_box
 var line_attributes = {} setget _set_line_attributes
 var points = [] setget _set_points
 
+var _dash_array_size = 0
+var _computed_path_length = 0
 var _lines = []
+
+# Lifecycle
+
+func _init():
+	name = "SVGPolygonLines2D"
 
 # Internal methods
 
@@ -26,7 +33,7 @@ func _create_lines_deferred():
 	
 	var full_percentage_size = sqrt((pow(inherited_view_box.size.x, 2) + pow(inherited_view_box.size.y, 2)) / 2)
 	
-	if dash_array.size() == 0:
+	if _dash_array_size <= 0:
 		var new_line = SVGPolygonLine2D.new()
 		new_line.points = points
 		for line_attribute in line_attributes:
@@ -55,6 +62,7 @@ func _create_lines_deferred():
 					if cumulative_offset > dash_offset:
 						current_dash_size_index = current_index
 						current_distance_traversed = cumulative_offset - dash_offset
+						break
 			else:
 				cumulative_offset *= -1
 				for current_index in range(dash_array.size() - 1, -1, -1):
@@ -63,6 +71,7 @@ func _create_lines_deferred():
 					if cumulative_offset < dash_offset:
 						current_dash_size_index = current_index
 						current_distance_traversed = cumulative_offset - dash_offset
+						break
 		current_dash_size = float(dash_array[current_dash_size_index])
 		
 		var points_reference = Array(points)
@@ -70,8 +79,14 @@ func _create_lines_deferred():
 		var previous_point = Vector2()
 		var current_point_list = PoolVector2Array([points_reference[0]])
 		var current_point = points_reference[0]
+		
+		var loop_count = 0
 		var point_index = 1
 		while point_index < points_reference.size():
+			if loop_count > 65536: # Prevent infinite loop
+				break
+			loop_count += 1
+			
 			previous_point = current_point
 			current_point = points_reference[point_index]
 			var direction = previous_point.direction_to(current_point)
@@ -101,9 +116,6 @@ func _create_lines_deferred():
 				current_point_list.push_back(current_point)
 				point_index += 1
 		
-			if point_index > 65536: # Prevent infinite loop
-				break
-		
 		for new_points in point_lists:
 			var new_line = SVGPolygonLine2D.new()
 			new_line.points = new_points
@@ -117,6 +129,9 @@ func _create_lines_deferred():
 
 func _set_dash_array(new_dash_array):
 	dash_array = new_dash_array
+	_dash_array_size = 0
+	for length in dash_array:
+		_dash_array_size += length
 	_create_lines()
 
 func _set_dash_offset(new_dash_offset):
@@ -133,4 +148,12 @@ func _set_line_attributes(new_line_attributes):
 
 func _set_points(new_points):
 	points = new_points
+	_computed_path_length = 0
+	var points_size = points.size()
+	if points_size > 0:
+		var previous_point = points[0]
+		for point_index in range(1, points_size):
+			var current_point = points[point_index]
+			_computed_path_length += previous_point.distance_to(current_point)
+			previous_point = current_point
 	_create_lines()

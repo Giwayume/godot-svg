@@ -43,10 +43,10 @@ func import(source_file, save_path, options, r_platform_variants, r_gen_files):
 	if file.open(source_file, File.READ) != OK:
 		return FAILED
 	
-	var svg_source = SVGSource.new()
-	svg_source.xml = file.get_as_text()
+	var svg_resource = SVGResource.new()
+	svg_resource.xml = file.get_as_text()
 	
-	var save_error = ResourceSaver.save("%s.%s" % [save_path, get_save_extension()], svg_source)
+	var save_error = ResourceSaver.save("%s.%s" % [save_path, get_save_extension()], svg_resource)
 	return OK
 
 

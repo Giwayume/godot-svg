@@ -39,6 +39,16 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://addons/godot_svg/resource/svg_paint.gd"
 }, {
+"base": "Resource",
+"class": "SVGResource",
+"language": "GDScript",
+"path": "res://addons/godot_svg/resource/svg_resource.gd"
+}, {
+"base": "Resource",
+"class": "SVGResourceElement",
+"language": "GDScript",
+"path": "res://addons/godot_svg/resource/svg_resource_element.gd"
+}, {
 "base": "ResourceFormatLoader",
 "class": "SVGResourceFormatLoader",
 "language": "GDScript",
@@ -48,16 +58,6 @@ _global_script_classes=[ {
 "class": "SVGResourceFormatSaver",
 "language": "GDScript",
 "path": "res://addons/godot_svg/import/svg_resource_saver.gd"
-}, {
-"base": "Resource",
-"class": "SVGSource",
-"language": "GDScript",
-"path": "res://addons/godot_svg/resource/svg_source.gd"
-}, {
-"base": "Resource",
-"class": "SVGSourceElement",
-"language": "GDScript",
-"path": "res://addons/godot_svg/resource/svg_source_element.gd"
 }, {
 "base": "Reference",
 "class": "SVGValueConstant",
@@ -71,10 +71,10 @@ _global_script_class_icons={
 "SVGLengthPercentage": "",
 "SVGMath": "",
 "SVGPaint": "",
+"SVGResource": "",
+"SVGResourceElement": "",
 "SVGResourceFormatLoader": "",
 "SVGResourceFormatSaver": "",
-"SVGSource": "",
-"SVGSourceElement": "",
 "SVGValueConstant": ""
 }
 
