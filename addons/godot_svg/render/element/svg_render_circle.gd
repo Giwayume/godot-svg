@@ -14,6 +14,7 @@ func _init():
 	node_name = "circle"
 
 func _draw():
+	._draw()
 	var scale_factor = get_scale_factor()
 	
 	var center = Vector2(
@@ -45,7 +46,8 @@ func _draw():
 		"stroke_color": stroke_color,
 		"stroke_texture": stroke_texture,
 		"stroke_width": stroke_width,
-		"stroke_points": SVGDrawing.generate_stroke_circle_arc_points(center, radius, -arc_stretch, 2*PI + arc_stretch, arc_points),
+		"stroke_points": SVGDrawing.generate_stroke_circle_arc_points(center, radius, 0, 2*PI, arc_points),
+		"stroke_closed": true,
 	})
 
 # Public Methods

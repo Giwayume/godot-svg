@@ -14,6 +14,7 @@ func _init():
 	node_name = "rect"
 
 func _draw():
+	._draw()
 	var scale_factor = get_scale_factor()
 	
 	var position = Vector2(

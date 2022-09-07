@@ -63,7 +63,7 @@
           <circle cx="0.7" cy="0.5" r="0.2" stroke-width="0.15" fill="blue" stroke="none"/>
         </mask>
       </defs>
-
+	  
       <rect x="150" y="150" width="200" height="200" fill="darkblue" mask="url(#two)"/>
       <text x="50" y="260">With a 'mask':</text>
     </g>

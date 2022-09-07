@@ -20,6 +20,7 @@ func _init():
 	node_name = "viewport"
 
 func _draw():
+	._draw()
 	var view_box = inherited_view_box
 	if attr_view_box is Rect2:
 		view_box = attr_view_box

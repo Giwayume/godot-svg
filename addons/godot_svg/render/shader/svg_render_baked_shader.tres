@@ -1,0 +1,20 @@
+[gd_resource type="Shader" format=2]
+
+[resource]
+code = "shader_type canvas_item;
+
+uniform sampler2D mask;
+
+void fragment() {
+	vec3 mask_color = texture(mask, UV).rgb;
+	float mask_grayscale = (0.299 * mask_color.r) + (0.587 * mask_color.g) + (0.114 * mask_color.b);
+	vec4 diffuse_color = texture(TEXTURE, UV).rgba;
+	diffuse_color.a *= mask_grayscale;
+	if (diffuse_color.a < 0.0) {
+		diffuse_color.a = 0.0;
+	} else if (diffuse_color.a > 1.0) {
+		diffuse_color.a = 1.0;
+	}
+	COLOR = diffuse_color;
+}
+"

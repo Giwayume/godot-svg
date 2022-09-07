@@ -1,5 +1,7 @@
 extends Node2D
 
+const SVGRenderBakedShader = preload("../shader/svg_render_baked_shader.tres")
+
 const SVGLine2D = preload("../polygon/svg_line_2d.gd")
 const SVGPolygonLine2D = preload("../polygon/svg_polygon_line_2d.gd")
 const SVGPolygonLines2D = preload("../polygon/svg_polygon_lines_2d.gd")
@@ -41,7 +43,7 @@ var attr_fill = SVGPaint.new("#000000") setget _set_attr_fill
 var attr_fill_opacity = null
 var attr_fill_rule = null
 var attr_filter = null
-var attr_mask = null
+var attr_mask = SVGValueConstant.NONE setget _set_attr_mask
 var attr_opacity = null
 var attr_pointer_events = null
 var attr_shape_rendering = null
@@ -59,6 +61,8 @@ var attr_visibility = SVGValueConstant.VISIBLE
 
 # Internal Variables
 
+var _baking_viewport = null
+var _baked_sprite = null
 var _previous_canvas_transform_scale = Vector2()
 var _shape_fills = []
 var _shape_strokes = []
@@ -80,7 +84,60 @@ func _process(_delta):
 		update()
 	_previous_canvas_transform_scale = canvas_transform_scale
 
+func _draw():
+	if attr_mask != SVGValueConstant.NONE and _baked_sprite != null:
+		var locator_result = svg_node._resolve_resource_locator(attr_mask)
+		var mask_renderer = locator_result.renderer
+		if mask_renderer != null and mask_renderer.node_name == "mask":
+			var bounding_box = get_bounding_box()
+			var mask_unit_bounding_box = mask_renderer.get_mask_unit_bounding_box(self)
+			_baked_sprite.position = bounding_box.position + mask_unit_bounding_box.position
+			_baking_viewport.size = mask_unit_bounding_box.size
+			_baking_viewport.canvas_transform = Transform2D()
+			_baking_viewport.canvas_transform.origin += -bounding_box.position - mask_unit_bounding_box.position
+			_baking_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
+			mask_renderer.request_mask_update(self)
+
+# Internal Methods
+
+func _mask_updated(mask_texture):
+	call_deferred("_mask_updated_deferred", mask_texture)
+
+func _mask_updated_deferred(mask_texture):
+	if _baked_sprite != null and _baking_viewport != null:
+		_baked_sprite.texture = _baking_viewport.get_texture()
+		if mask_texture != null:
+			_baked_sprite.material.set_shader_param("mask", mask_texture)
+		elif material != null:
+			_baked_sprite.material.set_shader_param("mask", null)
+
 # Public Methods
+
+func add_child(new_child, legible_unique_name = false):
+	if attr_mask != SVGValueConstant.NONE:
+		var bounding_box = get_bounding_box()
+		if _baked_sprite == null:
+			_baked_sprite = Sprite.new()
+			_baked_sprite.centered = false
+			_baked_sprite.material = ShaderMaterial.new()
+			_baked_sprite.material.shader = SVGRenderBakedShader
+			_baked_sprite.position = bounding_box.position
+			.add_child(_baked_sprite)
+		if _baking_viewport == null:
+			_baking_viewport = Viewport.new()
+			_baking_viewport.usage = Viewport.USAGE_2D # Viewport.USAGE_2D_NO_SAMPLING
+			_baking_viewport.transparent_bg = true
+			_baking_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
+			_baking_viewport.render_target_v_flip = true
+			_baking_viewport.name = "baking_viewport"
+			_baking_viewport.size = bounding_box.size
+			.add_child(_baking_viewport)
+			_baking_viewport.canvas_transform = global_transform.inverse()
+			_baking_viewport.canvas_transform.origin += bounding_box.position
+			
+		_baking_viewport.add_child(new_child, legible_unique_name)
+	else:
+		.add_child(new_child, legible_unique_name)
 
 func apply_attributes():
 	if element_resource != null:
@@ -231,7 +288,9 @@ func resolve_paint(attr_paint):
 		if attr_paint.url != null:
 			var result = svg_node._resolve_resource_locator(attr_fill.url)
 			var renderer = result.renderer
-			if renderer.node_name == "linearGradient":
+			if renderer == null:
+				paint.color = attr_paint.color
+			elif renderer.node_name == "linearGradient":
 				var stops = svg_node._find_elements_by_name("stop", result.resource)
 				var gradient = Gradient.new()
 				gradient.colors = []
@@ -289,12 +348,22 @@ func _set_attr_fill(fill):
 			attr_fill = SVGPaint.new(fill)
 	update()
 
+func _set_attr_mask(mask):
+	if typeof(mask) != TYPE_STRING:
+		attr_mask = mask
+	else:
+		if mask.begins_with("url(") and mask.ends_with(")"):
+			attr_mask = mask.replace("url(", "").rstrip(")").strip_edges()
+		else:
+			attr_mask = SVGValueConstant.NONE
+
 func _set_attr_stroke_opacity(stroke_opacity):
 	stroke_opacity = get_style("stroke_opacity", stroke_opacity)
 	if typeof(stroke_opacity) != TYPE_STRING:
 		attr_stroke_opacity = stroke_opacity
 	else:
 		attr_stroke_opacity = SVGLengthPercentage.new(stroke_opacity)
+	update()
 
 func _set_attr_stroke(stroke):
 	stroke = get_style("stroke", stroke)

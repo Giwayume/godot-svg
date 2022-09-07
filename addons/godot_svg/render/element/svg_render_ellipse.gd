@@ -15,6 +15,7 @@ func _init():
 	node_name = "ellipse"
 
 func _draw():
+	._draw()
 	var scale_factor = get_scale_factor()
 	
 	var center = Vector2(

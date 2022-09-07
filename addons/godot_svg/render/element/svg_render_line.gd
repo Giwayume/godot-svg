@@ -12,6 +12,7 @@ func _init():
 	node_name = "line"
 
 func _draw():
+	._draw()
 	var scale_factor = get_scale_factor()
 	
 	var fill_paint = resolve_paint(attr_fill)

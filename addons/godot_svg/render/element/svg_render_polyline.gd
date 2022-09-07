@@ -9,6 +9,7 @@ func _init():
 	node_name = "polyline"
 
 func _draw():
+	._draw()
 	if attr_points.size() < 2:
 		hide()
 		return

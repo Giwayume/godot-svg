@@ -9,6 +9,7 @@ const SVGRenderEllipse = preload("../render/element/svg_render_ellipse.gd")
 const SVGRenderG = preload("../render/element/svg_render_g.gd")
 const SVGRenderLine = preload("../render/element/svg_render_line.gd")
 const SVGRenderLinearGradient = preload("../render/element/svg_render_linear_gradient.gd")
+const SVGRenderMask = preload("../render/element/svg_render_mask.gd")
 const SVGRenderPath = preload("../render/element/svg_render_path.gd")
 const SVGRenderPolyline = preload("../render/element/svg_render_polyline.gd")
 const SVGRenderRect = preload("../render/element/svg_render_rect.gd")
@@ -40,6 +41,11 @@ func _exit_tree():
 
 # Internal Methods
 
+func _get_svg_element_node_class(node_name):
+	match node_name:
+		"mask": return Viewport
+	return Node2D
+
 func _get_svg_element_renderer(node_name):
 	match node_name:
 		"circle": return SVGRenderCircle
@@ -48,6 +54,7 @@ func _get_svg_element_renderer(node_name):
 		"g": return SVGRenderG
 		"line": return SVGRenderLine
 		"linearGradient": return SVGRenderLinearGradient
+		"mask": return SVGRenderMask
 		"path": return SVGRenderPath
 		"polyline": return SVGRenderPolyline
 		"rect": return SVGRenderRect
