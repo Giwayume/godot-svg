@@ -1,14 +1,23 @@
 # Godot SVG
 
-This Godot plugin renders SVG files at runtime, by using Polygon2D nodes. It achieves the effect of infinite scaling and smooth curves by varying the number of vertices used to draw each shape.
+This Godot plugin **renders SVG files at runtime** by using Polygon2D nodes. It achieves the effect of infinite scaling and smooth curves by varying the number of vertices used to draw each shape.
 
-This is the most specification-compliant SVG renderer for Godot. Every other SVG-related project I see only attempts to make simple things like shapes and solid lines work.
+This is the most spec-compliant SVG renderer for Godot. Every other SVG-related project I see only attempts to make simple things like shapes and solid lines work.
 
 ## Usage
 
 1. When importing a SVG into Godot, it defaults to "Import As: Texture". Change this dropdown to "Import As: SVG", then re-import.
 
+<div style="text-align: center">
+    <img src="./docs/tutorial_import_as_svg.png" alt="Visual instructions">
+</div>
+<br>
+
 2. Now in a 2D scene, add a SVG2D node. Drag & drop your SVG file to the "SVG" property of this node, and you will see the SVG rendered in realtime!
+
+<div style="text-align: center">
+    <img src="./docs/tutorial_create_svg2d_node.png" alt="Visual instructions">
+</div>
 
 ### The SVG2D Node
 
@@ -17,26 +26,30 @@ This is the most specification-compliant SVG renderer for Godot. Every other SVG
 | Property Name | Value Type | Notes |
 |:-----|:--------------|:------|
 | svg | SVG Resource | When importing a SVG file, choose "Import As: SVG". If you try to add a SVG imported as "Texture" here, it will not work. Use Sprite instead for that. |
-| fixed_scaling_ratio | float | If the value is 0, the SVG will be redrawn every time the scale changes so jagged edges are not visible. Setting the value above 0 bakes the resolution of the paths so they are not redrawn due to scaling at runtime. A value of 1 means it is drawn to look perfect at 100% scale (1:1), and if you zoom in further than that you will see jagged edges. |
+| fixed_scaling_ratio | float | If the value is 0, the SVG will be redrawn every time the scale changes so jagged edges are not visible. Setting the value above 0 bakes the resolution of the paths so they are not redrawn due to scaling at runtime. A value of 1 means it is drawn to look perfect at 100% view box scale (1:1), and if you zoom in further than that you will see jagged edges. |
 
 
 ## Performance Considerations
 
-**Polygons vs Sprites**
+**SVGs vs Sprites**
 
-Godot is way faster at drawing raster textures in 2D. Whenever you can get away with it, you should prefer using Sprites instead of SVGs.
+Godot is much faster at drawing raster textures in 2D. Whenever you can get away with it, you should prefer using Sprites instead of SVGs.
 
 **Scaling**
 
-Be aware that by default, when the scale of your SVG changes, or the scale of your Camera's viewport changes, the SVG's polygon vertices are recalculated so you do not see jaggy edges. There is a performance cost associated with this. If your game uses a lot of scaling operations, look there first for optimization (set fixed_scaling_ratio to a value above 0).
+By default, when the scale of your SVG changes, or the scale of your Camera's viewport changes, the SVG's polygon vertices are recalculated on the CPU so you do not see jaggy edges. There is a performance cost associated with this, **especially** if you zoom in close to large curves. If your game uses a lot of scaling operations, look there first for optimization (set fixed_scaling_ratio to a value above 0).
+
+**Masks and Clip Paths**
+
+Using masks and clip paths can quickly bring your game to a crawl. Both are rasterized to the game's output resolution before being applied to shapes. This means mask performance is resolution dependent. A masked shape that takes up the entire screen will take exponentially more time to draw than a smaller masked shape that takes up half the screen.
 
 **Stylesheets**
 
-Avoid SVGs that use stylesheets like the plague. (e.g. avoid the `<style>` element). It is technically supported, but it is very expensive to compute. Set inline attributes instead; the inline style attribute (e.g. `<rect style="fill:red">`) is OK to use.
+Avoid SVGs that use stylesheets like the plague. (e.g. avoid the `<style>` element). It is technically supported, but it is very expensive to compute up-front. Set inline attributes instead; the inline style attribute (e.g. `<rect style="fill:red">`) is OK to use.
 
 **Animation**
 
-Animating styling attributes that cause the shape of an element to change (such as `stroke-dasharray`, `d`, `r`) will cause the entire shape to be recalculated which can become expensive on a large scale.
+Animating styling attributes that cause the shape of an element to change (such as `stroke-dasharray`, `d`, `r`) will cause the entire shape to be recalculated which can become expensive on a large scale. Animating masked or clip-path shapes regenerates viewport textures on the CPU each frame, which is even more expensive.
 
 ## Support Table
 
@@ -98,7 +111,7 @@ Animating styling attributes that cause the shape of an element to change (such 
 | line | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
 | linearGradient | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
 | marker | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
-| mask | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| mask | ![Status](/docs/supported_checkmark.png) Supported | |
 | metadata | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
 | missing-glyph | ![Status](/docs/not_supported_x.png) Will Not Support | Deprecated |
 | mpath | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
@@ -151,7 +164,7 @@ Animating styling attributes that cause the shape of an element to change (such 
 
 | Name | Support Level | Notes |
 |:-----|:--------------|:------|
-| clip-path | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| clip-path | ![Status](/docs/supported_checkmark.png) Supported | Currently supported at the SVG1.1 spec |
 | clip-rule | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
 | color | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
 | color-interpolation | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
@@ -162,7 +175,7 @@ Animating styling attributes that cause the shape of an element to change (such 
 | fill-opacity | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
 | fill-rule | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
 | filter | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
-| mask | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| mask | ![Status](/docs/supported_checkmark.png) Supported | Currently supported at the SVG1.1 spec |
 | opacity | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
 | pointer-events | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
 | shape-rendering | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |

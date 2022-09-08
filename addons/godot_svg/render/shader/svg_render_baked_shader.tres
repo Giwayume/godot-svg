@@ -4,17 +4,27 @@
 code = "shader_type canvas_item;
 
 uniform sampler2D mask;
+uniform sampler2D clip_path;
 
 void fragment() {
-	vec3 mask_color = texture(mask, UV).rgb;
-	float mask_grayscale = (0.299 * mask_color.r) + (0.587 * mask_color.g) + (0.114 * mask_color.b);
 	vec4 diffuse_color = texture(TEXTURE, UV).rgba;
+	
+	vec4 mask_color = texture(mask, UV).rgba;
+	float mask_grayscale = (0.299 * mask_color.r) + (0.587 * mask_color.g) + (0.114 * mask_color.b);
 	diffuse_color.a *= mask_grayscale;
+	
+	float clip_path_alpha = texture(clip_path, UV).a;
+	if (clip_path_alpha < 0.0) {
+		diffuse_color.a = 0.0;
+	}
+	
+	// Limit alpha
 	if (diffuse_color.a < 0.0) {
 		diffuse_color.a = 0.0;
 	} else if (diffuse_color.a > 1.0) {
 		diffuse_color.a = 1.0;
 	}
+	
 	COLOR = diffuse_color;
 }
 "

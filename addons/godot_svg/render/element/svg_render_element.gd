@@ -12,12 +12,13 @@ export(Rect2) var inherited_view_box = Rect2()
 # Reference to SVG2D Node
 
 var is_root = false
+var is_in_root_viewport = true
 var svg_node = null
 var node_name = "element"
 var node_text = ""
 
 # Core Attributes
-var attr_id = null
+var attr_id = null setget _set_attr_id
 var attr_lang = null
 var attr_tabindex = 0
 
@@ -32,7 +33,7 @@ var attr_required_features = null
 var attr_system_language = null
 
 # Presentation Attributes
-var attr_clip_path = null
+var attr_clip_path = SVGValueConstant.NONE setget _set_attr_clip_path
 var attr_clip_rule = null
 var attr_color = null
 var attr_color_interpolation = null
@@ -61,28 +62,24 @@ var attr_visibility = SVGValueConstant.VISIBLE
 
 # Internal Variables
 
+var _is_editor_hint = false
 var _baking_viewport = null
 var _baked_sprite = null
-var _previous_canvas_transform_scale = Vector2()
+var _last_known_viewport_scale = Vector2()
 var _shape_fills = []
 var _shape_strokes = []
 
 # Lifecycle
 
 func _init():
+	_is_editor_hint = Engine.is_editor_hint()
 	apply_attributes()
 
 func _ready():
 	connect("visibility_changed", self, "_on_visibility_changed")
-
-func _process(_delta):
-	var canvas_transform_scale = get_viewport().canvas_transform.get_scale()
-	if (
-		canvas_transform_scale.x != _previous_canvas_transform_scale.x or
-		canvas_transform_scale.y != _previous_canvas_transform_scale.y
-	):
-		update()
-	_previous_canvas_transform_scale = canvas_transform_scale
+	if svg_node != null:
+		svg_node.connect("viewport_scale_changed", self, "_on_viewport_scale_changed")
+		call_deferred("_on_viewport_scale_changed", svg_node._last_known_viewport_scale)
 
 func _draw():
 	if attr_mask != SVGValueConstant.NONE and _baked_sprite != null:
@@ -90,26 +87,38 @@ func _draw():
 		var mask_renderer = locator_result.renderer
 		if mask_renderer != null and mask_renderer.node_name == "mask":
 			var bounding_box = get_bounding_box()
+			var scale_factor = get_scale_factor()
 			var mask_unit_bounding_box = mask_renderer.get_mask_unit_bounding_box(self)
 			_baked_sprite.position = bounding_box.position + mask_unit_bounding_box.position
-			_baking_viewport.size = mask_unit_bounding_box.size
-			_baking_viewport.canvas_transform = Transform2D()
-			_baking_viewport.canvas_transform.origin += -bounding_box.position - mask_unit_bounding_box.position
+			_baked_sprite.scale = Vector2(1.0, 1.0) / scale_factor
+			_baking_viewport.size = mask_unit_bounding_box.size * scale_factor
+			_baking_viewport.canvas_transform = Transform2D().scaled(scale_factor)
+			_baking_viewport.canvas_transform.origin += (-bounding_box.position - mask_unit_bounding_box.position) * scale_factor
 			_baking_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
 			mask_renderer.request_mask_update(self)
+	if attr_clip_path != SVGValueConstant.NONE and _baked_sprite != null:
+		pass
 
 # Internal Methods
 
-func _mask_updated(mask_texture):
-	call_deferred("_mask_updated_deferred", mask_texture)
-
-func _mask_updated_deferred(mask_texture):
+func _clip_path_updated(clip_path_texture):
 	if _baked_sprite != null and _baking_viewport != null:
+		_baked_sprite.texture = null # Force sprite to resize
+		_baked_sprite.texture = _baking_viewport.get_texture()
+		if clip_path_texture != null:
+			_baked_sprite.material.set_shader_param("clip_path", clip_path_texture)
+		elif material != null:
+			_baked_sprite.material.set_shader_param("clip_path", null)
+
+func _mask_updated(mask_texture):
+	if _baked_sprite != null and _baking_viewport != null:
+		_baked_sprite.texture = null # Force sprite to resize
 		_baked_sprite.texture = _baking_viewport.get_texture()
 		if mask_texture != null:
 			_baked_sprite.material.set_shader_param("mask", mask_texture)
 		elif material != null:
 			_baked_sprite.material.set_shader_param("mask", null)
+
 
 # Public Methods
 
@@ -125,7 +134,7 @@ func add_child(new_child, legible_unique_name = false):
 			.add_child(_baked_sprite)
 		if _baking_viewport == null:
 			_baking_viewport = Viewport.new()
-			_baking_viewport.usage = Viewport.USAGE_2D # Viewport.USAGE_2D_NO_SAMPLING
+			_baking_viewport.usage = Viewport.USAGE_2D_NO_SAMPLING
 			_baking_viewport.transparent_bg = true
 			_baking_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
 			_baking_viewport.render_target_v_flip = true
@@ -149,8 +158,17 @@ func apply_attributes():
 func get_bounding_box():
 	return Rect2(0, 0, 0, 0)
 
+func get_root_scale_factor():
+	if svg_node == null or svg_node._fixed_scaling_ratio == 0:
+		return global_scale * _last_known_viewport_scale
+	else:
+		return global_scale * svg_node._fixed_scaling_ratio
+
 func get_scale_factor():
-	return global_scale * _previous_canvas_transform_scale
+	if (svg_node == null or svg_node._fixed_scaling_ratio == 0) and not is_in_root_viewport:
+		return get_viewport().canvas_transform.get_scale()
+	else:
+		return get_root_scale_factor()
 
 func get_style(attribute_name, default_value):
 	var value = default_value
@@ -332,6 +350,14 @@ func _set_element_resource(new_element_resource):
 		set_name(element_resource.node_name)
 	update()
 
+func _set_attr_clip_path(clip_path):
+	clip_path = get_style("clip_path", clip_path)
+	if clip_path.begins_with("url(") or clip_path == SVGValueConstant.NONE:
+		attr_clip_path = clip_path
+	else:
+		pass # TODO - basic-shape || geometry-box
+	update()
+
 func _set_attr_display(display):
 	display = get_style("display", display)
 	attr_display = display
@@ -346,6 +372,13 @@ func _set_attr_fill(fill):
 			attr_fill = SVGPaint.new("#00000000")
 		else:
 			attr_fill = SVGPaint.new(fill)
+	update()
+
+func _set_attr_id(id):
+	if typeof(id) == TYPE_STRING:
+		if svg_node != null and svg_node._resource_locator_cache.has("#" + id):
+			svg_node._resource_locator_cache.remove("#" + id)
+	attr_id = id
 	update()
 
 func _set_attr_mask(mask):
@@ -457,3 +490,6 @@ func _on_visibility_changed():
 	if visible:
 		update()
 
+func _on_viewport_scale_changed(new_viewport_scale):
+	_last_known_viewport_scale = new_viewport_scale
+	update()

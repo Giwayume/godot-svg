@@ -1,6 +1,8 @@
 tool
 extends Node2D
 
+signal viewport_scale_changed(new_scale)
+
 const SVGResource = preload("../resource/svg_resource.gd")
 const SVGRenderCircle = preload("../render/element/svg_render_circle.gd")
 const SVGRenderDefs = preload("../render/element/svg_render_defs.gd")
@@ -20,24 +22,43 @@ const SVGRenderViewport = preload("../render/element/svg_render_viewport.gd")
 export(Resource) var svg = null setget _set_svg, _get_svg
 export(float) var fixed_scaling_ratio = 0 setget _set_fixed_scaling_ratio, _get_fixed_scaling_ratio
 
+var _is_editor_hint = false
 var _editor_plugin = null
+var _last_known_viewport_scale = Vector2(0.0, 0.0)
 var _fixed_scaling_ratio = 0
 var _svg = null
 var _renderer_map = {}
 var _global_stylesheet = []
+var _resource_locator_cache = {}
 
 # Lifecycle
 
+func _init():
+	_is_editor_hint = Engine.is_editor_hint()
+
 func _enter_tree():
-	if Engine.is_editor_hint():
+	if _is_editor_hint:
 		_editor_plugin = get_node("/root/EditorNode/GodotSVGEditorPlugin")
 		if _editor_plugin != null:
 			_editor_plugin.connect("svg_resources_reimported", self, "_on_svg_resources_reimported")
+			_editor_plugin.connect("editor_viewport_scale_changed", self, "_on_editor_viewport_scale_changed")
+	
+	if _last_known_viewport_scale.is_equal_approx(Vector2(0.0, 0.0)):
+		_last_known_viewport_scale = get_viewport().canvas_transform.get_scale()
+	emit_signal("viewport_scale_changed", _last_known_viewport_scale)
 
 func _exit_tree():
-	if Engine.is_editor_hint():
+	if _is_editor_hint:
 		if _editor_plugin != null:
 			_editor_plugin.disconnect("svg_resources_reimported", self, "_on_svg_resources_reimported")
+			_editor_plugin.disconnect("editor_viewport_scale_changed", self, "_on_editor_viewport_scale_changed")
+
+func _process(_delta):
+	if not _is_editor_hint and _fixed_scaling_ratio == 0:
+		var new_viewport_scale = get_viewport().canvas_transform.get_scale()
+		if not new_viewport_scale.is_equal_approx(_last_known_viewport_scale):
+			emit_signal("viewport_scale_changed", new_viewport_scale)
+		_last_known_viewport_scale = new_viewport_scale
 
 # Internal Methods
 
@@ -63,12 +84,19 @@ func _get_svg_element_renderer(node_name):
 		"svg": return SVGRenderViewport
 	return SVGRenderElement
 
-func _create_renderers_recursive(parent, children, view_box):
+func _create_renderers_recursive(parent, children, render_props = {}):
+	var view_box = null
+	if render_props.has("view_box"):
+		view_box = render_props.view_box
+	var is_in_root_viewport = false
+	if render_props.has("is_in_root_viewport"):
+		is_in_root_viewport = render_props.is_in_root_viewport
 	for child in children:
 		var renderer = _get_svg_element_renderer(child.node_name).new()
 		renderer.svg_node = self
 		renderer.element_resource = child
 		renderer.node_text = child.text
+		renderer.is_in_root_viewport = is_in_root_viewport
 		if view_box == null:
 			renderer.is_root = true
 		renderer.apply_attributes()
@@ -83,7 +111,11 @@ func _create_renderers_recursive(parent, children, view_box):
 		if renderer is SVGRenderStyle:
 			_global_stylesheet.append_array(renderer.get_stylesheet())
 		if child.children.size() > 0:
-			_create_renderers_recursive(renderer, child.children, view_box)
+			if renderer is SVGRenderViewport or renderer.attr_mask != SVGValueConstant.NONE or renderer.attr_clip_path != SVGValueConstant.NONE:
+				is_in_root_viewport = false
+			render_props.view_box = view_box
+			render_props.is_in_root_viewport = is_in_root_viewport
+			_create_renderers_recursive(renderer, child.children, render_props)
 
 func _apply_stylesheet_recursive(children, rule_state = null):
 	var rules = _global_stylesheet
@@ -143,6 +175,8 @@ func _apply_stylesheet_recursive(children, rule_state = null):
 func _resolve_resource_locator(url: String, parent_resource = null):
 	if parent_resource == null and _svg is SVGResource and _svg.viewport != null:
 		parent_resource = _svg.viewport
+		if _resource_locator_cache.has(url):
+			return _resource_locator_cache[url]
 	var located_resource = {
 		"resource": null,
 		"renderer": null,
@@ -157,6 +191,8 @@ func _resolve_resource_locator(url: String, parent_resource = null):
 				located_resource = _resolve_resource_locator(url, child_resource)
 				if located_resource.resource != null:
 					break
+	if located_resource.resource != null:
+		_resource_locator_cache[url] = located_resource
 	return located_resource
 
 func _find_elements_by_name(name: String, parent_resource = null):
@@ -195,6 +231,10 @@ func _on_svg_resources_reimported(resource_names):
 		if _svg.resource_path in resource_names:
 			_set_svg(_svg)
 
+func _on_editor_viewport_scale_changed(new_scale):
+	_last_known_viewport_scale = new_scale
+	emit_signal("viewport_scale_changed", new_scale)
+
 # Getters / Setters
 
 func _set_svg(svg):
@@ -208,7 +248,7 @@ func _set_svg(svg):
 	
 	# Create renderers
 	if svg is SVGResource and svg.viewport != null:
-		_create_renderers_recursive(self, [svg.viewport], null)
+		_create_renderers_recursive(self, [svg.viewport])
 		if _global_stylesheet.size() > 0:
 			_apply_stylesheet_recursive([svg.viewport])
 	update()

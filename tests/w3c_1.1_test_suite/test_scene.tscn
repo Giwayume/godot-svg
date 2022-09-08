@@ -19,3 +19,4 @@ fixed_scaling_ratio = 0
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2( 250, 158 )
+current = true

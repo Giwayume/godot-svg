@@ -18,7 +18,7 @@ var _current_mask_tick_count = 0
 func _init():
 	node_name = "mask"
 	_mask_viewport = Viewport.new()
-	_mask_viewport.usage = Viewport.USAGE_2D # Viewport.USAGE_2D_NO_SAMPLING
+	_mask_viewport.usage = Viewport.USAGE_2D_NO_SAMPLING
 	_mask_viewport.render_target_update_mode = Viewport.UPDATE_DISABLED
 	_mask_viewport.render_target_v_flip = true
 	_mask_viewport.name = "mask_viewport"
@@ -26,6 +26,7 @@ func _init():
 	_mask_background.color = Color(0, 0, 0, 1)
 	_mask_viewport.add_child(_mask_background)
 	.add_child(_mask_viewport)
+	hide()
 
 func _process(_delta):
 	if _current_mask_update_target != null:
@@ -48,16 +49,17 @@ func _on_mask_draw_deferred():
 func _prepare_viewport_for_draw():
 	if _mask_viewport != null:
 		if _current_mask_update_target != null:
-			_mask_viewport.render_target_update_mode = Viewport.UPDATE_ALWAYS
+			var scale_factor = _current_mask_update_target.get_root_scale_factor()
+			_mask_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
 			
 			# Mask Units
 			var mask_unit_bounding_box = get_mask_unit_bounding_box(_current_mask_update_target)
-			_mask_viewport.size = mask_unit_bounding_box.size - mask_unit_bounding_box.position
+			_mask_viewport.size = mask_unit_bounding_box.size * scale_factor
 			
 			# Mask Content Units
 			var mask_content_unit_bounding_box = get_mask_content_unit_bounding_box(_current_mask_update_target)
-			_mask_viewport.canvas_transform = Transform2D().scaled(mask_unit_bounding_box.size / mask_content_unit_bounding_box.size)
-			_mask_viewport.canvas_transform.origin = -mask_unit_bounding_box.position
+			_mask_viewport.canvas_transform = Transform2D().scaled((mask_unit_bounding_box.size / mask_content_unit_bounding_box.size + mask_unit_bounding_box.position) * scale_factor)
+			_mask_viewport.canvas_transform.origin = -mask_unit_bounding_box.position * scale_factor
 			
 			_mask_background.rect_position = -_mask_viewport.canvas_transform.origin
 			_mask_background.rect_size = _mask_viewport.size * _mask_viewport.canvas_transform.get_scale()
@@ -71,7 +73,7 @@ func _update_view_box_recursive(new_view_box, parent = null):
 			if renderer.node_name != "viewport":
 				renderer.inherited_view_box = new_view_box
 				_update_view_box_recursive(new_view_box, child)
-			update()
+			renderer.update()
 
 # Public Methods
 

@@ -2,11 +2,21 @@ tool
 extends EditorPlugin
 
 signal svg_resources_reimported(resource_names)
+signal editor_viewport_scale_changed(new_scale)
 
-var svg_import_plugin
+var svg_import_plugin = null
+var edited_scene_viewport = null
+var previous_editor_viewport_transform_scale = Vector2(1.0, 1.0)
 
 func _init():
 	name = "GodotSVGEditorPlugin"
+
+func _process(_delta):
+	if edited_scene_viewport != null:
+		var canvas_transform_scale = edited_scene_viewport.global_canvas_transform.get_scale()
+		if not canvas_transform_scale.is_equal_approx(previous_editor_viewport_transform_scale):
+			emit_signal("editor_viewport_scale_changed", canvas_transform_scale)
+		previous_editor_viewport_transform_scale = canvas_transform_scale
 
 func _enter_tree():
 	svg_import_plugin = preload("./import/svg_import.gd").new()
@@ -14,7 +24,18 @@ func _enter_tree():
 	add_custom_type("SVG2D", "Node2D", preload("./node/svg_2d.gd"), preload("./node/svg_2d.png"))
 	add_autoload_singleton("SVGLine2DTexture", "res://addons/godot_svg/render/polygon/svg_line_texture.gd")
 
-	get_editor_interface().get_resource_filesystem().connect("resources_reimported", self, "_on_resources_reimported")
+	var editor_interface = get_editor_interface()
+	editor_interface.get_resource_filesystem().connect("resources_reimported", self, "_on_resources_reimported")
+	
+	connect("scene_changed", self, "_on_editing_scene_changed")
+
+func _print_rec(node, level = 0):
+	var s = ""
+	for i in range(0, level):
+		s += "  "
+	print(s + node.name + " " + node.get_class())
+	for child in node.get_children():
+		_print_rec(child, level + 1)
 
 func _exit_tree():
 	remove_import_plugin(svg_import_plugin)
@@ -22,6 +43,7 @@ func _exit_tree():
 	remove_autoload_singleton("SVGLine2DTexture")
 	
 	get_editor_interface().get_resource_filesystem().disconnect("resources_reimported", self, "_on_resources_reimported")
+	disconnect("scene_changed", self, "_on_editing_scene_changed")
 	
 	svg_import_plugin = null
 
@@ -31,3 +53,21 @@ func _on_resources_reimported(resources):
 		if resource_name.ends_with(".svg"):
 			svg_resources.push_back(resource_name)
 	emit_signal("svg_resources_reimported", svg_resources)
+
+func _find_edit_viewport(node):
+	var viewport = null
+	if node.get_class() == "CanvasItemEditorViewport":
+		viewport = node
+		for child in node.get_parent().get_children():
+			if child.get_class() == "ViewportContainer":
+				viewport = child.get_children()[0]
+				break
+	else:
+		for child in node.get_children():
+			viewport = _find_edit_viewport(child)
+			if viewport != null:
+				break
+	return viewport
+
+func _on_editing_scene_changed(scene_root):
+	edited_scene_viewport = _find_edit_viewport(get_editor_interface().get_editor_viewport())
