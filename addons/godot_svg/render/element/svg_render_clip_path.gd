@@ -10,7 +10,7 @@ var _current_clip_path_update_target = null
 # Lifecycle
 
 func _init():
-	node_name = "clip_path"
+	node_name = "clipPath"
 	_clip_path_viewport = Viewport.new()
 	_clip_path_viewport.usage = Viewport.USAGE_2D_NO_SAMPLING
 	_clip_path_viewport.render_target_update_mode = Viewport.UPDATE_DISABLED
@@ -75,7 +75,7 @@ func add_child(new_child, legible_unique_name = false):
 
 func get_clip_path_unit_bounding_box(clip_path_target):
 	var clip_path_unit_bounding_box = Rect2()
-	clip_path_unit_bounding_box = clip_path_target.get_bounding_box()
+	clip_path_unit_bounding_box.size = clip_path_target.get_bounding_box().size
 	return clip_path_unit_bounding_box
 
 func get_clip_path_content_unit_bounding_box(clip_path_target):
@@ -85,6 +85,12 @@ func get_clip_path_content_unit_bounding_box(clip_path_target):
 	else: # USER_SPACE_ON_USE
 		clip_path_content_unit_bounding_box = clip_path_target.inherited_view_box
 	return clip_path_content_unit_bounding_box
+
+func request_clip_path_update(callback_node):
+	_clip_path_update_queue.push_back(callback_node)
+	if _current_clip_path_update_target == null and _clip_path_update_queue.size() > 0:
+		_current_clip_path_update_target = _clip_path_update_queue.pop_front()
+		_prepare_viewport_for_draw()
 
 # Getters / Setters
 

@@ -5,6 +5,7 @@ signal viewport_scale_changed(new_scale)
 
 const SVGResource = preload("../resource/svg_resource.gd")
 const SVGRenderCircle = preload("../render/element/svg_render_circle.gd")
+const SVGRenderClipPath = preload("../render/element/svg_render_clip_path.gd")
 const SVGRenderDefs = preload("../render/element/svg_render_defs.gd")
 const SVGRenderElement = preload("../render/element/svg_render_element.gd")
 const SVGRenderEllipse = preload("../render/element/svg_render_ellipse.gd")
@@ -62,14 +63,10 @@ func _process(_delta):
 
 # Internal Methods
 
-func _get_svg_element_node_class(node_name):
-	match node_name:
-		"mask": return Viewport
-	return Node2D
-
 func _get_svg_element_renderer(node_name):
 	match node_name:
 		"circle": return SVGRenderCircle
+		"clipPath": return SVGRenderClipPath
 		"defs": return SVGRenderDefs
 		"ellipse": return SVGRenderEllipse
 		"g": return SVGRenderG
@@ -91,12 +88,16 @@ func _create_renderers_recursive(parent, children, render_props = {}):
 	var is_in_root_viewport = false
 	if render_props.has("is_in_root_viewport"):
 		is_in_root_viewport = render_props.is_in_root_viewport
+	var is_in_clip_path = false
+	if render_props.has("is_in_clip_path"):
+		is_in_clip_path = render_props.is_in_clip_path
 	for child in children:
 		var renderer = _get_svg_element_renderer(child.node_name).new()
 		renderer.svg_node = self
 		renderer.element_resource = child
 		renderer.node_text = child.text
 		renderer.is_in_root_viewport = is_in_root_viewport
+		renderer.is_in_clip_path = is_in_clip_path
 		if view_box == null:
 			renderer.is_root = true
 		renderer.apply_attributes()
@@ -113,9 +114,13 @@ func _create_renderers_recursive(parent, children, render_props = {}):
 		if child.children.size() > 0:
 			if renderer is SVGRenderViewport or renderer.attr_mask != SVGValueConstant.NONE or renderer.attr_clip_path != SVGValueConstant.NONE:
 				is_in_root_viewport = false
-			render_props.view_box = view_box
-			render_props.is_in_root_viewport = is_in_root_viewport
-			_create_renderers_recursive(renderer, child.children, render_props)
+			if renderer is SVGRenderClipPath:
+				is_in_clip_path = true
+			_create_renderers_recursive(renderer, child.children, {
+				"view_box": view_box,
+				"is_in_root_viewport": is_in_root_viewport,
+				"is_in_clip_path": is_in_clip_path,
+			})
 
 func _apply_stylesheet_recursive(children, rule_state = null):
 	var rules = _global_stylesheet
@@ -242,6 +247,7 @@ func _set_svg(svg):
 	for renderer_name in _renderer_map:
 		_renderer_map[renderer_name].queue_free()
 	_renderer_map = {}
+	_resource_locator_cache = {}
 	
 	# Assign
 	_svg = svg

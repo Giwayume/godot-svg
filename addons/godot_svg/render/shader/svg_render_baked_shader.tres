@@ -9,14 +9,15 @@ uniform sampler2D clip_path;
 void fragment() {
 	vec4 diffuse_color = texture(TEXTURE, UV).rgba;
 	
+	// Mask
 	vec4 mask_color = texture(mask, UV).rgba;
 	float mask_grayscale = (0.299 * mask_color.r) + (0.587 * mask_color.g) + (0.114 * mask_color.b);
 	diffuse_color.a *= mask_grayscale;
 	
-	float clip_path_alpha = texture(clip_path, UV).a;
-	if (clip_path_alpha < 0.0) {
-		diffuse_color.a = 0.0;
-	}
+	// Clip path
+	vec4 clip_path_color = texture(clip_path, UV).rgba;
+	float clip_path_grayscale = (0.299 * clip_path_color.r) + (0.587 * clip_path_color.g) + (0.114 * clip_path_color.b);
+	diffuse_color.a *= clip_path_grayscale;
 	
 	// Limit alpha
 	if (diffuse_color.a < 0.0) {

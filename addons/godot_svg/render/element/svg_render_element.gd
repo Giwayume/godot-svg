@@ -13,6 +13,7 @@ export(Rect2) var inherited_view_box = Rect2()
 
 var is_root = false
 var is_in_root_viewport = true
+var is_in_clip_path = false
 var svg_node = null
 var node_name = "element"
 var node_text = ""
@@ -97,7 +98,20 @@ func _draw():
 			_baking_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
 			mask_renderer.request_mask_update(self)
 	if attr_clip_path != SVGValueConstant.NONE and _baked_sprite != null:
-		pass
+		var locator_result = svg_node._resolve_resource_locator(attr_clip_path)
+		var clip_path_renderer = locator_result.renderer
+		if clip_path_renderer != null and clip_path_renderer.node_name == "clipPath":
+			var bounding_box = get_bounding_box()
+			var scale_factor = get_scale_factor()
+			var clip_path_unit_bounding_box = clip_path_renderer.get_clip_path_unit_bounding_box(self)
+			if attr_mask == SVGValueConstant.NONE:
+				_baked_sprite.position = bounding_box.position
+				_baked_sprite.scale = Vector2(1.0, 1.0) / scale_factor
+			_baking_viewport.size = clip_path_unit_bounding_box.size * scale_factor
+			_baking_viewport.canvas_transform = Transform2D().scaled(scale_factor)
+			_baking_viewport.canvas_transform.origin += (-bounding_box.position - clip_path_unit_bounding_box.position) * scale_factor
+			_baking_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
+			clip_path_renderer.request_clip_path_update(self)
 
 # Internal Methods
 
@@ -123,7 +137,7 @@ func _mask_updated(mask_texture):
 # Public Methods
 
 func add_child(new_child, legible_unique_name = false):
-	if attr_mask != SVGValueConstant.NONE:
+	if attr_mask != SVGValueConstant.NONE or attr_clip_path != SVGValueConstant.NONE:
 		var bounding_box = get_bounding_box()
 		if _baked_sprite == null:
 			_baked_sprite = Sprite.new()
@@ -192,6 +206,10 @@ func draw_shape(updates):
 			shape_stroke.queue_free()
 		_shape_strokes = []
 		return
+	
+	if is_in_clip_path:
+		updates.fill_color = Color(1, 1, 1, 1)
+		updates.stroke_color = Color(0, 0, 0, 0)
 	
 	if updates.has("fill_color") and updates.fill_color.a > 0:
 		var polygon_lists = []
@@ -353,7 +371,7 @@ func _set_element_resource(new_element_resource):
 func _set_attr_clip_path(clip_path):
 	clip_path = get_style("clip_path", clip_path)
 	if clip_path.begins_with("url(") or clip_path == SVGValueConstant.NONE:
-		attr_clip_path = clip_path
+		attr_clip_path = clip_path.replace("url(", "").rstrip(")").strip_edges()
 	else:
 		pass # TODO - basic-shape || geometry-box
 	update()

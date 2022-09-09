@@ -8,16 +8,16 @@ This is the most spec-compliant SVG renderer for Godot. Every other SVG-related 
 
 1. When importing a SVG into Godot, it defaults to "Import As: Texture". Change this dropdown to "Import As: SVG", then re-import.
 
-<div style="text-align: center">
+<p align="center">
     <img src="./docs/tutorial_import_as_svg.png" alt="Visual instructions">
-</div>
+</p>
 <br>
 
 2. Now in a 2D scene, add a SVG2D node. Drag & drop your SVG file to the "SVG" property of this node, and you will see the SVG rendered in realtime!
 
-<div style="text-align: center">
+<p align="center">
     <img src="./docs/tutorial_create_svg2d_node.png" alt="Visual instructions">
-</div>
+</p>
 
 ### The SVG2D Node
 
@@ -65,7 +65,7 @@ Animating styling attributes that cause the shape of an element to change (such 
 | animateMotion | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
 | animateTransform | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
 | circle | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported |  |
-| clipPath | ![Status](/docs/partial_support_exclamation.png) Not Yet Supported | |
+| clipPath | ![Status](/docs/supported_checkmark.png) Supported | |
 | color-profile | ![Status](/docs/not_supported_x.png) Will Not Support | Deprecated |
 | cursor | ![Status](/docs/not_supported_x.png) Will Not Support | Deprecated |
 | defs | ![Status](/docs/supported_checkmark.png) Supported | |

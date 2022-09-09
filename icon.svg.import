@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/icon.svg-218a8f2b3041327d8a5756f3a245f83b.gdsvg"
+
+[deps]
+
+source_file="res://icon.svg"
+dest_files=[ "res://.import/icon.svg-218a8f2b3041327d8a5756f3a245f83b.gdsvg" ]
+
+[params]
+
