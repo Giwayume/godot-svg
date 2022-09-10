@@ -72,7 +72,7 @@ func _set_attr_height(height):
 			attr_height = height
 		else:
 			attr_height = SVGLengthPercentage.new(height)
-	update()
+	apply_props()
 
 func _set_attr_preserve_aspect_ratio(preserve_aspect_ratio):
 	if typeof(preserve_aspect_ratio) != TYPE_STRING:
@@ -92,7 +92,7 @@ func _set_attr_preserve_aspect_ratio(preserve_aspect_ratio):
 				},
 				"meetOrSlice": split[1] if split.length() > 1 else SVGValueConstant.MEET,
 			}
-	update()
+	apply_props()
 
 func _set_attr_view_box(view_box):
 	if typeof(view_box) != TYPE_STRING:
@@ -108,7 +108,7 @@ func _set_attr_view_box(view_box):
 				split[2] if split.size() > 2 else 0,
 				split[3] if split.size() > 3 else 0
 			)
-	update()
+	apply_props()
 
 func _set_attr_width(width):
 	if typeof(width) != TYPE_STRING:
@@ -118,21 +118,21 @@ func _set_attr_width(width):
 			attr_width = width
 		else:
 			attr_width = SVGLengthPercentage.new(width)
-	update()
+	apply_props()
 
 func _set_attr_x(x):
 	if typeof(x) != TYPE_STRING:
 		attr_x = x
 	else:
 		attr_x = SVGLengthPercentage.new(x)
-	update()
+	apply_props()
 
 func _set_attr_y(y):
 	if typeof(y) != TYPE_STRING:
 		attr_y = y
 	else:
 		attr_y = SVGLengthPercentage.new(y)
-	update()
+	apply_props()
 
 # Public Methods
 

@@ -51,11 +51,12 @@ func _draw():
 	})
 
 
-# Public Methods
+# Internal Methods
 
-func get_bounding_box():
+func _calculate_bounding_box():
 	# TODO
-	return Rect2(0, 0, 0, 0)
+	_bounding_box = Rect2(0, 0, 0, 0)
+	emit_signal("bounding_box_calculated", _bounding_box)
 
 # Getters / Setters
 
@@ -78,11 +79,11 @@ func _set_attr_points(points):
 					attr_points.push_back(current_point)
 					current_point = Vector2()
 				value_index += 1
-	update()
+	apply_props()
 
 func _set_attr_path_length(path_length):
 	if typeof(path_length) != TYPE_STRING:
 		attr_path_length = path_length
 	else:
 		attr_path_length = path_length.to_float()
-	update()
+	apply_props()

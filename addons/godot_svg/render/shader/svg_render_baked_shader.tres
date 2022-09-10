@@ -13,7 +13,7 @@ void fragment() {
 	vec4 mask_color = texture(mask, UV).rgba;
 	float mask_grayscale = (0.299 * mask_color.r) + (0.587 * mask_color.g) + (0.114 * mask_color.b);
 	diffuse_color.a *= mask_grayscale;
-	
+
 	// Clip path
 	vec4 clip_path_color = texture(clip_path, UV).rgba;
 	float clip_path_grayscale = (0.299 * clip_path_color.r) + (0.587 * clip_path_color.g) + (0.114 * clip_path_color.b);

@@ -54,9 +54,9 @@ func _draw():
 	})
 
 
-# Public Methods
+# Internal Methods
 
-func get_bounding_box():
+func _calculate_bounding_box():
 	var position = Vector2(
 		attr_x.get_length(inherited_view_box.size.x),
 		attr_y.get_length(inherited_view_box.size.y)
@@ -70,7 +70,8 @@ func get_bounding_box():
 	if attr_height is SVGLengthPercentage:
 		height = attr_height.get_length(inherited_view_box.size.y)
 	
-	return Rect2(position.x, position.y, width, height)
+	_bounding_box = Rect2(position.x, position.y, width, height)
+	emit_signal("bounding_box_calculated", _bounding_box)
 
 # Getters / Setters
 
@@ -80,7 +81,7 @@ func _set_attr_x(x):
 		attr_x = x
 	else:
 		attr_x = SVGLengthPercentage.new(x)
-	update()
+	apply_props()
 
 func _set_attr_y(y):
 	y = get_style("y", y)
@@ -88,7 +89,7 @@ func _set_attr_y(y):
 		attr_y = y
 	else:
 		attr_y = SVGLengthPercentage.new(y)
-	update()
+	apply_props()
 
 func _set_attr_width(width):
 	width = get_style("width", width)
@@ -99,7 +100,7 @@ func _set_attr_width(width):
 			attr_width = width
 		else:
 			attr_width = SVGLengthPercentage.new(width)
-	update()
+	apply_props()
 
 func _set_attr_height(height):
 	height = get_style("height", height)
@@ -110,7 +111,7 @@ func _set_attr_height(height):
 			attr_height = height
 		else:
 			attr_height = SVGLengthPercentage.new(height)
-	update()
+	apply_props()
 
 func _set_attr_rx(rx):
 	rx = get_style("rx", rx)
@@ -118,7 +119,7 @@ func _set_attr_rx(rx):
 		attr_rx = rx
 	else:
 		attr_rx = SVGLengthPercentage.new(rx)
-	update()
+	apply_props()
 
 func _set_attr_ry(ry):
 	ry = get_style("ry", ry)
@@ -126,11 +127,11 @@ func _set_attr_ry(ry):
 		attr_ry = ry
 	else:
 		attr_ry = SVGLengthPercentage.new(ry)
-	update()
+	apply_props()
 
 func _set_attr_path_length(path_length):
 	if typeof(path_length) != TYPE_STRING:
 		attr_path_length = path_length
 	else:
 		attr_path_length = path_length.to_float()
-	update()
+	apply_props()

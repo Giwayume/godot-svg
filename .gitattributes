@@ -1,11 +1,7 @@
-/docs				export-ignore
-/tests				export-ignore
-/.gitattributes		export-ignore
-/.github			export-ignore
-/.gitignore			export-ignore
-/default_env.tres	export-ignore
-/icon.png			export-ignore
-/icon.png.import	export-ignore
-/LICENSE.md			export-ignore
-/project.godot		export-ignore
-/README.md			export-ignore
+# Normalize line endings for all files that Git considers text files.
+* text=auto eol=lf
+
+# Only include the addons folder when downloading from the Asset Library.
+/**        export-ignore
+/addons    !export-ignore
+/addons/** !export-ignore

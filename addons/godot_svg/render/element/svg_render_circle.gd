@@ -50,11 +50,16 @@ func _draw():
 		"stroke_closed": true,
 	})
 
-# Public Methods
+# Internal Methods
 
-func get_bounding_box():
+func _calculate_bounding_box():
+	var center = Vector2(
+		attr_cx.get_length(inherited_view_box.size.x),
+		attr_cy.get_length(inherited_view_box.size.y)
+	)
 	var radius = attr_r.get_length(inherited_view_box.size.x)
-	return Rect2(-radius, -radius, radius * 2, radius * 2)
+	_bounding_box = Rect2(center.x - radius, center.y - radius, radius * 2, radius * 2)
+	emit_signal("bounding_box_calculated", _bounding_box)
 
 # Getters / Setters
 
@@ -64,7 +69,7 @@ func _set_attr_cx(cx):
 		attr_cx = cx
 	else:
 		attr_cx = SVGLengthPercentage.new(cx)
-	update()
+	apply_props()
 
 func _set_attr_cy(cy):
 	cy = get_style("cy", cy)
@@ -72,7 +77,7 @@ func _set_attr_cy(cy):
 		attr_cy = cy
 	else:
 		attr_cy = SVGLengthPercentage.new(cy)
-	update()
+	apply_props()
 
 func _set_attr_r(r):
 	r = get_style("r", r)
@@ -80,11 +85,11 @@ func _set_attr_r(r):
 		attr_r = r
 	else:
 		attr_r = SVGLengthPercentage.new(r)
-	update()
+	apply_props()
 
 func _set_attr_path_length(path_length):
 	if typeof(path_length) != TYPE_STRING:
 		attr_path_length = path_length
 	else:
 		attr_path_length = path_length.to_float()
-	update()
+	apply_props()

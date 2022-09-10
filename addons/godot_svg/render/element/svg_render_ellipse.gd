@@ -59,12 +59,17 @@ func _draw():
 		"stroke_points": SVGDrawing.generate_stroke_ellipse_arc_points(center, radius_x, radius_y, -arc_stretch, 2*PI + arc_stretch, arc_points),
 	})
 
-# Public Methods
+# Internal Methods
 
-func get_bounding_box():
+func _calculate_bounding_box():
+	var center = Vector2(
+		attr_cx.get_length(inherited_view_box.size.x),
+		attr_cy.get_length(inherited_view_box.size.y)
+	)
 	var radius_x = attr_rx.get_length(inherited_view_box.size.x)
 	var radius_y = attr_ry.get_length(inherited_view_box.size.y)
-	return Rect2(-radius_x, -radius_y, radius_x * 2, radius_y * 2)
+	_bounding_box = Rect2(center.x - radius_x, center.y - radius_y, radius_x * 2, radius_y * 2)
+	emit_signal("bounding_box_calculated", _bounding_box)
 
 # Getters / Setters
 
@@ -74,7 +79,7 @@ func _set_attr_cx(cx):
 		attr_cx = cx
 	else:
 		attr_cx = SVGLengthPercentage.new(cx)
-	update()
+	apply_props()
 
 func _set_attr_cy(cy):
 	cy = get_style("cy", cy)
@@ -82,7 +87,7 @@ func _set_attr_cy(cy):
 		attr_cy = cy
 	else:
 		attr_cy = SVGLengthPercentage.new(cy)
-	update()
+	apply_props()
 
 func _set_attr_rx(rx):
 	rx = get_style("rx", rx)
@@ -93,7 +98,7 @@ func _set_attr_rx(rx):
 			attr_rx = rx
 		else:
 			attr_rx = SVGLengthPercentage.new(rx)
-	update()
+	apply_props()
 
 func _set_attr_ry(ry):
 	ry = get_style("ry", ry)
@@ -104,11 +109,11 @@ func _set_attr_ry(ry):
 			attr_ry = ry
 		else:
 			attr_ry = SVGLengthPercentage.new(ry)
-	update()
+	apply_props()
 
 func _set_attr_path_length(path_length):
 	if typeof(path_length) != TYPE_STRING:
 		attr_path_length = path_length
 	else:
 		attr_path_length = path_length.to_float()
-	update()
+	apply_props()

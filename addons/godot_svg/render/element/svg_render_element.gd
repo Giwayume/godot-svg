@@ -1,5 +1,7 @@
 extends Node2D
 
+signal bounding_box_calculated(new_bounding_box)
+
 const SVGRenderBakedShader = preload("../shader/svg_render_baked_shader.tres")
 
 const SVGLine2D = preload("../polygon/svg_line_2d.gd")
@@ -14,6 +16,7 @@ export(Rect2) var inherited_view_box = Rect2()
 var is_root = false
 var is_in_root_viewport = true
 var is_in_clip_path = false
+var is_render_group = false # Child rendering elements can be drawn inside this element
 var svg_node = null
 var node_name = "element"
 var node_text = ""
@@ -42,11 +45,11 @@ var attr_color_rendering = null
 var attr_cursor = null
 var attr_display = "inline" setget _set_attr_display
 var attr_fill = SVGPaint.new("#000000") setget _set_attr_fill
-var attr_fill_opacity = null
+var attr_fill_opacity = SVGLengthPercentage.new("100%") setget _set_attr_fill_opacity
 var attr_fill_rule = null
 var attr_filter = null
 var attr_mask = SVGValueConstant.NONE setget _set_attr_mask
-var attr_opacity = null
+var attr_opacity = SVGLengthPercentage.new("100%") setget _set_attr_opacity
 var attr_pointer_events = null
 var attr_shape_rendering = null
 var attr_stroke = SVGPaint.new("#00000000") setget _set_attr_stroke
@@ -64,11 +67,15 @@ var attr_visibility = SVGValueConstant.VISIBLE
 # Internal Variables
 
 var _is_editor_hint = false
+var _bounding_box = Rect2(0, 0, 0, 0)
 var _baking_viewport = null
 var _baked_sprite = null
 var _last_known_viewport_scale = Vector2()
 var _shape_fills = []
 var _shape_strokes = []
+var _child_list = []
+var _child_container = self
+var _is_props_applied_scheduled = false
 
 # Lifecycle
 
@@ -82,41 +89,77 @@ func _ready():
 		svg_node.connect("viewport_scale_changed", self, "_on_viewport_scale_changed")
 		call_deferred("_on_viewport_scale_changed", svg_node._last_known_viewport_scale)
 
+func _props_applied():
+	_calculate_bounding_box()
+	if (
+		attr_mask != SVGValueConstant.NONE or
+		attr_clip_path != SVGValueConstant.NONE or
+		(is_render_group and attr_opacity.get_length(1) < 1)
+	):
+		if _child_container != _baking_viewport:
+			var bounding_box = get_bounding_box()
+			if _baked_sprite == null:
+				_baked_sprite = Sprite.new()
+				_baked_sprite.centered = false
+				_baked_sprite.material = ShaderMaterial.new()
+				_baked_sprite.material.shader = SVGRenderBakedShader
+				_baked_sprite.position = bounding_box.position
+				call_deferred("_add_baked_sprite_as_child")
+			if _baking_viewport == null:
+				_baking_viewport = Viewport.new()
+				_baking_viewport.usage = Viewport.USAGE_2D_NO_SAMPLING
+				_baking_viewport.transparent_bg = true
+				_baking_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
+				_baking_viewport.render_target_v_flip = true
+				_baking_viewport.name = "baking_viewport"
+				_baking_viewport.size = bounding_box.size
+				call_deferred("_add_baking_viewport_as_child", bounding_box)
+			_swap_child_container(_baking_viewport)
+	else:
+		if _child_container != self:
+			_swap_child_container(self)
+			if _baked_sprite != null:
+				_baked_sprite.queue_free()
+				_baked_sprite = null
+			if _baking_viewport != null:
+				_baking_viewport.queue_free()
+				_baking_viewport = null
+
 func _draw():
 	if attr_mask != SVGValueConstant.NONE and _baked_sprite != null:
 		var locator_result = svg_node._resolve_resource_locator(attr_mask)
 		var mask_renderer = locator_result.renderer
 		if mask_renderer != null and mask_renderer.node_name == "mask":
-			var bounding_box = get_bounding_box()
-			var scale_factor = get_scale_factor()
-			var mask_unit_bounding_box = mask_renderer.get_mask_unit_bounding_box(self)
-			_baked_sprite.position = bounding_box.position + mask_unit_bounding_box.position
-			_baked_sprite.scale = Vector2(1.0, 1.0) / scale_factor
-			_baking_viewport.size = mask_unit_bounding_box.size * scale_factor
-			_baking_viewport.canvas_transform = Transform2D().scaled(scale_factor)
-			_baking_viewport.canvas_transform.origin += (-bounding_box.position - mask_unit_bounding_box.position) * scale_factor
-			_baking_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
 			mask_renderer.request_mask_update(self)
 	if attr_clip_path != SVGValueConstant.NONE and _baked_sprite != null:
 		var locator_result = svg_node._resolve_resource_locator(attr_clip_path)
 		var clip_path_renderer = locator_result.renderer
 		if clip_path_renderer != null and clip_path_renderer.node_name == "clipPath":
-			var bounding_box = get_bounding_box()
-			var scale_factor = get_scale_factor()
-			var clip_path_unit_bounding_box = clip_path_renderer.get_clip_path_unit_bounding_box(self)
-			if attr_mask == SVGValueConstant.NONE:
-				_baked_sprite.position = bounding_box.position
-				_baked_sprite.scale = Vector2(1.0, 1.0) / scale_factor
-			_baking_viewport.size = clip_path_unit_bounding_box.size * scale_factor
-			_baking_viewport.canvas_transform = Transform2D().scaled(scale_factor)
-			_baking_viewport.canvas_transform.origin += (-bounding_box.position - clip_path_unit_bounding_box.position) * scale_factor
-			_baking_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
 			clip_path_renderer.request_clip_path_update(self)
+	if is_render_group and attr_opacity.get_length(1) < 1 and _baked_sprite != null:
+		call_deferred("_opacity_mask_updated")
 
 # Internal Methods
 
-func _clip_path_updated(clip_path_texture):
+func _calculate_bounding_box():
+	pass # Override
+
+func _apply_props_deferred():
+	_is_props_applied_scheduled = false
+	_props_applied()
+
+func _clip_path_updated(clip_path_texture, clip_path_renderer):
 	if _baked_sprite != null and _baking_viewport != null:
+		var bounding_box = get_bounding_box()
+		var scale_factor = get_scale_factor()
+		var clip_path_unit_bounding_box = clip_path_renderer.get_clip_path_unit_bounding_box(self)
+		if attr_mask == SVGValueConstant.NONE:
+			_baked_sprite.position = bounding_box.position
+			_baked_sprite.scale = Vector2(1.0, 1.0) / scale_factor
+		_baking_viewport.size = clip_path_unit_bounding_box.size * scale_factor
+		_baking_viewport.canvas_transform = Transform2D().scaled(scale_factor)
+		_baking_viewport.canvas_transform.origin += (-bounding_box.position - clip_path_unit_bounding_box.position) * scale_factor
+		_baking_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
 		_baked_sprite.texture = null # Force sprite to resize
 		_baked_sprite.texture = _baking_viewport.get_texture()
 		if clip_path_texture != null:
@@ -124,8 +167,18 @@ func _clip_path_updated(clip_path_texture):
 		elif material != null:
 			_baked_sprite.material.set_shader_param("clip_path", null)
 
-func _mask_updated(mask_texture):
+func _mask_updated(mask_texture, mask_renderer):
 	if _baked_sprite != null and _baking_viewport != null:
+		var bounding_box = get_bounding_box()
+		var scale_factor = get_scale_factor()
+		var mask_unit_bounding_box = mask_renderer.get_mask_unit_bounding_box(self)
+		_baking_viewport.size = mask_unit_bounding_box.size * scale_factor
+		_baking_viewport.canvas_transform = Transform2D().scaled(scale_factor)
+		_baking_viewport.canvas_transform.origin += (-mask_unit_bounding_box.position) * scale_factor
+		_baking_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
+
+		_baked_sprite.position = mask_unit_bounding_box.position
+		_baked_sprite.scale = Vector2(1.0, 1.0) / scale_factor
 		_baked_sprite.texture = null # Force sprite to resize
 		_baked_sprite.texture = _baking_viewport.get_texture()
 		if mask_texture != null:
@@ -133,34 +186,78 @@ func _mask_updated(mask_texture):
 		elif material != null:
 			_baked_sprite.material.set_shader_param("mask", null)
 
+func _opacity_mask_updated():
+	if _baked_sprite != null and _baking_viewport != null:
+		if attr_mask == SVGValueConstant.NONE and attr_clip_path == SVGValueConstant.NONE:
+			var bounding_box = get_bounding_box()
+			var scale_factor = get_scale_factor()
+			if (
+				bounding_box.size.x > 0 and
+				bounding_box.size.y > 0 and
+				scale_factor.x != 0.0 and
+				scale_factor.y != 0.0
+			):
+				_baking_viewport.size = bounding_box.size * scale_factor
+				_baking_viewport.canvas_transform = Transform2D().scaled(scale_factor)
+				_baking_viewport.canvas_transform.origin += (-bounding_box.position) * scale_factor
+				_baking_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
+				
+				_baked_sprite.position = bounding_box.position
+				_baked_sprite.scale = Vector2(1.0, 1.0) / scale_factor
+				_baked_sprite.texture = null # Force sprite to resize
+				_baked_sprite.texture = _baking_viewport.get_texture()
+		_baked_sprite.self_modulate = Color(1, 1, 1, attr_opacity.get_length(1))
+
+func _swap_child_container(new_container):
+	var swapped_child_list = []
+	for child in _child_list:
+		if is_instance_valid(child):
+			var parent = child.get_parent()
+			if parent == self:
+				.remove_child(child)
+			else:
+				parent.remove_child(child)
+			if new_container == self:
+				.add_child(child)
+			else:
+				new_container.add_child(child)
+			swapped_child_list.push_back(child)
+	_child_list = swapped_child_list
+	_child_container = new_container
+
+func _add_baked_sprite_as_child():
+	if _baked_sprite != null:
+		.add_child(_baked_sprite)
+
+func _add_baking_viewport_as_child(bounding_box):
+	if _baking_viewport != null:
+		.add_child(_baking_viewport)
+		_baking_viewport.canvas_transform = global_transform.inverse()
+		_baking_viewport.canvas_transform.origin += bounding_box.position
 
 # Public Methods
 
+func apply_props():
+	if not _is_props_applied_scheduled:
+		_is_props_applied_scheduled = true
+		call_deferred("_apply_props_deferred")
+		update()
+
 func add_child(new_child, legible_unique_name = false):
-	if attr_mask != SVGValueConstant.NONE or attr_clip_path != SVGValueConstant.NONE:
-		var bounding_box = get_bounding_box()
-		if _baked_sprite == null:
-			_baked_sprite = Sprite.new()
-			_baked_sprite.centered = false
-			_baked_sprite.material = ShaderMaterial.new()
-			_baked_sprite.material.shader = SVGRenderBakedShader
-			_baked_sprite.position = bounding_box.position
-			.add_child(_baked_sprite)
-		if _baking_viewport == null:
-			_baking_viewport = Viewport.new()
-			_baking_viewport.usage = Viewport.USAGE_2D_NO_SAMPLING
-			_baking_viewport.transparent_bg = true
-			_baking_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
-			_baking_viewport.render_target_v_flip = true
-			_baking_viewport.name = "baking_viewport"
-			_baking_viewport.size = bounding_box.size
-			.add_child(_baking_viewport)
-			_baking_viewport.canvas_transform = global_transform.inverse()
-			_baking_viewport.canvas_transform.origin += bounding_box.position
-			
-		_baking_viewport.add_child(new_child, legible_unique_name)
-	else:
+	if not _child_list.has(new_child):
+		_child_list.push_back(new_child)
+	if _child_container == self:
 		.add_child(new_child, legible_unique_name)
+	else:
+		_child_container.add_child(new_child, legible_unique_name)
+
+func remove_child(child_to_remove):
+	if _child_list.has(child_to_remove):
+		_child_list.remove(child_to_remove)
+	if _child_container == self:
+		.remove_child(child_to_remove)
+	else:
+		_child_container.remove_child(child_to_remove)
 
 func apply_attributes():
 	if element_resource != null:
@@ -170,7 +267,7 @@ func apply_attributes():
 	update()
 
 func get_bounding_box():
-	return Rect2(0, 0, 0, 0)
+	return _bounding_box
 
 func get_root_scale_factor():
 	if svg_node == null or svg_node._fixed_scaling_ratio == 0:
@@ -207,6 +304,9 @@ func draw_shape(updates):
 		_shape_strokes = []
 		return
 	
+	if not is_render_group:
+		modulate = Color(1, 1, 1, attr_opacity.get_length(1))
+	
 	if is_in_clip_path:
 		updates.fill_color = Color(1, 1, 1, 1)
 		updates.stroke_color = Color(0, 0, 0, 0)
@@ -236,6 +336,7 @@ func draw_shape(updates):
 			if fill_index < polygon_lists.size():
 				_shape_fill.polygon = polygon_lists[fill_index]
 			_shape_fill.color = updates.fill_color
+			_shape_fill.self_modulate = Color(1, 1, 1, max(0, min(1, attr_fill_opacity.get_length(1))))
 			if updates.has("stroke_color"):
 				_shape_fill.antialiased = updates.stroke_color.a == 0
 			if updates.has("fill_texture") and updates.fill_texture != null:
@@ -289,12 +390,14 @@ func draw_shape(updates):
 			_stroke_attrs.sharp_limit = attr_stroke_miterlimit
 			_stroke_attrs.opacity = attr_stroke_opacity.get_length(1)
 			if updates.has("stroke_width") and updates.has("scale_factor"):
-	#			var applied_stroke_width = updates.stroke_width * updates.scale_factor.x
-	#			if applied_stroke_width >= 2:
-	#				applied_stroke_width += 2
-	#			elif applied_stroke_width > 1:
-	#				applied_stroke_width = applied_stroke_width + ((applied_stroke_width - 1) * 2)
-	#			_stroke_attrs.width = applied_stroke_width / max(0.0001, updates.scale_factor.x)
+				# Commented out logic for dealing with svg_line_texture
+#				var applied_stroke_width = updates.stroke_width * updates.scale_factor.x
+#				if applied_stroke_width >= 2:
+#					applied_stroke_width += 2
+#				elif applied_stroke_width > 1:
+#					applied_stroke_width = applied_stroke_width + ((applied_stroke_width - 1) * 2)
+#				_stroke_attrs.width = applied_stroke_width / max(0.0001, updates.scale_factor.x)
+
 				_stroke_attrs.width = updates.stroke_width
 				var applied_stroke_width = updates.stroke_width * updates.scale_factor.x
 				if applied_stroke_width < 1:
@@ -335,20 +438,31 @@ func resolve_paint(attr_paint):
 					var offset = stop.renderer.attr_offset.get_length(1)
 					var color = stop.renderer.attr_stop_color
 					var opacity = stop.renderer.attr_stop_opacity
-					if opacity < 1:
+					if opacity < 1.0:
 						color.a = opacity
 					gradient.add_point(offset, color)
 				var gradient_texture = GradientTexture2D.new()
-				var transform = renderer.attr_gradient_transform
+				var gradient_transform = renderer.attr_gradient_transform
 				gradient_texture.gradient = gradient
-				gradient_texture.fill_from = transform.xform(Vector2(
-					renderer.attr_x1.get_length(1),
-					renderer.attr_y1.get_length(1)
-				))
-				gradient_texture.fill_to = transform.xform(Vector2(
-					renderer.attr_x2.get_length(1),
-					renderer.attr_y2.get_length(1)
-				))
+				if renderer.attr_gradient_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
+					gradient_texture.fill_from = gradient_transform.xform(Vector2(
+						renderer.attr_x1.get_length(1),
+						renderer.attr_y1.get_length(1)
+					))
+					gradient_texture.fill_to = gradient_transform.xform(Vector2(
+						renderer.attr_x2.get_length(1),
+						renderer.attr_y2.get_length(1)
+					))
+				else: # USER_SPACE_ON_USE
+					var shape_bounds = get_bounding_box()
+					gradient_texture.fill_from = gradient_transform.xform(Vector2(
+						renderer.attr_x1.get_normalized_length(shape_bounds.size.x, shape_bounds.position.x),
+						renderer.attr_y1.get_normalized_length(shape_bounds.size.y, shape_bounds.position.y)
+					))
+					gradient_texture.fill_to = gradient_transform.xform(Vector2(
+						renderer.attr_x2.get_normalized_length(shape_bounds.size.x, shape_bounds.position.x),
+						renderer.attr_y2.get_normalized_length(shape_bounds.size.y, shape_bounds.position.y)
+					))
 				gradient_texture.repeat = {
 					SVGValueConstant.PAD: GradientTexture2D.REPEAT_NONE,
 					SVGValueConstant.REPEAT: GradientTexture2D.REPEAT,
@@ -366,7 +480,7 @@ func _set_element_resource(new_element_resource):
 	element_resource = new_element_resource
 	if element_resource != null:
 		set_name(element_resource.node_name)
-	update()
+	apply_props()
 
 func _set_attr_clip_path(clip_path):
 	clip_path = get_style("clip_path", clip_path)
@@ -374,12 +488,12 @@ func _set_attr_clip_path(clip_path):
 		attr_clip_path = clip_path.replace("url(", "").rstrip(")").strip_edges()
 	else:
 		pass # TODO - basic-shape || geometry-box
-	update()
+	apply_props()
 
 func _set_attr_display(display):
 	display = get_style("display", display)
 	attr_display = display
-	update()
+	apply_props()
 
 func _set_attr_fill(fill):
 	fill = get_style("fill", fill)
@@ -390,14 +504,22 @@ func _set_attr_fill(fill):
 			attr_fill = SVGPaint.new("#00000000")
 		else:
 			attr_fill = SVGPaint.new(fill)
-	update()
+	apply_props()
+
+func _set_attr_fill_opacity(fill_opacity):
+	fill_opacity = get_style("fill_opacity", fill_opacity)
+	if typeof(fill_opacity) != TYPE_STRING:
+		attr_fill_opacity = fill_opacity
+	else:
+		attr_fill_opacity = SVGLengthPercentage.new(fill_opacity)
+	apply_props()
 
 func _set_attr_id(id):
 	if typeof(id) == TYPE_STRING:
 		if svg_node != null and svg_node._resource_locator_cache.has("#" + id):
 			svg_node._resource_locator_cache.remove("#" + id)
 	attr_id = id
-	update()
+	apply_props()
 
 func _set_attr_mask(mask):
 	if typeof(mask) != TYPE_STRING:
@@ -408,13 +530,21 @@ func _set_attr_mask(mask):
 		else:
 			attr_mask = SVGValueConstant.NONE
 
+func _set_attr_opacity(opacity):
+	opacity = get_style("opacity", opacity)
+	if typeof(opacity) != TYPE_STRING:
+		attr_opacity = opacity
+	else:
+		attr_opacity = SVGLengthPercentage.new(opacity)
+	apply_props()
+
 func _set_attr_stroke_opacity(stroke_opacity):
 	stroke_opacity = get_style("stroke_opacity", stroke_opacity)
 	if typeof(stroke_opacity) != TYPE_STRING:
 		attr_stroke_opacity = stroke_opacity
 	else:
 		attr_stroke_opacity = SVGLengthPercentage.new(stroke_opacity)
-	update()
+	apply_props()
 
 func _set_attr_stroke(stroke):
 	stroke = get_style("stroke", stroke)
@@ -425,7 +555,7 @@ func _set_attr_stroke(stroke):
 			attr_stroke = SVGPaint.new("#00000000")
 		else:
 			attr_stroke = SVGPaint.new(stroke)
-	update()
+	apply_props()
 
 func _set_attr_stroke_dasharray(stroke_dasharray):
 	stroke_dasharray = get_style("stroke_dasharray", stroke_dasharray)
@@ -444,7 +574,7 @@ func _set_attr_stroke_dasharray(stroke_dasharray):
 			if values.size() % 2 == 1:
 				values.append_array(values.duplicate())
 			attr_stroke_dasharray = values
-	update()
+	apply_props()
 
 func _set_attr_stroke_dashoffset(stroke_dashoffset):
 	stroke_dashoffset = get_style("stroke_dashoffset", stroke_dashoffset)
@@ -452,12 +582,12 @@ func _set_attr_stroke_dashoffset(stroke_dashoffset):
 		attr_stroke_dashoffset = stroke_dashoffset
 	else:
 		attr_stroke_dashoffset = SVGLengthPercentage.new(stroke_dashoffset)
-	update()
+	apply_props()
 
 func _set_attr_stroke_linejoin(stroke_linejoin):
 	stroke_linejoin = get_style("stroke_linejoin", stroke_linejoin)
 	attr_stroke_linejoin = stroke_linejoin
-	update()
+	apply_props()
 
 func _set_attr_stroke_miterlimit(stroke_miterlimit):
 	stroke_miterlimit = get_style("stroke_miterlimit", stroke_miterlimit)
@@ -465,7 +595,7 @@ func _set_attr_stroke_miterlimit(stroke_miterlimit):
 		attr_stroke_miterlimit = stroke_miterlimit
 	else:
 		attr_stroke_miterlimit = stroke_miterlimit.to_float()
-	update()
+	apply_props()
 
 func _set_attr_stroke_width(stroke_width):
 	stroke_width = get_style("stroke_width", stroke_width)
@@ -473,7 +603,7 @@ func _set_attr_stroke_width(stroke_width):
 		attr_stroke_width = stroke_width
 	else:
 		attr_stroke_width = SVGLengthPercentage.new(stroke_width)
-	update()
+	apply_props()
 
 func _set_attr_style(style):
 	if typeof(style) != TYPE_STRING:
@@ -486,7 +616,7 @@ func _set_attr_style(style):
 	for attr_name in attr_style:
 		if "attr_" + attr_name in self:
 			self["attr_" + attr_name] = self["attr_" + attr_name]
-	update()
+	apply_props()
 
 func _set_applied_stylesheet_style(style):
 	if typeof(style) == TYPE_DICTIONARY:
@@ -494,13 +624,13 @@ func _set_applied_stylesheet_style(style):
 		for attr_name in applied_stylesheet_style:
 			if "attr_" + attr_name in self:
 				self["attr_" + attr_name] = self["attr_" + attr_name]
-	update()
+	apply_props()
 
 func _set_attr_transform(new_transform):
 	new_transform = get_style("transform", new_transform)
 	attr_transform = SVGAttributeParser.parse_transform_list(new_transform)
 	self.transform = attr_transform
-	update()
+	apply_props()
 
 # Signal Callbacks
 

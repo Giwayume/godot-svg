@@ -14,10 +14,14 @@ func _init(attribute: String):
 	else:
 		length = attribute.to_float()
 
-func get_length(percentage_size: float = 1):
+func get_length(percentage_size: float = 1, offset: float = 0):
 	if length != null:
 		return length
 	elif percentage != null:
-		return percentage_size * percentage
+		return offset + (percentage_size * percentage)
 	else:
 		return 0
+
+func get_normalized_length(percentage_size: float = 1, offset: float = 0):
+	var length = get_length(percentage_size, offset)
+	return (length - offset) / percentage_size

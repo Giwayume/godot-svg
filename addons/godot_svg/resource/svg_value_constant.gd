@@ -108,8 +108,6 @@ const GLOBAL_INHERITED_ATTRIBUTE_NAMES = [
 	"fill_opacity",
 	"fill_rule",
 	"filter",
-	"mask",
-	"opacity",
 	"pointer_events",
 	"shape_rendering",
 	"stroke",

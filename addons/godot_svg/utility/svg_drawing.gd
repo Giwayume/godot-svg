@@ -31,11 +31,11 @@ static func generate_fill_rect_points(x, y, width, height) -> PoolVector2Array:
 
 static func generate_fill_rect_uv(x, y, width, height, size = 1.0) -> PoolVector2Array:
 	return PoolVector2Array([
-		Vector2(0, 0) * size,
-		Vector2(1, 0) * size,
-		Vector2(1, 1) * size,
-		Vector2(0, 1) * size,
-		Vector2(0, 0) * size
+		Vector2(0.0, 0.0) * size,
+		Vector2(1.0, 0.0) * size,
+		Vector2(1.0, 1.0) * size,
+		Vector2(0.0, 1.0) * size,
+		Vector2(0.0, 0.0) * size
 	])
 
 static func generate_stroke_rect_points(x, y, width, height) -> PoolVector2Array:

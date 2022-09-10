@@ -37,7 +37,7 @@ func _process(_delta):
 func _on_mask_draw_deferred():
 	if _current_mask_update_target != null:
 		var viewport_texture = _mask_viewport.get_texture()
-		_current_mask_update_target._mask_updated(viewport_texture)
+		_current_mask_update_target._mask_updated(viewport_texture, self)
 	if _mask_update_queue.size() > 0:
 		_current_mask_update_target = _mask_update_queue.pop_front()
 		_current_mask_tick_count = 0
@@ -52,17 +52,35 @@ func _prepare_viewport_for_draw():
 			var scale_factor = _current_mask_update_target.get_root_scale_factor()
 			_mask_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
 			
+			var target_bounding_box = _current_mask_update_target.get_bounding_box()
+			var mask_content_relative_size = target_bounding_box.size
+			
 			# Mask Units
 			var mask_unit_bounding_box = get_mask_unit_bounding_box(_current_mask_update_target)
 			_mask_viewport.size = mask_unit_bounding_box.size * scale_factor
 			
 			# Mask Content Units
 			var mask_content_unit_bounding_box = get_mask_content_unit_bounding_box(_current_mask_update_target)
-			_mask_viewport.canvas_transform = Transform2D().scaled((mask_unit_bounding_box.size / mask_content_unit_bounding_box.size + mask_unit_bounding_box.position) * scale_factor)
-			_mask_viewport.canvas_transform.origin = -mask_unit_bounding_box.position * scale_factor
 			
-			_mask_background.rect_position = -_mask_viewport.canvas_transform.origin
-			_mask_background.rect_size = _mask_viewport.size * _mask_viewport.canvas_transform.get_scale()
+			# Mask Viewport Transform
+			var transform_scale = null
+			var transform_origin = null
+			if attr_mask_content_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
+				transform_scale = (mask_content_relative_size / mask_content_unit_bounding_box.size) * scale_factor
+				transform_origin = (-mask_unit_bounding_box.position + target_bounding_box.position) * scale_factor
+			else:
+				transform_scale = scale_factor
+				transform_origin = (-mask_unit_bounding_box.position) * scale_factor
+			if transform_scale.is_equal_approx(Vector2()):
+				transform_scale = Vector2(1.0, 1.0)
+			_mask_viewport.canvas_transform = Transform2D().scaled(transform_scale)
+			_mask_viewport.canvas_transform.origin = transform_origin
+
+			_mask_background.rect_position = -_mask_viewport.canvas_transform.origin / scale_factor
+			if attr_mask_content_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
+				_mask_background.rect_size = _mask_viewport.size * _mask_viewport.canvas_transform.get_scale()
+			else:
+				_mask_background.rect_size = mask_content_unit_bounding_box.size
 			_update_view_box_recursive(mask_content_unit_bounding_box, element_resource)
 			
 
@@ -87,8 +105,8 @@ func get_mask_unit_bounding_box(mask_target):
 		mask_unit_bounding_box = mask_target.get_bounding_box()
 	else: # USER_SPACE_ON_USE
 		mask_unit_bounding_box = mask_target.inherited_view_box
-	mask_unit_bounding_box.position.x = attr_x.get_length(mask_unit_bounding_box.size.x)
-	mask_unit_bounding_box.position.y = attr_y.get_length(mask_unit_bounding_box.size.y)
+	mask_unit_bounding_box.position.x += attr_x.get_length(mask_unit_bounding_box.size.x)
+	mask_unit_bounding_box.position.y += attr_y.get_length(mask_unit_bounding_box.size.y)
 	mask_unit_bounding_box.size.x = attr_width.get_length(mask_unit_bounding_box.size.x)
 	mask_unit_bounding_box.size.y = attr_height.get_length(mask_unit_bounding_box.size.y)
 	return mask_unit_bounding_box

@@ -31,7 +31,7 @@ func _process(_delta):
 func _on_clip_path_draw_deferred():
 	if _current_clip_path_update_target != null:
 		var viewport_texture = _clip_path_viewport.get_texture()
-		_current_clip_path_update_target._clip_path_updated(viewport_texture)
+		_current_clip_path_update_target._clip_path_updated(viewport_texture, self)
 	if _clip_path_update_queue.size() > 0:
 		_current_clip_path_update_target = _clip_path_update_queue.pop_front()
 		_prepare_viewport_for_draw()
@@ -51,7 +51,10 @@ func _prepare_viewport_for_draw():
 			
 			# Clip Path Content Units
 			var clip_path_content_unit_bounding_box = get_clip_path_content_unit_bounding_box(_current_clip_path_update_target)
-			_clip_path_viewport.canvas_transform = Transform2D().scaled((clip_path_unit_bounding_box.size / clip_path_content_unit_bounding_box.size + clip_path_unit_bounding_box.position) * scale_factor)
+			var transform_scale = (clip_path_unit_bounding_box.size / clip_path_content_unit_bounding_box.size + clip_path_unit_bounding_box.position) * scale_factor
+			if transform_scale.is_equal_approx(Vector2()):
+				transform_scale = Vector2(1.0, 1.0)
+			_clip_path_viewport.canvas_transform = Transform2D().scaled(transform_scale)
 			_clip_path_viewport.canvas_transform.origin = -clip_path_unit_bounding_box.position * scale_factor
 			
 			_clip_path_background.rect_position = -_clip_path_viewport.canvas_transform.origin

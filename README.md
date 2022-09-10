@@ -31,23 +31,25 @@ This is the most spec-compliant SVG renderer for Godot. Every other SVG-related 
 
 ## Performance Considerations
 
-**SVGs vs Sprites**
+***SVGs vs Sprites***
 
 Godot is much faster at drawing raster textures in 2D. Whenever you can get away with it, you should prefer using Sprites instead of SVGs.
 
-**Scaling**
+***Scaling***
 
 By default, when the scale of your SVG changes, or the scale of your Camera's viewport changes, the SVG's polygon vertices are recalculated on the CPU so you do not see jaggy edges. There is a performance cost associated with this, **especially** if you zoom in close to large curves. If your game uses a lot of scaling operations, look there first for optimization (set fixed_scaling_ratio to a value above 0).
 
-**Masks and Clip Paths**
+***Masks and Clip Paths***
 
 Using masks and clip paths can quickly bring your game to a crawl. Both are rasterized to the game's output resolution before being applied to shapes. This means mask performance is resolution dependent. A masked shape that takes up the entire screen will take exponentially more time to draw than a smaller masked shape that takes up half the screen.
 
-**Stylesheets**
+Setting `opacity < 1` on group (`<g>`) elements is also treated like a mask.
+
+***Stylesheets***
 
 Avoid SVGs that use stylesheets like the plague. (e.g. avoid the `<style>` element). It is technically supported, but it is very expensive to compute up-front. Set inline attributes instead; the inline style attribute (e.g. `<rect style="fill:red">`) is OK to use.
 
-**Animation**
+***Animation***
 
 Animating styling attributes that cause the shape of an element to change (such as `stroke-dasharray`, `d`, `r`) will cause the entire shape to be recalculated which can become expensive on a large scale. Animating masked or clip-path shapes regenerates viewport textures on the CPU each frame, which is even more expensive.
 

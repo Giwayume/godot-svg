@@ -123,12 +123,12 @@ func get_stylesheet():
 
 func _set_attr_type(type):
 	attr_type = type
-	update()
+	apply_props()
 
 func _set_attr_media(media):
 	attr_media = media
-	update()
+	apply_props()
 	
 func _set_attr_title(title):
 	attr_title = title
-	update()
+	apply_props()
