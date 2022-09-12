@@ -47,6 +47,7 @@ func _draw():
 	])
 	
 	draw_shape({
+		"is_simple_shape": true,
 		"scale_factor": scale_factor,
 		"fill_color": fill_color,
 		"fill_texture": fill_texture,
@@ -71,7 +72,14 @@ func _calculate_bounding_box():
 	var xr = max(x1, x2)
 	var yt = min(y1, y2)
 	var yb = max(y1, y2)
-	_bounding_box = Rect2(xl, yt, xr - xl, yb - yt)
+	var stroke_width = get_visible_stroke_width()
+	var half_stroke_width = stroke_width / 2.0
+	_bounding_box = Rect2(
+		xl - half_stroke_width,
+		yt - half_stroke_width,
+		(xr - xl) + stroke_width,
+		(yb - yt) + stroke_width
+	)
 	emit_signal("bounding_box_calculated", _bounding_box)
 
 # Getters / Setters

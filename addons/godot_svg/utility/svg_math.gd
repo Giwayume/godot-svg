@@ -40,3 +40,19 @@ static func cubic_bezier_length_recurse(p0: Vector2, p1: Vector2, p2: Vector2, p
 		var chord_length = (p3 - p0).length()
 		length += (chord_length + control_net_length) / 2.0
 	return length
+
+static func get_polygon_bounds(polygon: PoolVector2Array):
+	var left = INF
+	var right = -INF
+	var top = INF
+	var bottom = -INF
+	for point in polygon:
+		if point.x < left:
+			left = point.x
+		if point.x > right:
+			right = point.x
+		if point.y < top:
+			top = point.y
+		if point.y > bottom:
+			bottom = point.y
+	return Rect2(left, top, right - left, bottom - top)

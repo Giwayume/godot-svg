@@ -37,6 +37,12 @@ const BEVEL = "bevel"
 const MITER = "miter"
 const MITER_CLIP = "miter-clip"
 
+const SPACING = "spacing"
+const SPACING_AND_GLYPHS = "spacingAndGlyphs"
+
+const NON_ZERO = "nonzero"
+const EVEN_ODD = "evenodd"
+
 enum PathCommand {
 	MOVE_TO,
 	LINE_TO,
@@ -97,7 +103,6 @@ const GLOBAL_INHERITED_ATTRIBUTE_NAMES = [
 	"required_extensions",
 	"required_features",
 	"system_language",
-	"clip_path",
 	"clip_rule",
 	"color",
 	"color_interpolation",

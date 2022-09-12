@@ -18,6 +18,7 @@ var attr_y = SVGLengthPercentage.new("0") setget _set_attr_y
 
 func _init():
 	node_name = "viewport"
+	_is_view_box_clip = true
 
 func _draw():
 	._draw()
@@ -136,8 +137,24 @@ func _set_attr_y(y):
 
 # Public Methods
 
-func calc_view_box():
+func calc_view_box(inherited_view_box = Rect2(0, 0, 0, 0)):
 	if attr_view_box is Rect2:
 		return attr_view_box
 	elif attr_view_box == SVGValueConstant.NONE:
-		return Rect2(0, 0, attr_width.get_length(1), attr_height.get_length(1))
+		var is_width_auto = false
+		var is_height_auto = false
+		var width = 0.0
+		var height = 0.0
+		if typeof(attr_width) == TYPE_STRING:
+			is_width_auto = attr_width == SVGValueConstant.AUTO
+		else:
+			width = attr_width.get_length(1)
+		if typeof(attr_height) == TYPE_STRING:
+			is_height_auto = attr_height == SVGValueConstant.AUTO
+		else:
+			height = attr_height.get_length(1)
+		if width == 0.0 and not is_height_auto:
+			width = height
+		elif height == 0.0 and not is_width_auto:
+			height = width
+		return Rect2(0, 0, width, height)

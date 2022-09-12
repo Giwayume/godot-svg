@@ -18,12 +18,16 @@ const SVGRenderPolyline = preload("../render/element/svg_render_polyline.gd")
 const SVGRenderRect = preload("../render/element/svg_render_rect.gd")
 const SVGRenderStop = preload("../render/element/svg_render_stop.gd")
 const SVGRenderStyle = preload("../render/element/svg_render_style.gd")
+const SVGRenderText = preload("../render/element/svg_render_text.gd")
 const SVGRenderViewport = preload("../render/element/svg_render_viewport.gd")
 
 export(Resource) var svg = null setget _set_svg, _get_svg
 export(float) var fixed_scaling_ratio = 0 setget _set_fixed_scaling_ratio, _get_fixed_scaling_ratio
+export(bool) var antialiased = true setget _set_antialiased, _get_antialiased
 
+var _antialiased = true
 var _is_editor_hint = false
+var _is_queued_render_from_scratch = false
 var _editor_plugin = null
 var _last_known_viewport_scale = Vector2(0.0, 0.0)
 var _fixed_scaling_ratio = 0
@@ -79,6 +83,7 @@ func _get_svg_element_renderer(node_name):
 		"stop": return SVGRenderStop
 		"style": return SVGRenderStyle
 		"svg": return SVGRenderViewport
+		"text": return SVGRenderText
 	return SVGRenderElement
 
 func _create_renderers_recursive(parent, children, render_props = {}):
@@ -103,7 +108,7 @@ func _create_renderers_recursive(parent, children, render_props = {}):
 		renderer.apply_attributes()
 		parent.add_child(renderer)
 		_renderer_map[child] = renderer
-		if view_box == null and renderer is SVGRenderViewport:
+		if renderer is SVGRenderViewport:
 			renderer.inherited_view_box = renderer.calc_view_box()
 		else:
 			renderer.inherited_view_box = view_box if view_box is Rect2 else renderer.inherited_view_box
@@ -112,15 +117,16 @@ func _create_renderers_recursive(parent, children, render_props = {}):
 		if renderer is SVGRenderStyle:
 			_global_stylesheet.append_array(renderer.get_stylesheet())
 		if child.children.size() > 0:
-			if renderer is SVGRenderViewport or renderer.attr_mask != SVGValueConstant.NONE or renderer.attr_clip_path != SVGValueConstant.NONE:
-				is_in_root_viewport = false
-			if renderer is SVGRenderClipPath:
-				is_in_clip_path = true
-			_create_renderers_recursive(renderer, child.children, {
+			var new_options = {
 				"view_box": view_box,
 				"is_in_root_viewport": is_in_root_viewport,
 				"is_in_clip_path": is_in_clip_path,
-			})
+			}
+			if renderer is SVGRenderViewport or renderer.attr_mask != SVGValueConstant.NONE or renderer.attr_clip_path != SVGValueConstant.NONE:
+				new_options.is_in_root_viewport = false
+			if renderer is SVGRenderClipPath:
+				new_options.is_in_clip_path = true
+			_create_renderers_recursive(renderer, child.children, new_options)
 
 func _apply_stylesheet_recursive(children, rule_state = null):
 	var rules = _global_stylesheet
@@ -214,6 +220,28 @@ func _find_elements_by_name(name: String, parent_resource = null):
 				found_resources.append_array(_find_elements_by_name(name, child_resource))
 	return found_resources
 
+
+func _queue_render_from_scratch():
+	if not _is_queued_render_from_scratch:
+		_is_queued_render_from_scratch = true
+		call_deferred("_render_from_scratch")
+
+func _render_from_scratch():
+	_is_queued_render_from_scratch = false
+	
+	# Cleanup
+	for renderer_name in _renderer_map:
+		_renderer_map[renderer_name].queue_free()
+	_renderer_map = {}
+	_resource_locator_cache = {}
+	
+	# Create renderers
+	if _svg is SVGResource and _svg.viewport != null:
+		_create_renderers_recursive(self, [_svg.viewport])
+		if _global_stylesheet.size() > 0:
+			_apply_stylesheet_recursive([_svg.viewport])
+	update()
+
 # Editor
 
 func _get_configuration_warning():
@@ -243,29 +271,25 @@ func _on_editor_viewport_scale_changed(new_scale):
 # Getters / Setters
 
 func _set_svg(svg):
-	# Cleanup
-	for renderer_name in _renderer_map:
-		_renderer_map[renderer_name].queue_free()
-	_renderer_map = {}
-	_resource_locator_cache = {}
-	
-	# Assign
 	_svg = svg
-	
-	# Create renderers
-	if svg is SVGResource and svg.viewport != null:
-		_create_renderers_recursive(self, [svg.viewport])
-		if _global_stylesheet.size() > 0:
-			_apply_stylesheet_recursive([svg.viewport])
-	update()
 	update_configuration_warning()
+	_queue_render_from_scratch()
 
 func _get_svg():
 	return _svg
 
 func _set_fixed_scaling_ratio(fixed_scaling_ratio):
 	_fixed_scaling_ratio = fixed_scaling_ratio
-	update()
+	_queue_render_from_scratch()
 
 func _get_fixed_scaling_ratio():
 	return _fixed_scaling_ratio
+
+func _set_antialiased(antialiased):
+	if _antialiased != antialiased:
+		_antialiased = antialiased
+		_queue_render_from_scratch()
+
+func _get_antialiased():
+	return _antialiased
+

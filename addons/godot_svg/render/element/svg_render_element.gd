@@ -38,7 +38,7 @@ var attr_system_language = null
 
 # Presentation Attributes
 var attr_clip_path = SVGValueConstant.NONE setget _set_attr_clip_path
-var attr_clip_rule = null
+var attr_clip_rule = SVGValueConstant.NON_ZERO setget _set_attr_clip_rule
 var attr_color = null
 var attr_color_interpolation = null
 var attr_color_rendering = null
@@ -46,7 +46,7 @@ var attr_cursor = null
 var attr_display = "inline" setget _set_attr_display
 var attr_fill = SVGPaint.new("#000000") setget _set_attr_fill
 var attr_fill_opacity = SVGLengthPercentage.new("100%") setget _set_attr_fill_opacity
-var attr_fill_rule = null
+var attr_fill_rule = SVGValueConstant.NON_ZERO setget _set_attr_fill_rule
 var attr_filter = null
 var attr_mask = SVGValueConstant.NONE setget _set_attr_mask
 var attr_opacity = SVGLengthPercentage.new("100%") setget _set_attr_opacity
@@ -76,6 +76,8 @@ var _shape_strokes = []
 var _child_list = []
 var _child_container = self
 var _is_props_applied_scheduled = false
+var _is_view_box_clip = false
+var _view_box_clip_rect = null
 
 # Lifecycle
 
@@ -112,9 +114,27 @@ func _props_applied():
 				_baking_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
 				_baking_viewport.render_target_v_flip = true
 				_baking_viewport.name = "baking_viewport"
-				_baking_viewport.size = bounding_box.size
+#				_baking_viewport.size = bounding_box.size
 				call_deferred("_add_baking_viewport_as_child", bounding_box)
 			_swap_child_container(_baking_viewport)
+	elif _is_view_box_clip:
+		if _child_container != _view_box_clip_rect:
+			if _baked_sprite != null:
+				_baked_sprite.queue_free()
+				_baked_sprite = null
+			if _baking_viewport != null:
+				_baking_viewport.queue_free()
+				_baking_viewport = null
+			if _view_box_clip_rect == null:
+				var view_box = inherited_view_box
+				if "attr_view_box" in self and self.attr_view_box is Rect2:
+					view_box = self.attr_view_box
+				_view_box_clip_rect = Control.new()
+				_view_box_clip_rect.rect_position = Vector2()
+				_view_box_clip_rect.rect_size = view_box.size
+				_view_box_clip_rect.rect_clip_content = true
+				.add_child(_view_box_clip_rect)
+			_swap_child_container(_view_box_clip_rect)
 	else:
 		if _child_container != self:
 			_swap_child_container(self)
@@ -124,6 +144,9 @@ func _props_applied():
 			if _baking_viewport != null:
 				_baking_viewport.queue_free()
 				_baking_viewport = null
+			if _view_box_clip_rect != null:
+				_view_box_clip_rect.queue_free()
+				_view_box_clip_rect = null
 
 func _draw():
 	if attr_mask != SVGValueConstant.NONE and _baked_sprite != null:
@@ -158,7 +181,7 @@ func _clip_path_updated(clip_path_texture, clip_path_renderer):
 			_baked_sprite.scale = Vector2(1.0, 1.0) / scale_factor
 		_baking_viewport.size = clip_path_unit_bounding_box.size * scale_factor
 		_baking_viewport.canvas_transform = Transform2D().scaled(scale_factor)
-		_baking_viewport.canvas_transform.origin += (-bounding_box.position - clip_path_unit_bounding_box.position) * scale_factor
+		_baking_viewport.canvas_transform.origin += (-clip_path_unit_bounding_box.position) * scale_factor
 		_baking_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
 		_baked_sprite.texture = null # Force sprite to resize
 		_baked_sprite.texture = _baking_viewport.get_texture()
@@ -269,6 +292,18 @@ func apply_attributes():
 func get_bounding_box():
 	return _bounding_box
 
+func get_visible_stroke_width():
+	var stroke_width = 0.0
+	if not is_in_clip_path:
+		stroke_width = attr_stroke_width.get_length(inherited_view_box.size.x)
+		if typeof(attr_stroke) == TYPE_STRING:
+			if attr_stroke == SVGValueConstant.NONE:
+				stroke_width = 0.0
+		elif attr_stroke is SVGPaint:
+			if attr_stroke.color != null and attr_stroke.color.a <= 0.0:
+				stroke_width = 0.0
+	return stroke_width
+
 func get_root_scale_factor():
 	if svg_node == null or svg_node._fixed_scaling_ratio == 0:
 		return global_scale * _last_known_viewport_scale
@@ -307,18 +342,47 @@ func draw_shape(updates):
 	if not is_render_group:
 		modulate = Color(1, 1, 1, attr_opacity.get_length(1))
 	
+	var fill_rule = attr_fill_rule
 	if is_in_clip_path:
 		updates.fill_color = Color(1, 1, 1, 1)
 		updates.stroke_color = Color(0, 0, 0, 0)
+		fill_rule = attr_clip_rule
 	
 	if updates.has("fill_color") and updates.fill_color.a > 0:
+		var raw_polygon_lists = []
 		var polygon_lists = []
 		if updates.has("fill_polygon"):
 			if updates.fill_polygon.size() > 0:
 				if updates.fill_polygon[0] is PoolVector2Array:
-					polygon_lists = updates.fill_polygon
+					raw_polygon_lists = updates.fill_polygon
 				else:
-					polygon_lists = [updates.fill_polygon]
+					raw_polygon_lists = [updates.fill_polygon]
+			
+#			if fill_rule == SVGValueConstant.EVEN_ODD:
+#
+#				for raw_polygon in raw_polygon_lists:
+#					var polyline_bounds = SVGMath.get_polygon_bounds(raw_polygon)
+#					var boundary_rect = SVGDrawing.generate_fill_rect_points(
+#						polyline_bounds.position.x - 1,
+#						polyline_bounds.position.y - 1,
+#						polyline_bounds.size.x + 2,
+#						polyline_bounds.size.y + 2
+#					)
+#					var intersected_polygons = Geometry.merge_polygons_2d(raw_polygon, PoolVector2Array([]))
+#					polygon_lists.append_array(intersected_polygons)
+#
+#			else:
+			if updates.has("is_simple_shape") and updates.is_simple_shape:
+				polygon_lists = raw_polygon_lists
+			else:
+				for raw_polygon in raw_polygon_lists:
+					polygon_lists.append_array(
+						SVGPolygonSolver.simplify(raw_polygon, {
+							SVGValueConstant.EVEN_ODD: SVGPolygonSolver.FillRule.EVEN_ODD,
+							SVGValueConstant.NON_ZERO: SVGPolygonSolver.FillRule.NON_ZERO,
+						}[fill_rule])
+					)
+			
 			# Remove unused
 			for shape_stroke_index in range(polygon_lists.size(), _shape_fills.size()):
 				var shape = _shape_fills[shape_stroke_index]
@@ -338,7 +402,7 @@ func draw_shape(updates):
 			_shape_fill.color = updates.fill_color
 			_shape_fill.self_modulate = Color(1, 1, 1, max(0, min(1, attr_fill_opacity.get_length(1))))
 			if updates.has("stroke_color"):
-				_shape_fill.antialiased = updates.stroke_color.a == 0
+				_shape_fill.antialiased = svg_node.antialiased and updates.stroke_color.a == 0
 			if updates.has("fill_texture") and updates.fill_texture != null:
 				if updates.has("fill_uv"):
 					_shape_fill.uv = updates.fill_uv
@@ -386,7 +450,7 @@ func draw_shape(updates):
 			_stroke_attrs.color = updates.stroke_color
 			_stroke_attrs.cap_mode = attr_stroke_linecap
 			_stroke_attrs.joint_mode = attr_stroke_linejoin
-			_stroke_attrs.antialiased = true
+			_stroke_attrs.antialiased = svg_node.antialiased
 			_stroke_attrs.sharp_limit = attr_stroke_miterlimit
 			_stroke_attrs.opacity = attr_stroke_opacity.get_length(1)
 			if updates.has("stroke_width") and updates.has("scale_factor"):
@@ -490,6 +554,10 @@ func _set_attr_clip_path(clip_path):
 		pass # TODO - basic-shape || geometry-box
 	apply_props()
 
+func _set_attr_clip_rule(clip_rule):
+	attr_clip_rule = clip_rule
+	apply_props()
+
 func _set_attr_display(display):
 	display = get_style("display", display)
 	attr_display = display
@@ -514,6 +582,10 @@ func _set_attr_fill_opacity(fill_opacity):
 		attr_fill_opacity = SVGLengthPercentage.new(fill_opacity)
 	apply_props()
 
+func _set_attr_fill_rule(fill_rule):
+	attr_fill_rule = fill_rule
+	apply_props()
+
 func _set_attr_id(id):
 	if typeof(id) == TYPE_STRING:
 		if svg_node != null and svg_node._resource_locator_cache.has("#" + id):
@@ -536,14 +608,6 @@ func _set_attr_opacity(opacity):
 		attr_opacity = opacity
 	else:
 		attr_opacity = SVGLengthPercentage.new(opacity)
-	apply_props()
-
-func _set_attr_stroke_opacity(stroke_opacity):
-	stroke_opacity = get_style("stroke_opacity", stroke_opacity)
-	if typeof(stroke_opacity) != TYPE_STRING:
-		attr_stroke_opacity = stroke_opacity
-	else:
-		attr_stroke_opacity = SVGLengthPercentage.new(stroke_opacity)
 	apply_props()
 
 func _set_attr_stroke(stroke):
@@ -595,6 +659,14 @@ func _set_attr_stroke_miterlimit(stroke_miterlimit):
 		attr_stroke_miterlimit = stroke_miterlimit
 	else:
 		attr_stroke_miterlimit = stroke_miterlimit.to_float()
+	apply_props()
+
+func _set_attr_stroke_opacity(stroke_opacity):
+	stroke_opacity = get_style("stroke_opacity", stroke_opacity)
+	if typeof(stroke_opacity) != TYPE_STRING:
+		attr_stroke_opacity = stroke_opacity
+	else:
+		attr_stroke_opacity = SVGLengthPercentage.new(stroke_opacity)
 	apply_props()
 
 func _set_attr_stroke_width(stroke_width):

@@ -45,20 +45,42 @@ func _prepare_viewport_for_draw():
 			var scale_factor = _current_clip_path_update_target.get_root_scale_factor()
 			_clip_path_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
 			
+			var target_bounding_box = _current_clip_path_update_target.get_bounding_box()
+			var clip_path_content_relative_size = target_bounding_box.size
+			
 			# Clip Path Units
 			var clip_path_unit_bounding_box = get_clip_path_unit_bounding_box(_current_clip_path_update_target)
 			_clip_path_viewport.size = clip_path_unit_bounding_box.size * scale_factor
 			
 			# Clip Path Content Units
 			var clip_path_content_unit_bounding_box = get_clip_path_content_unit_bounding_box(_current_clip_path_update_target)
-			var transform_scale = (clip_path_unit_bounding_box.size / clip_path_content_unit_bounding_box.size + clip_path_unit_bounding_box.position) * scale_factor
+			
+			# Clip Path Viewport Transform
+			var transform_scale = null
+			var transform_origin = null
+			if attr_clip_path_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
+				transform_scale = (clip_path_content_relative_size / clip_path_content_unit_bounding_box.size) * scale_factor
+				transform_origin = (-clip_path_unit_bounding_box.position + target_bounding_box.position) * scale_factor
+			else:
+				transform_scale = scale_factor
+				transform_origin = (-clip_path_unit_bounding_box.position) * scale_factor
 			if transform_scale.is_equal_approx(Vector2()):
 				transform_scale = Vector2(1.0, 1.0)
 			_clip_path_viewport.canvas_transform = Transform2D().scaled(transform_scale)
-			_clip_path_viewport.canvas_transform.origin = -clip_path_unit_bounding_box.position * scale_factor
+			_clip_path_viewport.canvas_transform.origin = transform_origin
 			
-			_clip_path_background.rect_position = -_clip_path_viewport.canvas_transform.origin
-			_clip_path_background.rect_size = _clip_path_viewport.size * _clip_path_viewport.canvas_transform.get_scale()
+			
+#			var transform_scale = (clip_path_unit_bounding_box.size / clip_path_content_unit_bounding_box.size + clip_path_unit_bounding_box.position) * scale_factor
+#			if transform_scale.is_equal_approx(Vector2()):
+#				transform_scale = Vector2(1.0, 1.0)
+#			_clip_path_viewport.canvas_transform = Transform2D().scaled(transform_scale)
+#			_clip_path_viewport.canvas_transform.origin = -clip_path_unit_bounding_box.position * scale_factor
+			
+			_clip_path_background.rect_position = (-_clip_path_viewport.canvas_transform.origin / scale_factor) + Vector2(-5.0, -5.0)
+			if attr_clip_path_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
+				_clip_path_background.rect_size = (_clip_path_viewport.size * _clip_path_viewport.canvas_transform.get_scale()) + Vector2(10.0, 10.0)
+			else:
+				_clip_path_background.rect_size = clip_path_content_unit_bounding_box.size + Vector2(10.0, 10.0)
 			_update_view_box_recursive(clip_path_content_unit_bounding_box, element_resource)
 
 func _update_view_box_recursive(new_view_box, parent = null):
@@ -77,9 +99,7 @@ func add_child(new_child, legible_unique_name = false):
 		_clip_path_viewport.add_child(new_child, legible_unique_name)
 
 func get_clip_path_unit_bounding_box(clip_path_target):
-	var clip_path_unit_bounding_box = Rect2()
-	clip_path_unit_bounding_box.size = clip_path_target.get_bounding_box().size
-	return clip_path_unit_bounding_box
+	return _current_clip_path_update_target.get_bounding_box()
 
 func get_clip_path_content_unit_bounding_box(clip_path_target):
 	var clip_path_content_unit_bounding_box = Rect2()

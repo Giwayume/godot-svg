@@ -41,6 +41,7 @@ func _draw():
 	var stroke_width = attr_stroke_width.get_length(inherited_view_box.size.x)
 
 	draw_shape({
+		"is_simple_shape": true,
 		"scale_factor": scale_factor,
 		"fill_color": fill_color,
 		"fill_texture": fill_texture,
@@ -69,8 +70,16 @@ func _calculate_bounding_box():
 	var height = 0
 	if attr_height is SVGLengthPercentage:
 		height = attr_height.get_length(inherited_view_box.size.y)
+
+	var stroke_width = get_visible_stroke_width()
+	var half_stroke_width = stroke_width / 2.0
 	
-	_bounding_box = Rect2(position.x, position.y, width, height)
+	_bounding_box = Rect2(
+		position.x - half_stroke_width,
+		position.y - half_stroke_width,
+		width + stroke_width,
+		height + stroke_width
+	)
 	emit_signal("bounding_box_calculated", _bounding_box)
 
 # Getters / Setters

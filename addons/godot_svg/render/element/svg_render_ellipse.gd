@@ -48,6 +48,7 @@ func _draw():
 	var arc_stretch = PI / 32
 	
 	draw_shape({
+		"is_simple_shape": true,
 		"scale_factor": scale_factor,
 		"fill_color": fill_color,
 		"fill_texture": fill_texture,
@@ -68,7 +69,14 @@ func _calculate_bounding_box():
 	)
 	var radius_x = attr_rx.get_length(inherited_view_box.size.x)
 	var radius_y = attr_ry.get_length(inherited_view_box.size.y)
-	_bounding_box = Rect2(center.x - radius_x, center.y - radius_y, radius_x * 2, radius_y * 2)
+	var stroke_width = get_visible_stroke_width()
+	var half_stroke_width = stroke_width / 2.0
+	_bounding_box = Rect2(
+		center.x - radius_x - half_stroke_width,
+		center.y - radius_y - half_stroke_width,
+		(radius_x * 2) + stroke_width,
+		(radius_y * 2) + stroke_width
+	)
 	emit_signal("bounding_box_calculated", _bounding_box)
 
 # Getters / Setters
