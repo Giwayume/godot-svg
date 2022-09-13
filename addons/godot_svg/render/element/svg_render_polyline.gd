@@ -18,11 +18,11 @@ func _draw():
 	
 	var scale_factor = get_scale_factor()
 	
-	var fill_paint = resolve_paint(attr_fill)
+	var fill_paint = resolve_fill_paint()
 	var fill_color = fill_paint.color
 	var fill_texture = fill_paint.texture
 	
-	var stroke_paint = resolve_paint(attr_stroke)
+	var stroke_paint = resolve_stroke_paint()
 	var stroke_color = stroke_paint.color
 	var stroke_texture = stroke_paint.texture
 	

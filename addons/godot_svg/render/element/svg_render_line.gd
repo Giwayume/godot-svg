@@ -15,11 +15,11 @@ func _draw():
 	._draw()
 	var scale_factor = get_scale_factor()
 	
-	var fill_paint = resolve_paint(attr_fill)
+	var fill_paint = resolve_fill_paint()
 	var fill_color = fill_paint.color
 	var fill_texture = fill_paint.texture
 	
-	var stroke_paint = resolve_paint(attr_stroke)
+	var stroke_paint = resolve_stroke_paint()
 	var stroke_color = stroke_paint.color
 	var stroke_texture = stroke_paint.texture
 	
@@ -72,13 +72,11 @@ func _calculate_bounding_box():
 	var xr = max(x1, x2)
 	var yt = min(y1, y2)
 	var yb = max(y1, y2)
-	var stroke_width = get_visible_stroke_width()
-	var half_stroke_width = stroke_width / 2.0
 	_bounding_box = Rect2(
-		xl - half_stroke_width,
-		yt - half_stroke_width,
-		(xr - xl) + stroke_width,
-		(yb - yt) + stroke_width
+		xl,
+		yt,
+		(xr - xl),
+		(yb - yt)
 	)
 	emit_signal("bounding_box_calculated", _bounding_box)
 

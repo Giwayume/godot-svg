@@ -15,6 +15,7 @@ const SVGRenderLinearGradient = preload("../render/element/svg_render_linear_gra
 const SVGRenderMask = preload("../render/element/svg_render_mask.gd")
 const SVGRenderPath = preload("../render/element/svg_render_path.gd")
 const SVGRenderPolyline = preload("../render/element/svg_render_polyline.gd")
+const SVGRenderRadialGradient = preload("../render/element/svg_render_radial_gradient.gd")
 const SVGRenderRect = preload("../render/element/svg_render_rect.gd")
 const SVGRenderStop = preload("../render/element/svg_render_stop.gd")
 const SVGRenderStyle = preload("../render/element/svg_render_style.gd")
@@ -79,6 +80,7 @@ func _get_svg_element_renderer(node_name):
 		"mask": return SVGRenderMask
 		"path": return SVGRenderPath
 		"polyline": return SVGRenderPolyline
+		"radialGradient": return SVGRenderRadialGradient
 		"rect": return SVGRenderRect
 		"stop": return SVGRenderStop
 		"style": return SVGRenderStyle
@@ -105,7 +107,7 @@ func _create_renderers_recursive(parent, children, render_props = {}):
 		renderer.is_in_clip_path = is_in_clip_path
 		if view_box == null:
 			renderer.is_root = true
-		renderer.apply_attributes()
+		renderer.apply_resource_attributes()
 		parent.add_child(renderer)
 		_renderer_map[child] = renderer
 		if renderer is SVGRenderViewport:

@@ -52,7 +52,7 @@ func _prepare_viewport_for_draw():
 			var scale_factor = _current_mask_update_target.get_root_scale_factor()
 			_mask_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
 			
-			var target_bounding_box = _current_mask_update_target.get_bounding_box()
+			var target_bounding_box = _current_mask_update_target.get_stroked_bounding_box()
 			var mask_content_relative_size = target_bounding_box.size
 			
 			# Mask Units
@@ -102,7 +102,7 @@ func add_child(new_child, legible_unique_name = false):
 func get_mask_unit_bounding_box(mask_target):
 	var mask_unit_bounding_box = Rect2()
 	if attr_mask_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
-		mask_unit_bounding_box = mask_target.get_bounding_box()
+		mask_unit_bounding_box = mask_target.get_stroked_bounding_box()
 	else: # USER_SPACE_ON_USE
 		mask_unit_bounding_box = mask_target.inherited_view_box
 	mask_unit_bounding_box.position.x += attr_x.get_length(mask_unit_bounding_box.size.x)

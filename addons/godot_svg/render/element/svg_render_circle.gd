@@ -23,11 +23,11 @@ func _draw():
 	)
 	var radius = attr_r.get_length(inherited_view_box.size.x)
 	
-	var fill_paint = resolve_paint(attr_fill)
+	var fill_paint = resolve_fill_paint()
 	var fill_color = fill_paint.color
 	var fill_texture = fill_paint.texture
 	
-	var stroke_paint = resolve_paint(attr_stroke)
+	var stroke_paint = resolve_stroke_paint()
 	var stroke_color = stroke_paint.color
 	var stroke_texture = stroke_paint.texture
 	
@@ -59,13 +59,11 @@ func _calculate_bounding_box():
 		attr_cy.get_length(inherited_view_box.size.y, inherited_view_box.position.y)
 	)
 	var radius = attr_r.get_length(inherited_view_box.size.x)
-	var stroke_width = get_visible_stroke_width()
-	var half_stroke_width = stroke_width / 2.0
 	_bounding_box = Rect2(
-		center.x - radius - half_stroke_width,
-		center.y - radius - half_stroke_width,
-		(radius * 2) + stroke_width,
-		(radius * 2) + stroke_width
+		center.x - radius,
+		center.y - radius,
+		(radius * 2),
+		(radius * 2)
 	)
 	emit_signal("bounding_box_calculated", _bounding_box)
 

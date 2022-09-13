@@ -15,11 +15,6 @@ _global_script_classes=[ {
 "path": "res://addons/godot_svg/utility/svg_attribute_parser.gd"
 }, {
 "base": "Reference",
-"class": "SVGClipper",
-"language": "GDScript",
-"path": "res://addons/godot_svg/utility/svg_clipper.gd"
-}, {
-"base": "Reference",
 "class": "SVGDrawing",
 "language": "GDScript",
 "path": "res://addons/godot_svg/utility/svg_drawing.gd"
@@ -76,7 +71,6 @@ _global_script_classes=[ {
 } ]
 _global_script_class_icons={
 "SVGAttributeParser": "",
-"SVGClipper": "",
 "SVGDrawing": "",
 "SVGHelper": "",
 "SVGLengthPercentage": "",

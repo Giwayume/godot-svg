@@ -45,7 +45,7 @@ func _prepare_viewport_for_draw():
 			var scale_factor = _current_clip_path_update_target.get_root_scale_factor()
 			_clip_path_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
 			
-			var target_bounding_box = _current_clip_path_update_target.get_bounding_box()
+			var target_bounding_box = _current_clip_path_update_target.get_stroked_bounding_box()
 			var clip_path_content_relative_size = target_bounding_box.size
 			
 			# Clip Path Units
@@ -99,7 +99,7 @@ func add_child(new_child, legible_unique_name = false):
 		_clip_path_viewport.add_child(new_child, legible_unique_name)
 
 func get_clip_path_unit_bounding_box(clip_path_target):
-	return _current_clip_path_update_target.get_bounding_box()
+	return _current_clip_path_update_target.get_stroked_bounding_box()
 
 func get_clip_path_content_unit_bounding_box(clip_path_target):
 	var clip_path_content_unit_bounding_box = Rect2()

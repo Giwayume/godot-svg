@@ -78,12 +78,13 @@ var _child_container = self
 var _is_props_applied_scheduled = false
 var _is_view_box_clip = false
 var _view_box_clip_rect = null
+var _is_href_duplicate = false
+var _rerender_prop_cache = {}
 
 # Lifecycle
 
 func _init():
 	_is_editor_hint = Engine.is_editor_hint()
-	apply_attributes()
 
 func _ready():
 	connect("visibility_changed", self, "_on_visibility_changed")
@@ -99,7 +100,7 @@ func _props_applied():
 		(is_render_group and attr_opacity.get_length(1) < 1)
 	):
 		if _child_container != _baking_viewport:
-			var bounding_box = get_bounding_box()
+			var bounding_box = get_stroked_bounding_box()
 			if _baked_sprite == null:
 				_baked_sprite = Sprite.new()
 				_baked_sprite.centered = false
@@ -173,7 +174,7 @@ func _apply_props_deferred():
 
 func _clip_path_updated(clip_path_texture, clip_path_renderer):
 	if _baked_sprite != null and _baking_viewport != null:
-		var bounding_box = get_bounding_box()
+		var bounding_box = get_stroked_bounding_box()
 		var scale_factor = get_scale_factor()
 		var clip_path_unit_bounding_box = clip_path_renderer.get_clip_path_unit_bounding_box(self)
 		if attr_mask == SVGValueConstant.NONE:
@@ -192,7 +193,7 @@ func _clip_path_updated(clip_path_texture, clip_path_renderer):
 
 func _mask_updated(mask_texture, mask_renderer):
 	if _baked_sprite != null and _baking_viewport != null:
-		var bounding_box = get_bounding_box()
+		var bounding_box = get_stroked_bounding_box()
 		var scale_factor = get_scale_factor()
 		var mask_unit_bounding_box = mask_renderer.get_mask_unit_bounding_box(self)
 		_baking_viewport.size = mask_unit_bounding_box.size * scale_factor
@@ -212,7 +213,7 @@ func _mask_updated(mask_texture, mask_renderer):
 func _opacity_mask_updated():
 	if _baked_sprite != null and _baking_viewport != null:
 		if attr_mask == SVGValueConstant.NONE and attr_clip_path == SVGValueConstant.NONE:
-			var bounding_box = get_bounding_box()
+			var bounding_box = get_stroked_bounding_box()
 			var scale_factor = get_scale_factor()
 			if (
 				bounding_box.size.x > 0 and
@@ -282,7 +283,12 @@ func remove_child(child_to_remove):
 	else:
 		_child_container.remove_child(child_to_remove)
 
-func apply_attributes():
+func set_attributes(attributes: Dictionary):
+	for attribute_name in attributes:
+		if "attr_" + attribute_name in self:
+			set("attr_" + attribute_name, attributes[attribute_name])
+
+func apply_resource_attributes():
 	if element_resource != null:
 		for attribute_name in element_resource.attributes:
 			if "attr_" + attribute_name in self:
@@ -291,6 +297,16 @@ func apply_attributes():
 
 func get_bounding_box():
 	return _bounding_box
+
+func get_stroked_bounding_box():
+	var stroke_width = get_visible_stroke_width()
+	var half_stroke_width = stroke_width / 2.0
+	return Rect2(
+		_bounding_box.position.x - half_stroke_width,
+		_bounding_box.position.y - half_stroke_width,
+		_bounding_box.size.x + stroke_width,
+		_bounding_box.size.y + stroke_width
+	)
 
 func get_visible_stroke_width():
 	var stroke_width = 0.0
@@ -358,20 +374,6 @@ func draw_shape(updates):
 				else:
 					raw_polygon_lists = [updates.fill_polygon]
 			
-#			if fill_rule == SVGValueConstant.EVEN_ODD:
-#
-#				for raw_polygon in raw_polygon_lists:
-#					var polyline_bounds = SVGMath.get_polygon_bounds(raw_polygon)
-#					var boundary_rect = SVGDrawing.generate_fill_rect_points(
-#						polyline_bounds.position.x - 1,
-#						polyline_bounds.position.y - 1,
-#						polyline_bounds.size.x + 2,
-#						polyline_bounds.size.y + 2
-#					)
-#					var intersected_polygons = Geometry.merge_polygons_2d(raw_polygon, PoolVector2Array([]))
-#					polygon_lists.append_array(intersected_polygons)
-#
-#			else:
 			if updates.has("is_simple_shape") and updates.is_simple_shape:
 				polygon_lists = raw_polygon_lists
 			else:
@@ -482,6 +484,20 @@ func draw_shape(updates):
 		for stroke in _shape_strokes:
 			stroke.hide()
 
+func resolve_fill_paint():
+	if _rerender_prop_cache.has("fill"):
+		return _rerender_prop_cache.fill
+	else:
+		_rerender_prop_cache.fill = resolve_paint(attr_fill)
+		return _rerender_prop_cache.fill
+
+func resolve_stroke_paint():
+	if _rerender_prop_cache.has("stroke"):
+		return _rerender_prop_cache.stroke
+	else:
+		_rerender_prop_cache.stroke = resolve_paint(attr_stroke)
+		return _rerender_prop_cache.stroke
+
 func resolve_paint(attr_paint):
 	var paint = {
 		"color": Color(1, 1, 1, 1),
@@ -493,8 +509,9 @@ func resolve_paint(attr_paint):
 			var renderer = result.renderer
 			if renderer == null:
 				paint.color = attr_paint.color
-			elif renderer.node_name == "linearGradient":
-				var stops = svg_node._find_elements_by_name("stop", result.resource)
+			elif renderer.node_name == "linearGradient" or renderer.node_name == "radialGradient":
+				renderer = renderer.resolve_href()
+				var stops = svg_node._find_elements_by_name("stop", renderer.element_resource)
 				var gradient = Gradient.new()
 				gradient.colors = []
 				gradient.offsets = []
@@ -508,35 +525,64 @@ func resolve_paint(attr_paint):
 				var gradient_texture = GradientTexture2D.new()
 				var gradient_transform = renderer.attr_gradient_transform
 				gradient_texture.gradient = gradient
-				if renderer.attr_gradient_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
-					gradient_texture.fill_from = gradient_transform.xform(Vector2(
-						renderer.attr_x1.get_length(1),
-						renderer.attr_y1.get_length(1)
-					))
-					gradient_texture.fill_to = gradient_transform.xform(Vector2(
-						renderer.attr_x2.get_length(1),
-						renderer.attr_y2.get_length(1)
-					))
-				else: # USER_SPACE_ON_USE
-					var shape_bounds = get_bounding_box()
-					gradient_texture.fill_from = gradient_transform.xform(Vector2(
-						renderer.attr_x1.get_normalized_length(shape_bounds.size.x, shape_bounds.position.x),
-						renderer.attr_y1.get_normalized_length(shape_bounds.size.y, shape_bounds.position.y)
-					))
-					gradient_texture.fill_to = gradient_transform.xform(Vector2(
-						renderer.attr_x2.get_normalized_length(shape_bounds.size.x, shape_bounds.position.x),
-						renderer.attr_y2.get_normalized_length(shape_bounds.size.y, shape_bounds.position.y)
-					))
+				if renderer.node_name == "linearGradient":
+					gradient_texture.fill = GradientTexture2D.FILL_LINEAR
+					if renderer.attr_gradient_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
+						gradient_texture.fill_from = gradient_transform.xform(Vector2(
+							renderer.attr_x1.get_length(1),
+							renderer.attr_y1.get_length(1)
+						))
+						gradient_texture.fill_to = gradient_transform.xform(Vector2(
+							renderer.attr_x2.get_length(1),
+							renderer.attr_y2.get_length(1)
+						))
+					else: # USER_SPACE_ON_USE
+						var shape_bounds = get_bounding_box()
+						gradient_texture.fill_from = gradient_transform.xform(Vector2(
+							renderer.attr_x1.get_normalized_length(shape_bounds.size.x, shape_bounds.position.x),
+							renderer.attr_y1.get_normalized_length(shape_bounds.size.y, shape_bounds.position.y)
+						))
+						gradient_texture.fill_to = gradient_transform.xform(Vector2(
+							renderer.attr_x2.get_normalized_length(shape_bounds.size.x, shape_bounds.position.x),
+							renderer.attr_y2.get_normalized_length(shape_bounds.size.y, shape_bounds.position.y)
+						))
+				else: # "radialGradient"
+					gradient_texture.fill = GradientTexture2D.FILL_RADIAL
+					if renderer.attr_gradient_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
+						gradient_texture.fill_from = gradient_transform.xform(Vector2(
+							renderer.attr_cx.get_length(1),
+							renderer.attr_cy.get_length(1)
+						))
+						gradient_texture.fill_to = gradient_transform.xform(Vector2(
+							renderer.attr_cx.get_length(1),
+							renderer.attr_cy.get_length(1) + renderer.attr_r.get_length(1)
+						))
+					else: # USER_SPACE_ON_USE
+						var shape_bounds = get_bounding_box()
+						gradient_texture.fill_from = gradient_transform.xform(Vector2(
+							renderer.attr_cx.get_normalized_length(shape_bounds.size.x, shape_bounds.position.x),
+							renderer.attr_cy.get_normalized_length(shape_bounds.size.y, shape_bounds.position.y)
+						))
+						gradient_texture.fill_to = gradient_transform.xform(Vector2(
+							renderer.attr_cx.get_normalized_length(shape_bounds.size.x, shape_bounds.position.x),
+							renderer.attr_cy.get_normalized_length(shape_bounds.size.y, shape_bounds.position.y) +
+							renderer.attr_r.get_normalized_length(shape_bounds.size.x)
+						))
 				gradient_texture.repeat = {
 					SVGValueConstant.PAD: GradientTexture2D.REPEAT_NONE,
 					SVGValueConstant.REPEAT: GradientTexture2D.REPEAT,
 					SVGValueConstant.REFLECT: GradientTexture2D.REPEAT_MIRROR,
 				}[renderer.attr_spread_method]
 				paint.texture = gradient_texture
+				if renderer._is_href_duplicate:
+					renderer.queue_free()
 #				paint.texture = preload("res://icon.png")
 		else:
 			paint.color = attr_paint.color
 	return paint
+
+func resolve_href():
+	return null # override
 
 # Getters / Setters
 
@@ -572,6 +618,7 @@ func _set_attr_fill(fill):
 			attr_fill = SVGPaint.new("#00000000")
 		else:
 			attr_fill = SVGPaint.new(fill)
+	_rerender_prop_cache.erase("fill")
 	apply_props()
 
 func _set_attr_fill_opacity(fill_opacity):
@@ -619,6 +666,7 @@ func _set_attr_stroke(stroke):
 			attr_stroke = SVGPaint.new("#00000000")
 		else:
 			attr_stroke = SVGPaint.new(stroke)
+	_rerender_prop_cache.erase("stroke")
 	apply_props()
 
 func _set_attr_stroke_dasharray(stroke_dasharray):

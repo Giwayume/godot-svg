@@ -3,8 +3,11 @@ class_name SVGAttributeParser
 static func to_snake_case(attribute_name):
 	var camel_case_regex = RegEx.new()
 	camel_case_regex.compile("([A-Z])")
+	var snake_replace_regex = RegEx.new()
+	snake_replace_regex.compile("([\\-:])")
 	attribute_name = camel_case_regex.sub(attribute_name, "_$1", true)
-	attribute_name = attribute_name.to_lower().replace("-", "_")
+	attribute_name = snake_replace_regex.sub(attribute_name.to_lower(), "_", true)
+#	attribute_name = attribute_name.to_lower().replace("-", "_")
 	return attribute_name
 
 # https://www.w3.org/TR/SVG/styling.html#PresentationAttributes
