@@ -232,8 +232,8 @@ func _render_from_scratch():
 	_is_queued_render_from_scratch = false
 	
 	# Cleanup
-	for renderer_name in _renderer_map:
-		_renderer_map[renderer_name].queue_free()
+	for element_resource in _renderer_map:
+		_renderer_map[element_resource].queue_free()
 	_renderer_map = {}
 	_resource_locator_cache = {}
 	

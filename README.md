@@ -27,7 +27,7 @@ This is the most spec-compliant SVG renderer for Godot. Every other SVG-related 
 |:-----|:--------------|:------|
 | svg | SVG Resource | When importing a SVG file, choose "Import As: SVG". If you try to add a SVG imported as "Texture" here, it will not work. Use Sprite instead for that. |
 | fixed_scaling_ratio | float | If the value is 0, the SVG will be redrawn every time the scale changes so jagged edges are not visible. Setting the value above 0 bakes the resolution of the paths so they are not redrawn due to scaling at runtime. A value of 1 means it is drawn to look perfect at 100% view box scale (1:1), and if you zoom in further than that you will see jagged edges. |
-| antialiased | bool | Whether or not to use the Polygon2D's "antialiased" property. It has known issues with translucent shapes, so you may want to turn off in that scenario. |
+| antialiased | bool | Whether or not to use the Polygon2D's "antialiased" property. It has known issues with translucent shapes, so you may want to turn it off in that scenario. |
 
 
 ## Performance Considerations
@@ -112,7 +112,7 @@ Animating styling attributes that cause the shape of an element to change (such 
 | hkern | ![Status](./docs/not_supported_x.png) Will Not Support | Deprecated |
 | image | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | line | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
-| linearGradient | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
+| linearGradient | ![Status](./docs/supported_checkmark.png) Supported | |
 | marker | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | mask | ![Status](./docs/supported_checkmark.png) Supported | |
 | metadata | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
@@ -122,12 +122,12 @@ Animating styling attributes that cause the shape of an element to change (such 
 | pattern | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | polygon | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | polyline | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
-| radialGradient | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
+| radialGradient | ![Status](./docs/supported_checkmark.png) Supported | |
 | rect | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | script | ![Status](./docs/not_supported_x.png) Will Not Support | No use case |
 | set | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | stop | ![Status](./docs/supported_checkmark.png) Supported | |
-| style | ![Status](./docs/partial_support_exclamation.png) Partial Support | Currently element, id, class, descendant selectors are recognized. |
+| style | ![Status](./docs/partial_support_exclamation.png) Partial Support | Currently element, id, class, descendant selectors are recognized |
 | svg | ![Status](./docs/partial_support_exclamation.png) Partial Support | Need to implement: preserveAspectRatio |
 | switch | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | symbol | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |

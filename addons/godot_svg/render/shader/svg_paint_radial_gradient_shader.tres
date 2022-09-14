@@ -1,0 +1,77 @@
+[gd_resource type="Shader" format=2]
+
+[resource]
+code = "shader_type canvas_item;
+
+const float TILING = 1.0;
+
+uniform vec2 texture_size;
+uniform vec2 start_center;
+uniform float start_radius;
+uniform vec2 end_center;
+uniform float end_radius;
+uniform sampler2D gradient;
+uniform int repeat;
+
+vec4 sample_gradient(float position) {
+	if (position > 1.0) {
+		position = 1.0;
+	}
+	if (position < 0.0) {
+		position = 0.0;
+	}
+	return texture(gradient, vec2(position, 0.0));
+}
+
+void fragment() {
+	
+	vec2 center = end_center;
+	vec2 end_point = center + vec2(end_radius, 0.0);
+	vec2 focus = start_center;
+	vec2 coord = UV;
+	float radius = (end_radius - start_radius);
+	float start_radius_applied = start_radius;
+	float ellipse_ratio = texture_size.y / texture_size.x;
+	
+	vec2 axis = end_point - center;
+	float l2 = dot(axis, axis);
+	if (l2 != 0.0) {
+		float d = dot(coord - center, axis) / l2;
+		vec2 proj = center + d * axis;
+		coord = proj - (proj - coord) * ellipse_ratio;
+		
+		float d2 = dot(focus - center, axis) / l2;
+		vec2 proj2 = center + d2 * axis;
+		focus = proj2 - (proj2 - focus) * ellipse_ratio;
+	}
+	
+	float grad_length = 1.0;
+	vec2 diff = focus - center;
+	vec2 ray_dir = normalize(coord - focus);
+	float a = dot(ray_dir, ray_dir);
+	float b = 2.0 * dot(ray_dir, diff);
+	float c = dot(diff, diff) - radius * radius;
+	float disc = b * b - 4.0 * a * c;
+	if (disc >= 0.0) {
+		float t = (-b + sqrt(abs(disc))) / (2.0 * a);
+		vec2 projection = focus + ray_dir * t;
+		grad_length = distance(projection, focus);
+	}
+	else {
+		// Gradient is undefined for this coordinate
+	}
+	
+	float grad = (distance(coord, focus) - start_radius_applied) / grad_length * TILING;
+	if (repeat == 1) { // GradientTexture2D.REPEAT
+		COLOR = sample_gradient(fract(grad));
+	} else if (repeat == 2) { // GradientTexture2D.REPEAT_MIRROR
+		bool is_mirror = mod(grad, 2.0) < 1.0;
+		if (is_mirror) {
+			COLOR = sample_gradient(fract(grad));
+		} else {
+			COLOR = sample_gradient(1.0 - fract(grad));
+		}
+	} else {  // GradientTexture2D.REPEAT_NONE
+		COLOR = sample_gradient(grad);
+	}
+}"

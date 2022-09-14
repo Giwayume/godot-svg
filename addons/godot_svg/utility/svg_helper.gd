@@ -18,9 +18,3 @@ static func array_slice(array: Array, start = null, end = null, step = null):
 	for i in range(start, stop, step):
 		sliced.push_back(array[i])
 	return sliced
-
-static func pow_2_texture_size(size: Vector2):
-	return Vector2(
-		pow(2, ceil(log(size.x) / log(2))),
-		pow(2, ceil(log(size.y) / log(2)))
-	)

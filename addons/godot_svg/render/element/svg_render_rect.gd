@@ -33,10 +33,12 @@ func _draw():
 	var fill_paint = resolve_fill_paint()
 	var fill_color = fill_paint.color
 	var fill_texture = fill_paint.texture
+	var fill_texture_units = fill_paint.texture_units
 	
 	var stroke_paint = resolve_stroke_paint()
 	var stroke_color = stroke_paint.color
 	var stroke_texture = stroke_paint.texture
+	var stroke_texture_units = stroke_paint.texture_units
 	
 	var stroke_width = attr_stroke_width.get_length(inherited_view_box.size.x)
 
@@ -45,10 +47,12 @@ func _draw():
 		"scale_factor": scale_factor,
 		"fill_color": fill_color,
 		"fill_texture": fill_texture,
+		"fill_texture_units": fill_texture_units,
 		"fill_polygon": SVGDrawing.generate_fill_rect_points(position.x, position.y, width, height),
 		"fill_uv": SVGDrawing.generate_fill_rect_uv(position.x, position.y, width, height, fill_texture.get_width()) if fill_texture != null else null,
 		"stroke_color": stroke_color,
 		"stroke_texture": stroke_texture,
+		"stroke_texture_units": stroke_texture_units,
 		"stroke_points": SVGDrawing.generate_stroke_rect_points(position.x, position.y, width, height),
 		"stroke_width": stroke_width,
 		"stroke_closed": true,

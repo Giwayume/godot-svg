@@ -60,7 +60,7 @@
       <stop stop-color="black" offset="0"/>
       <stop stop-color="rgb(255,165,0)" offset="1"/>
     </radialGradient>
-    <radialGradient id="Grad2b" xlink:href="#Grad2a" gradientUnits="userSpaceOnUse" cx="240" cy="190" fx="240" fy="190" r="40"/>
+    <radialGradient id="Grad2b" xlink:href="#Grad2a" gradientUnits="userSpaceOnUse" cx="240" cy="190" fx="240" fy="190" r="40" />
     <rect x="20" y="20" width="440" height="80" fill="url(#Grad2a)"/>
     <text font-size="30" x="20" y="130">Radial gradient.</text>
     <rect x="20" y="150" width="440" height="80" fill="url(#Grad2b)"/>

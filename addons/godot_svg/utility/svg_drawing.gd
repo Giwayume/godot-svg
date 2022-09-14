@@ -83,4 +83,12 @@ static func generate_stroke_ellipse_arc_points(center, radius_x, radius_y, angle
 		points_arc.push_back(center + Vector2(cos(angle_point) * radius_x, sin(angle_point) * radius_y))
 	return points_arc
 
-
+static func generate_texture_uv(polygon: PoolVector2Array, view_box: Rect2, bounding_box: Rect2, texture_size: Vector2, texture_units: String):
+	var top_left = bounding_box.position if texture_units == SVGValueConstant.OBJECT_BOUNDING_BOX else view_box.position
+	var bottom_right = bounding_box.position + bounding_box.size if texture_units == SVGValueConstant.OBJECT_BOUNDING_BOX else view_box.position + view_box.size
+	var uv = PoolVector2Array()
+	for point in polygon:
+		uv.push_back(
+			((point - top_left) / (bottom_right - top_left)) * texture_size
+		)
+	return uv
