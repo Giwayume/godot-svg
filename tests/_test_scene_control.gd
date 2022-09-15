@@ -1,12 +1,23 @@
 extends Node2D
 
 onready var camera = $Camera2D
-var zoom_step = 1.1
+var zoom_step = 1.05
 var mouse_position = null
 var is_panning = false
 
+var zoom_at_step = 1.0
+var zoom_at_point = Vector2()
+var zoom_timer = 0.0
+
 func _ready():
 	mouse_position = get_viewport().get_mouse_position()
+
+func _process(delta):
+	if zoom_timer > 0.0:
+		zoom_timer -= delta
+		_zoom_at_point(zoom_at_step, zoom_at_point)
+		if zoom_timer < 0.0:
+			zoom_timer = 0.0
 
 func _input(event):
 	if event is InputEventMouse:
@@ -19,9 +30,13 @@ func _input(event):
 			if event.is_pressed() and not event.is_echo():
 				mouse_position = event.position
 				if event.button_index == BUTTON_WHEEL_UP:
-					_zoom_at_point(1.0 / zoom_step, mouse_position)
+					zoom_at_step = 1.0 / zoom_step
+					zoom_at_point = mouse_position
+					zoom_timer = 0.15
 				elif event.button_index == BUTTON_WHEEL_DOWN:
-					_zoom_at_point(zoom_step, mouse_position)
+					zoom_at_step = zoom_step
+					zoom_at_point = mouse_position
+					zoom_timer = 0.15
 			if event.button_index == BUTTON_LEFT or event.button_index == BUTTON_MIDDLE:
 				is_panning = event.is_pressed()
 	if event is InputEventKey:

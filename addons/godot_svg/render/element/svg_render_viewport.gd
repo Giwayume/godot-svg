@@ -6,7 +6,7 @@ var attr_preserve_aspect_ratio = {
 		"x": SVGValueConstant.MID,
 		"y": SVGValueConstant.MID,
 	},
-	"meetOrSlice": SVGValueConstant.MEET,
+	"meet_or_slice": SVGValueConstant.MEET,
 } setget _set_attr_preserve_aspect_ratio
 var attr_view_box = SVGValueConstant.NONE setget _set_attr_view_box
 var attr_width = SVGValueConstant.AUTO setget _set_attr_width
@@ -91,7 +91,7 @@ func _set_attr_preserve_aspect_ratio(preserve_aspect_ratio):
 					"x": align_x,
 					"y": align_y,
 				},
-				"meetOrSlice": split[1] if split.length() > 1 else SVGValueConstant.MEET,
+				"meet_or_slice": split[1] if split[1].length() > 1 else SVGValueConstant.MEET,
 			}
 	apply_props()
 

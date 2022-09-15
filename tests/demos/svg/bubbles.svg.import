@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/bubbles.svg-bc45c1c1ca7c49b2645363dc8866a438.gdsvg"
+
+[deps]
+
+source_file="res://tests/demos/svg/bubbles.svg"
+dest_files=[ "res://.import/bubbles.svg-bc45c1c1ca7c49b2645363dc8866a438.gdsvg" ]
+
+[params]
+

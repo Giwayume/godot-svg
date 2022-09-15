@@ -71,7 +71,7 @@ func get_stylesheet():
 							elif element_rule == "*":
 								element_selector.any = true
 								selector_weight += 1
-							else:
+							elif element_rule.strip_edges().length() > 0:
 								element_selector.node_name = element_rule
 								selector_weight += 1
 						element_selectors.push_back(element_selector)
@@ -105,6 +105,7 @@ func get_stylesheet():
 				stylesheet.push_back(current_rule)
 				current_rule = {
 					"selector_paths": [],
+					"selector_weights": [],
 					"declarations": {},
 				}
 				current_prop_name = ""

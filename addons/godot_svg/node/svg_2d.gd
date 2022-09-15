@@ -2,6 +2,7 @@ tool
 extends Node2D
 
 signal viewport_scale_changed(new_scale)
+signal renderers_created()
 
 const SVGResource = preload("../resource/svg_resource.gd")
 const SVGRenderCircle = preload("../render/element/svg_render_circle.gd")
@@ -14,6 +15,7 @@ const SVGRenderLine = preload("../render/element/svg_render_line.gd")
 const SVGRenderLinearGradient = preload("../render/element/svg_render_linear_gradient.gd")
 const SVGRenderMask = preload("../render/element/svg_render_mask.gd")
 const SVGRenderPath = preload("../render/element/svg_render_path.gd")
+const SVGRenderPattern = preload("../render/element/svg_render_pattern.gd")
 const SVGRenderPolyline = preload("../render/element/svg_render_polyline.gd")
 const SVGRenderRadialGradient = preload("../render/element/svg_render_radial_gradient.gd")
 const SVGRenderRect = preload("../render/element/svg_render_rect.gd")
@@ -26,6 +28,7 @@ export(Resource) var svg = null setget _set_svg, _get_svg
 export(float) var fixed_scaling_ratio = 0 setget _set_fixed_scaling_ratio, _get_fixed_scaling_ratio
 export(bool) var antialiased = true setget _set_antialiased, _get_antialiased
 
+var _root_viewport_renderer = null
 var _antialiased = true
 var _is_editor_hint = false
 var _is_queued_render_from_scratch = false
@@ -79,6 +82,7 @@ func _get_svg_element_renderer(node_name):
 		"linearGradient": return SVGRenderLinearGradient
 		"mask": return SVGRenderMask
 		"path": return SVGRenderPath
+		"pattern": return SVGRenderPattern
 		"polyline": return SVGRenderPolyline
 		"radialGradient": return SVGRenderRadialGradient
 		"rect": return SVGRenderRect
@@ -100,6 +104,8 @@ func _create_renderers_recursive(parent, children, render_props = {}):
 		is_in_clip_path = render_props.is_in_clip_path
 	for child in children:
 		var renderer = _get_svg_element_renderer(child.node_name).new()
+		if parent == self:
+			_root_viewport_renderer = renderer
 		renderer.svg_node = self
 		renderer.element_resource = child
 		renderer.node_text = child.text
@@ -234,7 +240,9 @@ func _render_from_scratch():
 	# Cleanup
 	for element_resource in _renderer_map:
 		_renderer_map[element_resource].queue_free()
+	_root_viewport_renderer = null
 	_renderer_map = {}
+	_global_stylesheet = []
 	_resource_locator_cache = {}
 	
 	# Create renderers
@@ -242,6 +250,7 @@ func _render_from_scratch():
 		_create_renderers_recursive(self, [_svg.viewport])
 		if _global_stylesheet.size() > 0:
 			_apply_stylesheet_recursive([_svg.viewport])
+		emit_signal("renderers_created")
 	update()
 
 # Editor

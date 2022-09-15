@@ -1,0 +1,700 @@
+<svg viewBox="-10 10 500 510" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <title>project layout 02</title>
+  <desc>illustration of a publishing architecture:
+    pools filled with content-bubbles, merged in purpose-specific bottles</desc>
+<style type="text/css">
+#BG {
+  fill:#a9ffa9;
+}
+.pools {
+  stroke:#ff4381;
+  stroke-width:2;
+  fill:#ffc1d7;
+}
+.bubbles {
+  stroke:#00c0c0;
+  stroke-width:2;
+  fill:#c0ffff;
+}
+.bottles {
+  stroke:#0185d9;
+  stroke-width:2;
+  fill:#8fd4ff;
+}
+.labels {
+  font-family:Arial;
+}
+#headlabel,
+#bottleslabel {
+  fill:#0185d9
+}
+#poolslabel {
+  fill:#dd014a
+}
+#poolslabelrect {
+  fill:#fef
+}
+#poolslabelrectinvis,
+#bubbleslabelrectinvis,
+#bottleslabelrectinvis {
+  fill:#ccc;
+  opacity:0
+}
+#bubbleslabel {
+  fill:#099
+}
+#bubbleslabelrect {
+  fill:#eff
+}
+#bottleslabelrect {
+  fill:#dff
+}
+#bodylabel {
+  fill:#0668a6
+}
+.footer {
+  fill:#060
+}
+.textrect {
+  stroke:#888;
+  stroke-width:2;
+  fill:#eee
+}
+#poolsmaxbox {
+  stroke-width:1.5;
+}
+.text {
+  stroke-width:0;
+  font-family:Arial;
+  font-weight:300;
+  fill:#444;
+}
+.cross {
+  stroke:#888;
+  stroke-width:3;
+  stroke-linejoin:round;
+  stroke-miterlimit:0;
+  stroke-linecap:round
+}
+#aboutpools,
+#aboutbubbles,
+#aboutbottles {
+  visibility:hidden
+}
+.link {
+  fill:#0185d9
+}
+</style>
+  <defs>
+    <g>
+      <animate xlink:href="#anibubble01" id="ani01" attributeName="cx" begin="anibubble01.click;bubble01.click;body04.click" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="112.5; 312" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble01" begin="ani01.begin" attributeName="cy" dur="4s" to="399"/>
+      <animate xlink:href="#anibubble01" begin="ani01.begin" attributeName="rx" dur="4s" to="57"/>
+      <animate xlink:href="#anibubble01" begin="ani01.begin" attributeName="ry" dur="4s" to="70"/>
+      <animate xlink:href="#anibubble01" begin="ani01.begin" attributeType="CSS" attributeName="fill" dur="4s" values="#c0ffff;#8fd4ff"/>
+      <animate xlink:href="#anibubble01" begin="ani01.begin" attributeType="CSS" attributeName="stroke" dur="4s" from="#00c0c0" to="#0185d9"/>
+    </g>
+    <g>
+      <animate xlink:href="#anibubble02" id="ani02" attributeName="cx" begin="anibubble02.click;bubble02.click;body02.click" dur="4s" calcMode="spline" keySplines=".98 0.04  .84 .96" values="127; 174" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble02" begin="ani02.begin" attributeName="cy" dur="4s" to="390"/>
+      <animate xlink:href="#anibubble02" begin="ani02.begin" attributeName="rx" dur="4s" to="30"/>
+      <animate xlink:href="#anibubble02" begin="ani02.begin" attributeName="ry" dur="4s" to="56"/>
+      <animate xlink:href="#anibubble02" begin="ani02.begin" attributeType="CSS" attributeName="fill" dur="4s" from="#c0ffff" to="#8fd4ff"/>
+      <animate xlink:href="#anibubble02" begin="ani02.begin" attributeType="CSS" attributeName="stroke" dur="4s" from="#00c0c0" to="#0185d9"/>
+    </g>
+    <g>
+      <animate xlink:href="#anibubble03" id="ani03" attributeName="cx" begin="anibubble03.click;bubble03.click;body01.click" dur="4s" calcMode="spline" keySplines="0.09 .82  .97 .12" values="146; 87.5" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble03" attributeName="cy" begin="ani03.begin" dur="4s" calcMode="spline" keySplines="0.09 .82  .97 .12" values="146; 337" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble03" attributeName="rx" begin="ani03.begin" dur="4s" to="51.5"/>
+      <animate xlink:href="#anibubble03" attributeName="ry" begin="ani03.begin" dur="4s" to="69"/>
+      <animate xlink:href="#anibubble03" attributeType="CSS" attributeName="fill" begin="ani03.begin" dur="4s" from="#c0ffff" to="#8fd4ff"/>
+      <animate xlink:href="#anibubble03" attributeType="CSS" attributeName="stroke" begin="ani03.begin" dur="4s" from="#00c0c0" to="#0185d9"/>
+    </g>
+    <g>
+      <animate xlink:href="#anibubble04" id="ani04" attributeName="cx" begin="anibubble04.click;bubble04.click" dur="4s" calcMode="spline" keySplines="0 1  1 0" values="193; 242.5" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble04" attributeName="cy" begin="ani04.begin" dur="4s" calcMode="spline" keySplines=".58 0  .36 1" values="124; 378" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble04" attributeName="rx" begin="ani04.begin" dur="4s" to="32.5"/>
+      <animate xlink:href="#anibubble04" attributeName="ry" begin="ani04.begin" dur="4s" to="47"/>
+      <animate xlink:href="#anibubble04" attributeType="CSS" attributeName="fill" begin="ani04.begin" dur="4s" from="#c0ffff" to="#8fd4ff"/>
+      <animate xlink:href="#anibubble04" attributeType="CSS" attributeName="stroke" begin="ani04.begin" dur="4s" from="#00c0c0" to="#0185d9"/>
+    </g>
+    <g>
+      <animate xlink:href="#anibubble05" id="ani05" attributeName="cx" begin="anibubble05.click;bubble05.click;body05.click" dur="4s" calcMode="spline" keySplines=".98 0  .84 1" values="213; 426.5" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble05" attributeName="cy" begin="ani05.begin" dur="4s" calcMode="spline" keySplines=".47 0  .56 .99" values="145; 416.5" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble05" attributeName="rx" begin="ani05.begin" dur="4s" to="43.5"/>
+      <animate xlink:href="#anibubble05" attributeName="ry" begin="ani05.begin" dur="4s" to="60.5"/>
+      <animate xlink:href="#anibubble05" attributeType="CSS" attributeName="fill" begin="ani05.begin" dur="4s" from="#c0ffff" to="#8fd4ff"/>
+      <animate xlink:href="#anibubble05" attributeType="CSS" attributeName="stroke" begin="ani05.begin" dur="4s" from="#00c0c0" to="#0185d9"/>
+    </g>
+    <g>
+      <animate xlink:href="#anibubble06" id="ani06" attributeName="cx" begin="anibubble06.click;bubble06.click" dur="4s" calcMode="spline" keySplines=".55 0  .71 .99" values="251.5; 167.5" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble06" attributeName="cy" begin="ani06.begin" dur="4s" calcMode="spline" keySplines="1 0 .5 .5" values="131; 337.5" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble06" attributeName="rx" begin="ani06.begin" dur="4s" to="16.5"/>
+      <animate xlink:href="#anibubble06" attributeName="ry" begin="ani06.begin" dur="4s" to="20.5"/>
+      <animate xlink:href="#anibubble06" attributeType="CSS" attributeName="fill" begin="ani06.begin" dur="4s" from="#c0ffff" to="#8fd4ff"/>
+      <animate xlink:href="#anibubble06" attributeType="CSS" attributeName="stroke" begin="ani06.begin" dur="4s" from="#00c0c0" to="#0185d9"/>
+    </g>
+    <g>
+      <animate xlink:href="#anibubble07" id="ani07" attributeName="cx" begin="anibubble07.click;bubble07.click;body02.click" dur="4s" calcMode="spline" keySplines=".82 0.09  .12 .97" values="255; 174" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble07" attributeName="cy" begin="ani07.begin" dur="4s" calcMode="spline" keySplines=".57 0  0.08 .34" values="116.5; 390" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble07" attributeName="rx" begin="ani07.begin" dur="4s" to="30"/>
+      <animate xlink:href="#anibubble07" attributeName="ry" begin="ani07.begin" dur="4s" to="56"/>
+      <animate xlink:href="#anibubble07" attributeType="CSS" attributeName="fill" begin="ani07.begin" dur="4s" from="#c0ffff" to="#8fd4ff"/>
+      <animate xlink:href="#anibubble07" attributeType="CSS" attributeName="stroke" begin="ani07.begin" dur="4s" from="#00c0c0" to="#0185d9"/>
+    </g>
+    <g>
+      <animate xlink:href="#anibubble08" id="ani08" attributeName="cx" begin="anibubble08.click;bubble08.click;body04.click" dur="4s" calcMode="spline" keySplines="0.09 .82  .97 .12" values="284.5; 312" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble08" attributeName="cy" begin="ani08.begin" dur="4s" calcMode="spline" keySplines="0.09 .82  .97 .12" values="166; 399" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble08" attributeName="rx" begin="ani08.begin" dur="4s" to="57"/>
+      <animate xlink:href="#anibubble08" attributeName="ry" begin="ani08.begin" dur="4s" to="70"/>
+      <animate xlink:href="#anibubble08" attributeType="CSS" attributeName="fill" begin="ani08.begin" dur="4s" from="#c0ffff" to="#8fd4ff"/>
+      <animate xlink:href="#anibubble08" attributeType="CSS" attributeName="stroke" begin="ani08.begin" dur="4s" from="#00c0c0" to="#0185d9"/>
+    </g>
+    <g>
+      <animate xlink:href="#anibubble09" id="ani09" attributeName="cx" begin="anibubble09.click;bubble09.click" dur="4s" calcMode="spline" keySplines="1 0  .22 .97" values="335.5; 419.5" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble09" attributeName="cy" begin="ani09.begin" dur="4s" calcMode="spline" keySplines="1 0  .76 1" values="139; 349" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble09" attributeName="rx" begin="ani09.begin" dur="4s" to="36.5"/>
+      <animate xlink:href="#anibubble09" attributeName="ry" begin="ani09.begin" dur="4s" to="35"/>
+      <animate xlink:href="#anibubble09" attributeType="CSS" attributeName="fill" begin="ani09.begin" dur="4s" from="#c0ffff" to="#8fd4ff"/>
+      <animate xlink:href="#anibubble09" attributeType="CSS" attributeName="stroke" begin="ani09.begin" dur="4s" from="#00c0c0" to="#0185d9"/>
+    </g>
+    <g>
+      <animate xlink:href="#anibubble10" id="ani10" attributeName="cx" begin="anibubble10.click;bubble10.click;head01.click" dur="4s" calcMode="spline" keySplines="1 0  .67 1" values="344.5; 66.5" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble10" attributeName="cy" begin="ani10.begin" dur="4s" calcMode="spline" keySplines=".49 0  0 .39" values="192; 284.5" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble10" attributeName="rx" begin="ani10.begin" dur="4s" to="26.5"/>
+      <animate xlink:href="#anibubble10" attributeName="ry" begin="ani10.begin" dur="4s" to="28.5"/>
+      <animate xlink:href="#anibubble10" attributeType="CSS" attributeName="fill" begin="ani10.begin" dur="4s" from="#c0ffff" to="#8fd4ff"/>
+      <animate xlink:href="#anibubble10" attributeType="CSS" attributeName="stroke" begin="ani10.begin" dur="4s" from="#00c0c0" to="#0185d9"/>
+    </g>
+    <g>
+      <animate xlink:href="#anibubble10" id="ani11" attributeName="cx" begin="head02.click" dur="3s" calcMode="spline" keySplines="1 0  .67 1" values="344.5; 167.5" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble10" attributeName="cy" begin="ani11.begin" dur="3s" calcMode="spline" keySplines=".49 0  0 .39" values="192; 337.5" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble10" attributeName="rx" begin="ani11.begin" dur="3s" to="16.5"/>
+      <animate xlink:href="#anibubble10" attributeName="ry" begin="ani11.begin" dur="3s" to="20.5"/>
+      <animate xlink:href="#anibubble10" attributeType="CSS" attributeName="fill" begin="ani11.begin" dur="3s" from="#c0ffff" to="#8fd4ff"/>
+      <animate xlink:href="#anibubble10" attributeType="CSS" attributeName="stroke" begin="ani11.begin" dur="3s" from="#00c0c0" to="#0185d9"/>
+    </g>
+    <g>
+      <animate xlink:href="#anibubble11" id="ani12" attributeName="cx" begin="anibubble11.click;bubble11.click;body03.click" dur="4s" calcMode="spline" keySplines="0.09 .82  .97 .12" values="351; 242.5" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble11" attributeName="cy" begin="ani12.begin" dur="4s" calcMode="spline" keySplines=".8 .39  .36 .67" values="122.5; 378" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble11" attributeName="rx" begin="ani12.begin" dur="4s" to="32.5"/>
+      <animate xlink:href="#anibubble11" attributeName="ry" begin="ani12.begin" dur="4s" to="47"/>
+      <animate xlink:href="#anibubble11" attributeType="CSS" attributeName="fill" begin="ani12.begin" dur="4s" from="#c0ffff" to="#8fd4ff"/>
+      <animate xlink:href="#anibubble11" attributeType="CSS" attributeName="stroke" begin="ani12.begin" dur="4s" from="#00c0c0" to="#0185d9"/>
+    </g>
+    <g>
+      <animate xlink:href="#anibubble12" id="ani13" attributeName="cx" begin="anibubble12.click;bubble12.click;head03.click" dur="4s" calcMode="spline" keySplines="0.09 .82  .97 .12" values="377; 225.5" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble12" attributeName="cy" begin="ani13.begin" dur="4s" calcMode="spline" keySplines="0.09 .82  .97 .12" values="167; 326" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble12" attributeName="rx" begin="ani13.begin" dur="4s" to="20.5"/>
+      <animate xlink:href="#anibubble12" attributeName="ry" begin="ani13.begin" dur="4s" to="23"/>
+      <animate xlink:href="#anibubble12" attributeType="CSS" attributeName="fill" begin="ani13.begin" dur="4s" from="#c0ffff" to="#8fd4ff"/>
+      <animate xlink:href="#anibubble12" attributeType="CSS" attributeName="stroke" begin="ani13.begin" dur="4s" from="#00c0c0" to="#0185d9"/>
+    </g>
+    <g>
+      <animate xlink:href="#anibubble13" id="ani14" attributeName="cx" begin="anibubble13.click;bubble13.click;body02.click" dur="4s" calcMode="spline" keySplines="0.09 .82  .97 .12" values="383.5; 174" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble13" attributeName="cy" begin="ani14.begin" dur="4s" calcMode="spline" keySplines="0.09 .82  .97 .12" values="141; 390" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble13" attributeName="rx" begin="ani14.begin" dur="4s" to="30"/>
+      <animate xlink:href="#anibubble13" attributeName="ry" begin="ani14.begin" dur="4s" to="56"/>
+      <animate xlink:href="#anibubble13" attributeType="CSS" attributeName="fill" begin="ani14.begin" dur="4s" from="#c0ffff" to="#8fd4ff"/>
+      <animate xlink:href="#anibubble13" attributeType="CSS" attributeName="stroke" begin="ani14.begin" dur="4s" from="#00c0c0" to="#0185d9"/>
+    </g>
+    <g>
+      <animate xlink:href="#anibubble14" id="ani15" attributeName="cx" begin="anibubble14.click;bubble14.click;head04.click" dur="4s" calcMode="spline" keySplines="0.09 .82  .97 .12" values="386; 306" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble14" attributeName="cy" begin="ani15.begin" dur="4s" calcMode="spline" keySplines="0.09 .82  .97 .12" values="191.5; 326" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble14" attributeName="rx" begin="ani15.begin" dur="4s" to="34"/>
+      <animate xlink:href="#anibubble14" attributeName="ry" begin="ani15.begin" dur="4s" to="24"/>
+      <animate xlink:href="#anibubble14" attributeType="CSS" attributeName="fill" begin="ani15.begin" dur="4s" from="#c0ffff" to="#8fd4ff"/>
+      <animate xlink:href="#anibubble14" attributeType="CSS" attributeName="stroke" begin="ani15.begin" dur="4s" from="#00c0c0" to="#0185d9"/>
+    </g>
+    <g>
+      <animate xlink:href="#anibubble14" id="ani16" attributeName="cx" begin="head05.click" dur="3s" calcMode="spline" keySplines="0.09 .82  .97 .12" values="386; 419.5" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble14" attributeName="cy" begin="ani16.begin" dur="3s" calcMode="spline" keySplines="0.09 .82  .97 .12" values="191.5; 349" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble14" attributeName="rx" begin="ani16.begin" dur="3s" to="36.5"/>
+      <animate xlink:href="#anibubble14" attributeName="ry" begin="ani16.begin" dur="3s" to="35"/>
+      <animate xlink:href="#anibubble14" attributeType="CSS" attributeName="fill" begin="ani16.begin" dur="3s" from="#c0ffff" to="#8fd4ff"/>
+      <animate xlink:href="#anibubble14" attributeType="CSS" attributeName="stroke" begin="ani16.begin" dur="3s" from="#00c0c0" to="#0185d9"/>
+    </g>
+    <g>
+      <animate xlink:href="#anibubble15" id="ani17" attributeName="cx" begin="anibubble15.click;bubble15.click;head01.click" dur="4s" calcMode="spline" keySplines="0.09 .82  .97 .12" values="423.5; 66.5" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble15" attributeName="cy" begin="ani17.begin" dur="4s" calcMode="spline" keySplines="0.09 .82  .97 .12" values="145.5; 284.5" keyTimes="0; 1"/>
+      <animate xlink:href="#anibubble15" attributeName="rx" begin="ani17.begin" dur="4s" to="26.5"/>
+      <animate xlink:href="#anibubble15" attributeName="ry" begin="ani17.begin" dur="4s" to="28.5"/>
+      <animate xlink:href="#anibubble15" attributeType="CSS" attributeName="fill" begin="ani17.begin" dur="4s" from="#c0ffff" to="#8fd4ff"/>
+      <animate xlink:href="#anibubble15" attributeType="CSS" attributeName="stroke" begin="ani17.begin" dur="4s" from="#00c0c0" to="#0185d9"/>
+    </g>
+    <g>
+      <animate id="aboutpoolsminAni" xlink:href="#poolsrect" attributeName="x" fill="freeze" begin="poolsminrect.click;poolsminline.click" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="190; 130" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsrect" attributeName="y" fill="freeze" begin="aboutpoolsminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="90; 460" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsrect" attributeName="width" fill="freeze" begin="aboutpoolsminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="230; 60" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsrect" attributeName="height" fill="freeze" begin="aboutpoolsminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="75; 40" keyTimes="0; 1"/>
+      <animate xlink:href="#poolstext00" attributeName="x" fill="freeze" begin="aboutpoolsminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="200; 140" keyTimes="0; 1"/>
+      <animate xlink:href="#poolstext00" attributeName="y" fill="freeze" begin="aboutpoolsminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="118; 494" keyTimes="0; 1"/>
+      <animate xlink:href="#poolstext01" attributeName="x" fill="freeze" begin="aboutpoolsminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="200; 140" keyTimes="0; 1"/>
+      <animate xlink:href="#poolstext01" attributeName="y" fill="freeze" begin="aboutpoolsminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="133; 475" keyTimes="0; 1"/>
+      <animate xlink:href="#poolstext01" attributeName="font-size" fill="freeze" calcMode="spline" keySplines=".74 .22  .27 .82" begin="aboutpoolsminAni.begin" dur="1s" values="12; 0"/>
+      <animate xlink:href="#poolstext02" attributeName="x" fill="freeze" begin="aboutpoolsminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="200; 140" keyTimes="0; 1"/>
+      <animate xlink:href="#poolstext02" attributeName="y" fill="freeze" begin="aboutpoolsminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="148; 475" keyTimes="0; 1"/>
+      <animate xlink:href="#poolstext02" attributeName="font-size" fill="freeze" calcMode="spline" keySplines=".74 .22  .27 .82" begin="aboutpoolsminAni.begin" dur="1s" values="12; 0"/>
+      <animate xlink:href="#poolscrossrect" attributeName="x" fill="freeze" begin="aboutpoolsminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="390; 164" keyTimes="0; 1"/>
+      <animate xlink:href="#poolscrossrect" attributeName="y" fill="freeze" begin="aboutpoolsminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="100; 466" keyTimes="0; 1"/>
+      <animate xlink:href="#poolscross01" attributeName="x1" fill="freeze" begin="aboutpoolsminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="394; 168" keyTimes="0; 1"/>
+      <animate xlink:href="#poolscross01" attributeName="y1" fill="freeze" begin="aboutpoolsminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="112; 478" keyTimes="0; 1"/>
+      <animate xlink:href="#poolscross01" attributeName="x2" fill="freeze" begin="aboutpoolsminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="402; 176" keyTimes="0; 1"/>
+      <animate xlink:href="#poolscross01" attributeName="y2" fill="freeze" begin="aboutpoolsminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="104; 470" keyTimes="0; 1"/>
+      <animate xlink:href="#poolscross02" attributeName="x1" fill="freeze" begin="aboutpoolsminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="394; 168" keyTimes="0; 1"/>
+      <animate xlink:href="#poolscross02" attributeName="y1" fill="freeze" begin="aboutpoolsminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="104; 470" keyTimes="0; 1"/>
+      <animate xlink:href="#poolscross02" attributeName="x2" fill="freeze" begin="aboutpoolsminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="402; 176" keyTimes="0; 1"/>
+      <animate xlink:href="#poolscross02" attributeName="y2" fill="freeze" begin="aboutpoolsminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="112; 478" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsminrect" attributeName="x" fill="freeze" begin="aboutpoolsminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="366; 140" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsminrect" attributeName="y" fill="freeze" begin="aboutpoolsminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="100; 466" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsminrect" attributeName="width" fill="freeze" begin="aboutpoolsminAni.begin" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="16; 0" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsminrect" attributeName="height" fill="freeze" begin="aboutpoolsminAni.begin" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="16; 0" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsminrect" attributeName="stroke-width" fill="freeze" begin="aboutpoolsminAni.begin" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="2; 0" keyTimes="0; 1"/>
+      <set xlink:href="#poolsminline" attributeName="stroke-width" fill="freeze" begin="aboutpoolsminAni.begin" to="0"/>
+      <set xlink:href="#poolsminline" attributeName="x2" fill="freeze" begin="aboutpoolsminAni.begin" to="370"/>
+      <animate xlink:href="#poolsmaxrect" attributeName="x" fill="freeze" begin="aboutpoolsminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="356; 140" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsmaxrect" attributeName="y" fill="freeze" begin="aboutpoolsminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="100; 466" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsmaxrect" attributeName="width" fill="freeze" begin="aboutpoolsminAni.begin+2" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="0; 16" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsmaxrect" attributeName="height" fill="freeze" begin="aboutpoolsminAni.begin+2" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="0; 16" keyTimes="0; 1"/>
+      <set xlink:href="#poolsmaxrect" attributeName="stroke-width" fill="freeze" begin="aboutpoolsminAni.begin+2" to="2"/>
+      <animate xlink:href="#poolsmaxbox" attributeName="x" fill="freeze" begin="aboutpoolsminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="359; 143" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsmaxbox" attributeName="y" fill="freeze" begin="aboutpoolsminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="103; 469" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsmaxbox" attributeName="width" fill="freeze" begin="aboutpoolsminAni.begin+2" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="0; 10" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsmaxbox" attributeName="height" fill="freeze" begin="aboutpoolsminAni.begin+2" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="0; 10" keyTimes="0; 1"/>
+      <set xlink:href="#poolsmaxbox" attributeName="stroke-width" fill="freeze" begin="aboutpoolsminAni.begin+2" to="1.5"/>
+    </g>
+    <g>
+      <animate id="aboutpoolsmaxAni" xlink:href="#poolsrect" attributeName="x" fill="freeze" begin="poolsmaxrect.click;poolsmaxbox.click" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="130; 190" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsrect" attributeName="y" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="460; 90" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsrect" attributeName="width" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="60; 230" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsrect" attributeName="height" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="40; 75" keyTimes="0; 1"/>
+      <animate xlink:href="#poolstext00" attributeName="x" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="140; 200" keyTimes="0; 1"/>
+      <animate xlink:href="#poolstext00" attributeName="y" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="494; 118" keyTimes="0; 1"/>
+      <animate xlink:href="#poolstext01" attributeName="x" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="140; 200" keyTimes="0; 1"/>
+      <animate xlink:href="#poolstext01" attributeName="y" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="475; 133" keyTimes="0; 1"/>
+      <animate xlink:href="#poolstext01" attributeName="font-size" fill="freeze" calcMode="spline" keySplines=".74 .22  .27 .82" begin="aboutpoolsmaxAni.begin+3s" dur="1s" values="0; 12"/>
+      <animate xlink:href="#poolstext02" attributeName="x" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="140; 200" keyTimes="0; 1"/>
+      <animate xlink:href="#poolstext02" attributeName="y" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="475; 148" keyTimes="0; 1"/>
+      <animate xlink:href="#poolstext02" attributeName="font-size" fill="freeze" calcMode="spline" keySplines=".74 .22  .27 .82" begin="aboutpoolsmaxAni.begin+3s" dur="1s" values="0; 12"/>
+      <animate xlink:href="#poolscrossrect" attributeName="x" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="164; 390" keyTimes="0; 1"/>
+      <animate xlink:href="#poolscrossrect" attributeName="y" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="466; 100" keyTimes="0; 1"/>
+      <animate xlink:href="#poolscross01" attributeName="x1" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="168; 394" keyTimes="0; 1"/>
+      <animate xlink:href="#poolscross01" attributeName="y1" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="478; 112" keyTimes="0; 1"/>
+      <animate xlink:href="#poolscross01" attributeName="x2" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="176; 402" keyTimes="0; 1"/>
+      <animate xlink:href="#poolscross01" attributeName="y2" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="470; 104" keyTimes="0; 1"/>
+      <animate xlink:href="#poolscross02" attributeName="x1" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="168; 394" keyTimes="0; 1"/>
+      <animate xlink:href="#poolscross02" attributeName="y1" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="470; 104" keyTimes="0; 1"/>
+      <animate xlink:href="#poolscross02" attributeName="x2" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="176; 402" keyTimes="0; 1"/>
+      <animate xlink:href="#poolscross02" attributeName="y2" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="478; 112" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsminrect" attributeName="x" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="140; 366" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsminrect" attributeName="y" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="466; 100" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsminrect" attributeName="width" fill="freeze" begin="aboutpoolsmaxAni.begin+2" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="0; 16" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsminrect" attributeName="height" fill="freeze" begin="aboutpoolsmaxAni.begin+2" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="0; 16" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsminrect" attributeName="stroke-width" fill="freeze" begin="aboutpoolsmaxAni.begin+2" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="0; 2" keyTimes="0; 1"/>
+      <set xlink:href="#poolsminline" attributeName="stroke-width" fill="freeze" begin="aboutpoolsmaxAni.begin+4s" to="3"/>
+      <set xlink:href="#poolsminline" attributeName="x2" fill="freeze" begin="aboutpoolsmaxAni.begin+4s" to="378"/>
+      <animate xlink:href="#poolsmaxrect" attributeName="x" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="140; 356" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsmaxrect" attributeName="y" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="466; 100" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsmaxrect" attributeName="width" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="16; 0" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsmaxrect" attributeName="height" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="16; 0" keyTimes="0; 1"/>
+      <set xlink:href="#poolsmaxrect" attributeName="stroke-width" fill="freeze" begin="aboutpoolsmaxAni.begin+3s" to="0"/>
+      <animate xlink:href="#poolsmaxbox" attributeName="x" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="143; 359" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsmaxbox" attributeName="y" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="469; 103" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsmaxbox" attributeName="width" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="10; 0" keyTimes="0; 1"/>
+      <animate xlink:href="#poolsmaxbox" attributeName="height" fill="freeze" begin="aboutpoolsmaxAni.begin" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="10; 0" keyTimes="0; 1"/>
+      <set xlink:href="#poolsmaxbox" attributeName="stroke-width" fill="freeze" begin="aboutpoolsmaxAni.begin+3s" to="0"/>
+    </g>
+    <g>
+      <animate id="aboutbubblesminAni" xlink:href="#bubblesrect" attributeName="x" fill="freeze" begin="bubblesminrect.click;bubblesminline.click" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="160; 200" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesrect" attributeName="y" fill="freeze" begin="aboutbubblesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="130; 460" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesrect" attributeName="width" fill="freeze" begin="aboutbubblesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="220; 70" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesrect" attributeName="height" fill="freeze" begin="aboutbubblesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="75; 40" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblestext00" attributeName="x" fill="freeze" begin="aboutbubblesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="170; 210" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblestext00" attributeName="y" fill="freeze" begin="aboutbubblesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="158; 494" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblestext01" attributeName="x" fill="freeze" begin="aboutbubblesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="170; 210" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblestext01" attributeName="y" fill="freeze" begin="aboutbubblesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="173; 475" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblestext01" attributeName="font-size" fill="freeze" calcMode="spline" keySplines=".74 .22  .27 .82" begin="aboutbubblesminAni.begin" dur="1s" values="12; 0"/>
+      <animate xlink:href="#bubblestext02" attributeName="x" fill="freeze" begin="aboutbubblesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="170; 210" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblestext02" attributeName="y" fill="freeze" begin="aboutbubblesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="188; 475" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblestext02" attributeName="font-size" fill="freeze" calcMode="spline" keySplines=".74 .22  .27 .82" begin="aboutbubblesminAni.begin" dur="1s" values="12; 0"/>
+      <animate xlink:href="#bubblescrossrect" attributeName="x" fill="freeze" begin="aboutbubblesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="350; 239" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblescrossrect" attributeName="y" fill="freeze" begin="aboutbubblesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="140; 466" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblescross01" attributeName="x1" fill="freeze" begin="aboutbubblesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="354; 243" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblescross01" attributeName="y1" fill="freeze" begin="aboutbubblesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="152; 478" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblescross01" attributeName="x2" fill="freeze" begin="aboutbubblesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="362; 251" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblescross01" attributeName="y2" fill="freeze" begin="aboutbubblesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="144; 470" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblescross02" attributeName="x1" fill="freeze" begin="aboutbubblesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="354; 243" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblescross02" attributeName="y1" fill="freeze" begin="aboutbubblesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="144; 470" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblescross02" attributeName="x2" fill="freeze" begin="aboutbubblesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="362; 251" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblescross02" attributeName="y2" fill="freeze" begin="aboutbubblesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="152; 478" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesminrect" attributeName="x" fill="freeze" begin="aboutbubblesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="326; 215" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesminrect" attributeName="y" fill="freeze" begin="aboutbubblesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="140; 466" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesminrect" attributeName="width" fill="freeze" begin="aboutbubblesminAni.begin" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="16; 0" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesminrect" attributeName="height" fill="freeze" begin="aboutbubblesminAni.begin" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="16; 0" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesminrect" attributeName="stroke-width" fill="freeze" begin="aboutbubblesminAni.begin" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="2; 0" keyTimes="0; 1"/>
+      <set xlink:href="#bubblesminline" attributeName="stroke-width" fill="freeze" begin="aboutbubblesminAni.begin" to="0"/>
+      <set xlink:href="#bubblesminline" attributeName="x2" fill="freeze" begin="aboutbubblesminAni.begin" to="330"/>
+      <animate xlink:href="#bubblesmaxrect" attributeName="x" fill="freeze" begin="aboutbubblesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="326; 215" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesmaxrect" attributeName="y" fill="freeze" begin="aboutbubblesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="140; 466" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesmaxrect" attributeName="width" fill="freeze" begin="aboutbubblesminAni.begin+2" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="0; 16" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesmaxrect" attributeName="height" fill="freeze" begin="aboutbubblesminAni.begin+2" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="0; 16" keyTimes="0; 1"/>
+      <set xlink:href="#bubblesmaxrect" attributeName="stroke-width" fill="freeze" begin="aboutbubblesminAni.begin+2" to="2"/>
+      <animate xlink:href="#bubblesmaxbox" attributeName="x" fill="freeze" begin="aboutbubblesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="329; 218" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesmaxbox" attributeName="y" fill="freeze" begin="aboutbubblesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="143; 469" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesmaxbox" attributeName="width" fill="freeze" begin="aboutbubblesminAni.begin+2" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="0; 10" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesmaxbox" attributeName="height" fill="freeze" begin="aboutbubblesminAni.begin+2" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="0; 10" keyTimes="0; 1"/>
+      <set xlink:href="#bubblesmaxbox" attributeName="stroke-width" fill="freeze" begin="aboutbubblesminAni.begin+2" to="1.5"/>
+    </g>
+    <g>
+      <animate id="aboutbubblesmaxAni" xlink:href="#bubblesrect" attributeName="x" fill="freeze" begin="bubblesmaxrect.click;bubblesmaxbox.click" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="200; 160" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesrect" attributeName="y" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="460; 130" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesrect" attributeName="width" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="70; 220" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesrect" attributeName="height" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="40; 75" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblestext00" attributeName="x" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="210; 170" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblestext00" attributeName="y" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="494; 158" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblestext01" attributeName="x" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="210; 170" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblestext01" attributeName="y" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="475; 173" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblestext01" attributeName="font-size" fill="freeze" calcMode="spline" keySplines=".74 .22  .27 .82" begin="aboutbubblesmaxAni.begin+3" dur="1s" values="0; 12"/>
+      <animate xlink:href="#bubblestext02" attributeName="x" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="210; 170" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblestext02" attributeName="y" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="475; 188" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblestext02" attributeName="font-size" fill="freeze" calcMode="spline" keySplines=".74 .22  .27 .82" begin="aboutbubblesmaxAni.begin+3" dur="1s" values="0; 12"/>
+      <animate xlink:href="#bubblescrossrect" attributeName="x" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="239; 350" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblescrossrect" attributeName="y" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="466; 140" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblescross01" attributeName="x1" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="243; 354" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblescross01" attributeName="y1" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="478; 152" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblescross01" attributeName="x2" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="251; 362" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblescross01" attributeName="y2" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="470; 144" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblescross02" attributeName="x1" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="243; 354" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblescross02" attributeName="y1" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="470; 144" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblescross02" attributeName="x2" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="251; 362" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblescross02" attributeName="y2" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="478; 152" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesminrect" attributeName="x" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="215; 326" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesminrect" attributeName="y" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="466; 140" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesminrect" attributeName="width" fill="freeze" begin="aboutbubblesmaxAni.begin+2" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="0; 16" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesminrect" attributeName="height" fill="freeze" begin="aboutbubblesmaxAni.begin+2" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="0; 16" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesminrect" attributeName="stroke-width" fill="freeze" begin="aboutbubblesmaxAni.begin+2" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="0; 2" keyTimes="0; 1"/>
+      <set xlink:href="#bubblesminline" attributeName="stroke-width" fill="freeze" begin="aboutbubblesmaxAni.begin+4" to="3"/>
+      <set xlink:href="#bubblesminline" attributeName="x2" fill="freeze" begin="aboutbubblesmaxAni.begin+4" to="338"/>
+      <animate xlink:href="#bubblesmaxrect" attributeName="x" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="215; 326" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesmaxrect" attributeName="y" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="466; 140" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesmaxrect" attributeName="width" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="16; 0" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesmaxrect" attributeName="height" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="16; 0" keyTimes="0; 1"/>
+      <set xlink:href="#bubblesmaxrect" attributeName="stroke-width" fill="freeze" begin="aboutbubblesmaxAni.begin+1.5" to="0"/>
+      <animate xlink:href="#bubblesmaxbox" attributeName="x" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="218; 329" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesmaxbox" attributeName="y" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="469; 143" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesmaxbox" attributeName="width" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="10; 0" keyTimes="0; 1"/>
+      <animate xlink:href="#bubblesmaxbox" attributeName="height" fill="freeze" begin="aboutbubblesmaxAni.begin" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="10; 0" keyTimes="0; 1"/>
+      <set xlink:href="#bubblesmaxbox" attributeName="stroke-width" fill="freeze" begin="aboutbubblesmaxAni.begin+1.5" to="0"/>
+    </g>
+    <g>
+      <animate id="aboutbottlesminAni" xlink:href="#bottlesrect" attributeName="x" fill="freeze" begin="bottlesminrect.click;bottlesminline.click" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="160; 280" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesrect" attributeName="y" fill="freeze" begin="aboutbottlesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="200; 460" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesrect" attributeName="width" fill="freeze" begin="aboutbottlesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="220; 70" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesrect" attributeName="height" fill="freeze" begin="aboutbottlesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="75; 40" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlestext00" attributeName="x" fill="freeze" begin="aboutbottlesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="170; 292" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlestext00" attributeName="y" fill="freeze" begin="aboutbottlesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="228; 494" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlestext01" attributeName="x" fill="freeze" begin="aboutbottlesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="170; 290" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlestext01" attributeName="y" fill="freeze" begin="aboutbottlesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="243; 475" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlestext01" attributeName="font-size" fill="freeze" calcMode="spline" keySplines=".74 .22  .27 .82" begin="aboutbottlesminAni.begin" dur="1s" values="12; 0"/>
+      <animate xlink:href="#bottlestext02" attributeName="x" fill="freeze" begin="aboutbottlesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="170; 290" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlestext02" attributeName="y" fill="freeze" begin="aboutbottlesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="258; 475" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlestext02" attributeName="font-size" fill="freeze" calcMode="spline" keySplines=".74 .22  .27 .82" begin="aboutbottlesminAni.begin" dur="1s" values="12; 0"/>
+      <animate xlink:href="#bottlescrossrect" attributeName="x" fill="freeze" begin="aboutbottlesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="350; 319" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlescrossrect" attributeName="y" fill="freeze" begin="aboutbottlesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="210; 466" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlescross01" attributeName="x1" fill="freeze" begin="aboutbottlesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="354; 323" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlescross01" attributeName="y1" fill="freeze" begin="aboutbottlesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="222; 478" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlescross01" attributeName="x2" fill="freeze" begin="aboutbottlesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="362; 331" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlescross01" attributeName="y2" fill="freeze" begin="aboutbottlesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="214; 470" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlescross02" attributeName="x1" fill="freeze" begin="aboutbottlesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="354; 323" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlescross02" attributeName="y1" fill="freeze" begin="aboutbottlesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="214; 470" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlescross02" attributeName="x2" fill="freeze" begin="aboutbottlesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="362; 331" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlescross02" attributeName="y2" fill="freeze" begin="aboutbottlesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="222; 478" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesminrect" attributeName="x" fill="freeze" begin="aboutbottlesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="326; 295" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesminrect" attributeName="y" fill="freeze" begin="aboutbottlesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="210; 466" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesminrect" attributeName="width" fill="freeze" begin="aboutbottlesminAni.begin" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="16; 0" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesminrect" attributeName="height" fill="freeze" begin="aboutbottlesminAni.begin" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="16; 0" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesminrect" attributeName="stroke-width" fill="freeze" begin="aboutbottlesminAni.begin" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="2; 0" keyTimes="0; 1"/>
+      <set xlink:href="#bottlesminline" attributeName="stroke-width" fill="freeze" begin="aboutbottlesminAni.begin" to="0"/>
+      <set xlink:href="#bottlesminline" attributeName="x2" fill="freeze" begin="aboutbottlesminAni.begin" to="330"/>
+      <animate xlink:href="#bottlesmaxrect" attributeName="x" fill="freeze" begin="aboutbottlesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="326; 295" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesmaxrect" attributeName="y" fill="freeze" begin="aboutbottlesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="210; 466" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesmaxrect" attributeName="width" fill="freeze" begin="aboutbottlesminAni.begin+2" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="0; 16" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesmaxrect" attributeName="height" fill="freeze" begin="aboutbottlesminAni.begin+2" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="0; 16" keyTimes="0; 1"/>
+      <set xlink:href="#bottlesmaxrect" attributeName="stroke-width" fill="freeze" begin="aboutbottlesminAni.begin+2" to="2"/>
+      <animate xlink:href="#bottlesmaxbox" attributeName="x" fill="freeze" begin="aboutbottlesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="329; 298" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesmaxbox" attributeName="y" fill="freeze" begin="aboutbottlesminAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="213; 469" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesmaxbox" attributeName="width" fill="freeze" begin="aboutbottlesminAni.begin+2" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="0; 10" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesmaxbox" attributeName="height" fill="freeze" begin="aboutbottlesminAni.begin+2" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="0; 10" keyTimes="0; 1"/>
+      <set xlink:href="#bottlesmaxbox" attributeName="stroke-width" fill="freeze" begin="aboutbottlesminAni.begin+2" to="1.5"/>
+    </g>
+    <g>
+      <animate id="aboutbottlesmaxAni" xlink:href="#bottlesrect" attributeName="x" fill="freeze" begin="bottlesmaxrect.click;bottlesmaxbox.click" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="280; 160" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesrect" attributeName="y" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="460; 200" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesrect" attributeName="width" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="70; 220" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesrect" attributeName="height" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="40; 75" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlestext00" attributeName="x" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="292; 170" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlestext00" attributeName="y" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="494; 228" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlestext01" attributeName="x" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="290; 170" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlestext01" attributeName="y" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="475; 243" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlestext01" attributeName="font-size" fill="freeze" calcMode="spline" keySplines=".74 .22  .27 .82" begin="aboutbottlesmaxAni.begin+3" dur="1s" values="0; 12"/>
+      <animate xlink:href="#bottlestext02" attributeName="x" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="290; 170" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlestext02" attributeName="y" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="475; 258" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlestext02" attributeName="font-size" fill="freeze" calcMode="spline" keySplines=".74 .22  .27 .82" begin="aboutbottlesmaxAni.begin+3" dur="1s" values="0; 12"/>
+      <animate xlink:href="#bottlescrossrect" attributeName="x" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="319; 350" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlescrossrect" attributeName="y" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="466; 210" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlescross01" attributeName="x1" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="323; 354" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlescross01" attributeName="y1" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="478; 222" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlescross01" attributeName="x2" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="331; 362" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlescross01" attributeName="y2" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="470; 214" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlescross02" attributeName="x1" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="323; 354" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlescross02" attributeName="y1" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="470; 214" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlescross02" attributeName="x2" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="331; 362" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlescross02" attributeName="y2" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="478; 222" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesminrect" attributeName="x" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="295; 326" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesminrect" attributeName="y" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="466; 210" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesminrect" attributeName="width" fill="freeze" begin="aboutbottlesmaxAni.begin+2" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="0; 16" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesminrect" attributeName="height" fill="freeze" begin="aboutbottlesmaxAni.begin+2" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="0; 16" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesminrect" attributeName="stroke-width" fill="freeze" begin="aboutbottlesmaxAni.begin+2" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="0; 2" keyTimes="0; 1"/>
+      <set xlink:href="#bottlesminline" attributeName="stroke-width" fill="freeze" begin="aboutbottlesmaxAni.begin+4" to="3"/>
+      <set xlink:href="#bottlesminline" attributeName="x2" fill="freeze" begin="aboutbottlesmaxAni.begin+4" to="338"/>
+      <animate xlink:href="#bottlesmaxrect" attributeName="x" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="295; 326" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesmaxrect" attributeName="y" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="466; 210" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesmaxrect" attributeName="width" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="16; 0" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesmaxrect" attributeName="height" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="16; 0" keyTimes="0; 1"/>
+      <set xlink:href="#bottlesmaxrect" attributeName="stroke-width" fill="freeze" begin="aboutbottlesmaxAni.begin+1.5" to="0"/>
+      <animate xlink:href="#bottlesmaxbox" attributeName="x" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="298; 329" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesmaxbox" attributeName="y" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="4s" calcMode="spline" keySplines=".74 .22  .27 .82" values="469; 213" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesmaxbox" attributeName="width" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="10; 0" keyTimes="0; 1"/>
+      <animate xlink:href="#bottlesmaxbox" attributeName="height" fill="freeze" begin="aboutbottlesmaxAni.begin" dur="1.5s" calcMode="spline" keySplines=".74 .22  .27 .82" values="10; 0" keyTimes="0; 1"/>
+      <set xlink:href="#bottlesmaxbox" attributeName="stroke-width" fill="freeze" begin="aboutbottlesmaxAni.begin+1.5" to="0"/>
+    </g>
+  </defs>
+  <rect id="BG" x="-1000%" y="-1000%" width="3000%" height="3000%"/>
+  <g class="pools">
+    <ellipse cx="97.5" cy="104" rx="42.5" ry="59"/>
+    <ellipse cx="288.5" cy="109" rx="142.5" ry="78"/>
+    <ellipse cx="356.5" cy="179.5" rx="50.5" ry="40.5"/>
+  </g>
+  <g class="bubbles">
+    <ellipse id="bubble01" cx="112.5" cy="149.5" rx="16.5" ry="12.5">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="bubble01.mouseover" end="bubble01.mouseout"/>
+    </ellipse>
+    <ellipse id="bubble02" cx="127" cy="105.5" rx="7" ry="7.5">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="bubble02.mouseover" end="bubble02.mouseout"/>
+    </ellipse>
+    <ellipse id="bubble03" cx="146" cy="146" rx="4" ry="4">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="bubble03.mouseover" end="bubble03.mouseout"/>
+    </ellipse>
+    <ellipse id="bubble04" cx="193" cy="124" rx="9" ry="8">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="bubble04.mouseover" end="bubble04.mouseout"/>
+    </ellipse>
+    <ellipse id="bubble05" cx="213" cy="145" rx="10" ry="11">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="bubble05.mouseover" end="bubble05.mouseout"/>
+    </ellipse>
+    <ellipse id="bubble06" cx="251.5" cy="131" rx="5.5" ry="6">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="bubble06.mouseover" end="bubble06.mouseout"/>
+    </ellipse>
+    <ellipse id="bubble07" cx="255" cy="116.5" rx="4" ry="4.5">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="bubble07.mouseover" end="bubble07.mouseout"/>
+    </ellipse>
+    <ellipse id="bubble08" cx="284.5" cy="166" rx="15.5" ry="16">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="bubble08.mouseover" end="bubble08.mouseout"/>
+    </ellipse>
+    <ellipse id="bubble09" cx="335.5" cy="139" rx="15.5" ry="17">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="bubble09.mouseover" end="bubble09.mouseout"/>
+    </ellipse>
+    <ellipse id="bubble10" cx="344.5" cy="192" rx="14.5" ry="14">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="bubble10.mouseover" end="bubble10.mouseout"/>
+    </ellipse>
+    <ellipse id="bubble11" cx="351" cy="122.5" rx="6" ry="7.5">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="bubble11.mouseover" end="bubble11.mouseout"/>
+    </ellipse>
+    <ellipse id="bubble12" cx="377" cy="167" rx="9" ry="10">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="bubble12.mouseover" end="bubble12.mouseout"/>
+    </ellipse>
+    <ellipse id="bubble13" cx="383.5" cy="141" rx="9.5" ry="11">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="bubble13.mouseover" end="bubble13.mouseout"/>
+    </ellipse>
+    <ellipse id="bubble14" cx="386" cy="191.5" rx="4" ry="4.5">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="bubble14.mouseover" end="bubble14.mouseout"/>
+    </ellipse>
+    <ellipse id="bubble15" cx="423.5" cy="145.5" rx="14.5" ry="14.5">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="bubble15.mouseover" end="bubble15.mouseout"/>
+    </ellipse>
+  </g>
+  <g class="bottles">
+    <ellipse id="head01" cx="66.5" cy="284.5" rx="26.5" ry="28.5">
+      <set attributeName="stroke" attributeType="CSS" to="#06a" begin="head01.mouseover" end="head01.mouseout"/>
+    </ellipse>
+    <ellipse id="head02" cx="167.5" cy="337.5" rx="16.5" ry="20.5">
+      <set attributeName="stroke" attributeType="CSS" to="#06a" begin="head02.mouseover" end="head02.mouseout"/>
+    </ellipse>
+    <ellipse id="head03" cx="225.5" cy="326" rx="20.5" ry="23">
+      <set attributeName="stroke" attributeType="CSS" to="#06a" begin="head03.mouseover" end="head03.mouseout"/>
+    </ellipse>
+    <ellipse id="head04" cx="306" cy="326" rx="34" ry="24">
+      <set attributeName="stroke" attributeType="CSS" to="#06a" begin="head04.mouseover" end="head04.mouseout"/>
+    </ellipse>
+    <ellipse id="head05" cx="419.5" cy="349" rx="36.5" ry="35">
+      <set attributeName="stroke" attributeType="CSS" to="#06a" begin="head05.mouseover" end="head05.mouseout"/>
+    </ellipse>
+    <ellipse id="body01" cx="87.5" cy="337" rx="51.5" ry="69">
+      <set attributeName="stroke" attributeType="CSS" to="#06a" begin="body01.mouseover;bodylabel.mouseover" end="body01.mouseout;bodylabel.mouseout"/>
+    </ellipse>
+    <ellipse id="body02" cx="174" cy="390" rx="30" ry="56">
+      <set attributeName="stroke" attributeType="CSS" to="#06a" begin="body02.mouseover" end="body02.mouseout"/>
+    </ellipse>
+    <ellipse id="body03" cx="242.5" cy="378" rx="32.5" ry="47">
+      <set attributeName="stroke" attributeType="CSS" to="#06a" begin="body03.mouseover" end="body03.mouseout"/>
+    </ellipse>
+    <ellipse id="body04" cx="312" cy="399" rx="57" ry="70">
+      <set attributeName="stroke" attributeType="CSS" to="#06a" begin="body04.mouseover" end="body04.mouseout"/>
+    </ellipse>
+    <ellipse id="body05" cx="426.5" cy="416.5" rx="43.5" ry="60.5">
+      <set attributeName="stroke" attributeType="CSS" to="#06a" begin="body05.mouseover" end="body05.mouseout"/>
+    </ellipse>
+  </g>
+  <g class="labels" font-size="18">
+    <rect id="poolslabelrect" class="pools" x="154" y="44" width="62" height="24" rx="10" ry="10">
+      <set attributeName="stroke" attributeType="CSS" to="#dd014a" begin="poolslabelrectinvis.mouseover" end="poolslabelrectinvis.mouseout"/>
+    </rect>
+    <text id="poolslabel" x="162" y="61">
+			pools
+			<set attributeName="fill" attributeType="CSS" to="#b03" begin="poolslabelrectinvis.mouseover" end="poolslabelrectinvis.mouseout"/>
+    </text>
+    <rect id="poolslabelrectinvis" pointer-events="all" x="154" y="44" width="62" height="24" rx="10" ry="10">
+      <set attributeName="opacity" attributeType="CSS" to="0.5" begin="poolslabelrectinvis.click" end="poolscrossrect.click;poolscross01.click;poolscross02.click"/>
+    </rect>
+    <rect id="bubbleslabelrect" class="bubbles" x="272" y="72" width="86" height="24" rx="10" ry="10">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="bubbleslabelrectinvis.mouseover" end="bubbleslabelrectinvis.mouseout"/>
+    </rect>
+    <text id="bubbleslabel" x="280" y="90">
+			bubbles
+				<set attributeName="fill" attributeType="CSS" to="#066" begin="bubbleslabelrectinvis.mouseover" end="bubbleslabelrectinvis.mouseout"/>
+    </text>
+    <rect id="bubbleslabelrectinvis" pointer-events="all" x="272" y="72" width="86" height="24" rx="10" ry="10">
+      <set attributeName="opacity" attributeType="CSS" to="0.5" begin="bubbleslabelrectinvis.click" end="bubblescrossrect.click;bubblescross01.click;bubblescross02.click"/>
+    </rect>
+    <rect id="bottleslabelrect" class="bottles" x="61" y="227" width="76" height="24" rx="10" ry="10">
+      <set attributeName="stroke" attributeType="CSS" to="#068" begin="bottleslabelrectinvis.mouseover" end="bottleslabelrectinvis.mouseout"/>
+    </rect>
+    <text id="bottleslabel" x="69" y="245">
+			bottles
+			<set attributeName="fill" attributeType="CSS" to="#06a" begin="bottleslabelrectinvis.mouseover" end="bottleslabelrectinvis.mouseout"/>
+    </text>
+    <rect id="bottleslabelrectinvis" pointer-events="all" x="61" y="227" width="76" height="24" rx="10" ry="10">
+      <set attributeName="opacity" attributeType="CSS" to="0.5" begin="bottleslabelrectinvis.click" end="bottlescrossrect.click;bottlescross01.click;bottlescross02.click"/>
+    </rect>
+    <text id="headlabel" x="4" y="265">
+			head
+			<set attributeName="fill" attributeType="CSS" to="#06a" begin="headlabel.mouseover" end="headlabel.mouseout"/>
+    </text>
+    <text id="bodylabel" x="42" y="339">
+			body
+			<set attributeName="fill" attributeType="CSS" to="#035" begin="bodylabel.mouseover" end="bodylabel.mouseout"/>
+    </text>
+  </g>
+  <g class="bubbles">
+    <ellipse id="anibubble01" cx="112.5" cy="149.5" rx="16.5" ry="12.5">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="anibubble01.mouseover" end="anibubble01.mouseout"/>
+    </ellipse>
+    <ellipse id="anibubble02" cx="127" cy="105.5" rx="7" ry="7.5">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="anibubble02.mouseover" end="anibubble02.mouseout"/>
+    </ellipse>
+    <ellipse id="anibubble03" cx="146" cy="146" rx="4" ry="4">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="anibubble03.mouseover" end="anibubble03.mouseout"/>
+    </ellipse>
+    <ellipse id="anibubble04" cx="193" cy="124" rx="9" ry="8">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="anibubble04.mouseover" end="anibubble04.mouseout"/>
+    </ellipse>
+    <ellipse id="anibubble05" cx="213" cy="145" rx="10" ry="11">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="anibubble05.mouseover" end="anibubble05.mouseout"/>
+    </ellipse>
+    <ellipse id="anibubble06" cx="251.5" cy="131" rx="5.5" ry="6">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="anibubble06.mouseover" end="anibubble06.mouseout"/>
+    </ellipse>
+    <ellipse id="anibubble07" cx="255" cy="116.5" rx="4" ry="4.5">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="anibubble07.mouseover" end="anibubble07.mouseout"/>
+    </ellipse>
+    <ellipse id="anibubble08" cx="284.5" cy="166" rx="15.5" ry="16">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="anibubble08.mouseover" end="anibubble08.mouseout"/>
+    </ellipse>
+    <ellipse id="anibubble09" cx="335.5" cy="139" rx="15.5" ry="17">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="anibubble09.mouseover" end="anibubble09.mouseout"/>
+    </ellipse>
+    <ellipse id="anibubble10" cx="344.5" cy="192" rx="14.5" ry="14">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="anibubble10.mouseover" end="anibubble10.mouseout"/>
+    </ellipse>
+    <ellipse id="anibubble11" cx="351" cy="122.5" rx="6" ry="7.5">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="anibubble11.mouseover" end="anibubble11.mouseout"/>
+    </ellipse>
+    <ellipse id="anibubble12" cx="377" cy="167" rx="9" ry="10">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="anibubble12.mouseover" end="anibubble12.mouseout"/>
+    </ellipse>
+    <ellipse id="anibubble13" cx="383.5" cy="141" rx="9.5" ry="11">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="anibubble13.mouseover" end="anibubble13.mouseout"/>
+    </ellipse>
+    <ellipse id="anibubble14" cx="386" cy="191.5" rx="4" ry="4.5">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="anibubble14.mouseover" end="anibubble14.mouseout"/>
+    </ellipse>
+    <ellipse id="anibubble15" cx="423.5" cy="145.5" rx="14.5" ry="14.5">
+      <set attributeName="stroke" attributeType="CSS" to="#099" begin="anibubble15.mouseover" end="anibubble15.mouseout"/>
+    </ellipse>
+  </g>
+  <a xlink:href="../../" target="_top">
+    <text class="labels footer link" x="30" y="480" font-size="16">2000 Tobi Reif</text>
+  </a>
+  
+  <text class="labels footer" x="30" y="494" font-size="16">click on anything</text>
+  <g id="aboutpools">
+    <set attributeName="visibility" attributeType="CSS" to="visible" begin="poolslabelrectinvis.click" fill="freeze"/>
+    <set attributeName="visibility" attributeType="CSS" to="hidden" begin="poolscrossrect.click;poolscross01.click;poolscross02.click" fill="freeze"/>
+    <rect id="poolsrect" class="textrect" x="190" y="90" width="230" height="75" rx="10" ry="10"/>
+    <text id="poolstext" class="text" font-size="12">
+      <tspan id="poolstext00" x="200" y="118">a pool :</tspan>
+      <tspan id="poolstext01" x="200" y="133">contains one or more content-bubbles.</tspan>
+      <tspan id="poolstext02" x="200" y="148">it can be a document or a folder.</tspan>
+    </text>
+    <rect id="poolscrossrect" class="textrect" x="390" y="100" width="16" height="16" rx="1" ry="1"/>
+    <line id="poolscross01" class="cross" x1="394" y1="112" x2="402" y2="104"/>
+    <line id="poolscross02" class="cross" x1="394" y1="104" x2="402" y2="112"/>
+    <rect id="poolsminrect" class="textrect" x="366" y="100" width="16" height="16" rx="1" ry="1"/>
+    <line id="poolsminline" class="cross" x1="370" y1="110" x2="378" y2="110"/>
+    <rect id="poolsmaxrect" class="textrect" x="356" y="100" width="0" height="0" rx="1" ry="1"/>
+    <rect id="poolsmaxbox" class="textrect" x="359" y="103" width="0" height="0" rx="1" ry="1"/>
+  </g>
+  <g id="aboutbubbles">
+    <set attributeName="visibility" attributeType="CSS" to="visible" begin="bubbleslabelrectinvis.click" fill="freeze"/>
+    <set attributeName="visibility" attributeType="CSS" to="hidden" begin="bubblescrossrect.click;bubblescross01.click;bubblescross02.click" fill="freeze"/>
+    <rect id="bubblesrect" class="textrect" x="160" y="130" width="220" height="75" rx="10" ry="10"/>
+    <text id="bubblestext" class="text" font-size="12">
+      <tspan id="bubblestext00" x="170" y="158">a bubble :</tspan>
+      <tspan id="bubblestext01" x="170" y="173">contains content : text, links, styles,</tspan>
+      <tspan id="bubblestext02" x="170" y="188">behaviours, animations, pics.</tspan>
+    </text>
+    <rect id="bubblescrossrect" class="textrect" x="350" y="140" width="16" height="16" rx="1" ry="1"/>
+    <line id="bubblescross01" class="cross" x1="354" y1="152" x2="362" y2="144"/>
+    <line id="bubblescross02" class="cross" x1="354" y1="144" x2="362" y2="152"/>
+    <rect id="bubblesminrect" class="textrect" x="326" y="140" width="16" height="16" rx="1" ry="1"/>
+    <line id="bubblesminline" class="cross" x1="330" y1="150" x2="338" y2="150"/>
+    <rect id="bubblesmaxrect" class="textrect" x="326" y="140" width="0" height="0" rx="1" ry="1"/>
+    <rect id="bubblesmaxbox" class="textrect" x="329" y="143" width="0" height="0" rx="1" ry="1"/>
+  </g>
+  <g id="aboutbottles">
+    <set attributeName="visibility" attributeType="CSS" to="visible" begin="bottleslabelrectinvis.click" fill="freeze"/>
+    <set attributeName="visibility" attributeType="CSS" to="hidden" begin="bottlescrossrect.click;bottlescross01.click;bottlescross02.click" fill="freeze"/>
+    <rect id="bottlesrect" class="textrect" x="160" y="200" width="220" height="75" rx="10" ry="10"/>
+    <text id="bottlestext" class="text" font-size="12">
+      <tspan id="bottlestext00" x="170" y="228">a bottle :</tspan>
+      <tspan id="bottlestext01" x="170" y="243">merges content by including bubbles</tspan>
+      <tspan id="bottlestext02" x="170" y="258">for hyper- , print- or other media.</tspan>
+    </text>
+    <rect id="bottlescrossrect" class="textrect" x="350" y="210" width="16" height="16" rx="1" ry="1"/>
+    <line id="bottlescross01" class="cross" x1="354" y1="222" x2="362" y2="214"/>
+    <line id="bottlescross02" class="cross" x1="354" y1="214" x2="362" y2="222"/>
+    <rect id="bottlesminrect" class="textrect" x="326" y="210" width="16" height="16" rx="1" ry="1"/>
+    <line id="bottlesminline" class="cross" x1="330" y1="220" x2="338" y2="220"/>
+    <rect id="bottlesmaxrect" class="textrect" x="326" y="210" width="0" height="0" rx="1" ry="1"/>
+    <rect id="bottlesmaxbox" class="textrect" x="329" y="213" width="0" height="0" rx="1" ry="1"/>
+  </g>
+</svg>
