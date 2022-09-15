@@ -137,7 +137,7 @@ func _set_attr_y(y):
 
 # Public Methods
 
-func calc_view_box(inherited_view_box = Rect2(0, 0, 0, 0)):
+func calculate_view_box(inherited_view_box = Rect2(0, 0, 0, 0)):
 	if attr_view_box is Rect2:
 		return attr_view_box
 	elif attr_view_box == SVGValueConstant.NONE:

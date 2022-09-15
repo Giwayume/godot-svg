@@ -39,6 +39,9 @@ var _svg = null
 var _renderer_map = {}
 var _global_stylesheet = []
 var _resource_locator_cache = {}
+var _process_polygon_thread = null
+var _polygons_to_process = []
+var _polygons_to_process_mutex = null
 
 # Lifecycle
 
@@ -117,7 +120,7 @@ func _create_renderers_recursive(parent, children, render_props = {}):
 		parent.add_child(renderer)
 		_renderer_map[child] = renderer
 		if renderer is SVGRenderViewport:
-			renderer.inherited_view_box = renderer.calc_view_box()
+			renderer.inherited_view_box = renderer.calculate_view_box()
 		else:
 			renderer.inherited_view_box = view_box if view_box is Rect2 else renderer.inherited_view_box
 		if renderer is SVGRenderViewport and renderer.attr_view_box is Rect2:
@@ -253,6 +256,54 @@ func _render_from_scratch():
 		emit_signal("renderers_created")
 	update()
 
+
+func _queue_process_polygon(polygon_definition: Dictionary):
+	if _polygons_to_process_mutex == null:
+		_polygons_to_process_mutex = Mutex.new()
+	var need_to_create_thread = false
+	if _process_polygon_thread == null:
+		need_to_create_thread = true
+	
+	# Add process to process list for thread to read
+	_polygons_to_process_mutex.lock()
+	var process_already_exists = false
+	for process_item in _polygons_to_process:
+		if process_item.renderer == polygon_definition.renderer:
+			process_already_exists = true
+			break
+	if not process_already_exists:
+		_polygons_to_process.push_back(polygon_definition)
+	_polygons_to_process_mutex.unlock()
+
+	# Start thread
+	if need_to_create_thread:
+		_process_polygon_thread = Thread.new()
+		_process_polygon_thread.start(self, "_process_polygon_thread", null, Thread.PRIORITY_LOW)
+
+func _process_polygon_thread(_userdata):
+	var has_polygons_to_process = false
+	_polygons_to_process_mutex.lock()
+	has_polygons_to_process = _polygons_to_process.size() > 0
+	_polygons_to_process_mutex.unlock()
+	
+	while has_polygons_to_process:
+		_polygons_to_process_mutex.lock()
+		var _polygon_to_process = _polygons_to_process.pop_front()
+		_polygons_to_process_mutex.unlock()
+		if is_instance_valid(_polygon_to_process.renderer):
+			var polygon = _polygon_to_process.renderer.call("_process_simplified_polygon")
+			_polygon_to_process.renderer.call_deferred("_process_simplified_polygon_complete", polygon)
+		_polygons_to_process_mutex.lock()
+		has_polygons_to_process = _polygons_to_process.size() > 0
+		_polygons_to_process_mutex.unlock()
+
+	call_deferred("_process_polygon_thread_end")
+
+func _process_polygon_thread_end():
+	if _process_polygon_thread != null:
+		_process_polygon_thread.wait_to_finish()
+		_process_polygon_thread = null
+
 # Editor
 
 func _get_configuration_warning():
@@ -267,7 +318,7 @@ func _get_item_rect():
 	if _svg is SVGResource and _svg.viewport != null:
 			var viewport_renderer = _renderer_map[_svg.viewport]
 			if viewport_renderer != null:
-				edit_rect = viewport_renderer.calc_view_box()
+				edit_rect = viewport_renderer.calculate_view_box()
 	return edit_rect
 
 func _on_svg_resources_reimported(resource_names):

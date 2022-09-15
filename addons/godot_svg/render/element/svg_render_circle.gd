@@ -13,15 +13,24 @@ var svg_stroke = null
 func _init():
 	node_name = "circle"
 
-func _draw():
-	._draw()
+func _process_polygon():
 	var scale_factor = get_scale_factor()
-	
 	var center = Vector2(
 		attr_cx.get_length(inherited_view_box.size.x),
 		attr_cy.get_length(inherited_view_box.size.y)
 	)
 	var radius = attr_r.get_length(inherited_view_box.size.x)
+	var circumference = 2 * PI * radius
+	var arc_points = max(20.0, round(circumference * _current_arc_resolution.x))
+	return {
+		"is_simple_shape": true,
+		"fill": SVGDrawing.generate_fill_circle_arc_points(center, radius, 0, 2*PI, arc_points),
+		"stroke": SVGDrawing.generate_stroke_circle_arc_points(center, radius, 0, 2*PI, arc_points),
+	}
+
+func _draw():
+	._draw()
+	var scale_factor = get_scale_factor()
 	
 	var fill_paint = resolve_fill_paint()
 	var fill_color = fill_paint.color
@@ -32,22 +41,15 @@ func _draw():
 	var stroke_texture = stroke_paint.texture
 	
 	var stroke_width = attr_stroke_width.get_length(inherited_view_box.size.x)
-
-	var circumference = 2 * PI * radius
-	var arc_points = min(1024, max(24, 32 * floor((circumference * scale_factor.x / 4) / 32)))
-	var arc_stretch = PI / 32
 	
 	draw_shape({
 		"is_simple_shape": true,
 		"scale_factor": scale_factor,
 		"fill_color": fill_color,
 		"fill_texture": fill_texture,
-		"fill_polygon": SVGDrawing.generate_fill_circle_arc_points(center, radius, 0, 2*PI, arc_points),
-		"fill_uv": SVGDrawing.generate_fill_circle_arc_uv(0, 2*PI, Vector2(), fill_texture.get_width(), arc_points) if fill_texture != null else null,
 		"stroke_color": stroke_color,
 		"stroke_texture": stroke_texture,
 		"stroke_width": stroke_width,
-		"stroke_points": SVGDrawing.generate_stroke_circle_arc_points(center, radius, 0, 2*PI, arc_points),
 		"stroke_closed": true,
 	})
 

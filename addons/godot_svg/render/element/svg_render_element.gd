@@ -82,7 +82,7 @@ var _view_box_clip_rect = null
 var _is_href_duplicate = false
 var _rerender_prop_cache = {}
 var _paint_server_textures = {}
-
+var _current_arc_resolution = null
 
 # Lifecycle
 
@@ -177,6 +177,58 @@ func _draw():
 		call_deferred("_opacity_mask_updated")
 
 # Internal Methods
+
+func _calculate_arc_resolution(scale_factor):
+	var applied_scale_x = pow(2, ceil(log(scale_factor.x) / log(2)) + 1)
+	var applied_scale_y = pow(2, ceil(log(scale_factor.y) / log(2)) + 1)
+	return Vector2(
+		pow(applied_scale_x, 0.5) * 0.1,
+		pow(applied_scale_y, 0.5) * 0.1
+	)
+
+func _process_polygon(): # Override me
+	return {
+		"fill": PoolVector2Array(),
+		"stroke": PoolVector2Array()
+	}
+
+func _process_simplified_polygon():
+	var polygons = _process_polygon()
+	var simplified_fills = []
+	if polygons.has("fill"):
+		if polygons.fill.size() > 0:
+				if not polygons.fill[0] is PoolVector2Array:
+					polygons.fill = [polygons.fill]
+		
+		if polygons.has("is_simple_shape") and polygons.is_simple_shape:
+			simplified_fills = polygons.fill
+		else:
+			var fill_rule = attr_fill_rule
+			if is_in_clip_path:
+				fill_rule = attr_clip_rule
+			
+			for fill_polygon in polygons.fill:
+				simplified_fills.append_array(
+					SVGPolygonSolver.simplify(fill_polygon, {
+						SVGValueConstant.EVEN_ODD: SVGPolygonSolver.FillRule.EVEN_ODD,
+						SVGValueConstant.NON_ZERO: SVGPolygonSolver.FillRule.NON_ZERO,
+					}[fill_rule])
+				)
+	var simplified_strokes = []
+	if polygons.has("stroke"):
+		if polygons.stroke.size() > 0:
+			if not polygons.stroke[0] is PoolVector2Array:
+				polygons.stroke = [polygons.stroke]
+		simplified_strokes = polygons.stroke
+	return {
+		"fill": simplified_fills,
+		"stroke": simplified_strokes,
+	}
+
+func _process_simplified_polygon_complete(polygons):
+	_rerender_prop_cache["processed_polygon"] = polygons
+	update()
+
 
 func _calculate_bounding_box():
 	pass # Override
@@ -377,39 +429,44 @@ func draw_shape(updates):
 		updates.stroke_color = Color(0, 0, 0, 0)
 		fill_rule = attr_clip_rule
 	
-	if updates.has("fill_color") and updates.fill_color.a > 0:
+	var will_fill = updates.has("fill_color") and updates.fill_color.a > 0
+	var will_stroke = updates.has("stroke_color") and updates.stroke_color.a > 0
+	
+	var processed_polygon = null
+	var scale_factor = Vector2(1.0, 1.0)
+	if (will_fill or will_stroke):
+		if updates.has("scale_factor"):
+			scale_factor = updates.scale_factor
+		if _current_arc_resolution == null:
+			_current_arc_resolution = _calculate_arc_resolution(scale_factor)
+		
+		if _rerender_prop_cache.has("processed_polygon"):
+			processed_polygon = _rerender_prop_cache["processed_polygon"]
+			var new_arc_resolution = _calculate_arc_resolution(scale_factor)
+			if new_arc_resolution.x != _current_arc_resolution.x or new_arc_resolution.y != _current_arc_resolution.y:
+				_current_arc_resolution = new_arc_resolution
+				svg_node._queue_process_polygon({
+					"renderer": self,
+				})
+		else:
+			processed_polygon = _process_simplified_polygon()
+			_rerender_prop_cache["processed_polygon"] = processed_polygon
+	
+	if will_fill:
 		var bounding_box = get_bounding_box()
-		var raw_polygon_lists = []
-		var polygon_lists = []
-		if updates.has("fill_polygon"):
-			if updates.fill_polygon.size() > 0:
-				if updates.fill_polygon[0] is PoolVector2Array:
-					raw_polygon_lists = updates.fill_polygon
-				else:
-					raw_polygon_lists = [updates.fill_polygon]
-			
-			if updates.has("is_simple_shape") and updates.is_simple_shape:
-				polygon_lists = raw_polygon_lists
-			else:
-				for raw_polygon in raw_polygon_lists:
-					polygon_lists.append_array(
-						SVGPolygonSolver.simplify(raw_polygon, {
-							SVGValueConstant.EVEN_ODD: SVGPolygonSolver.FillRule.EVEN_ODD,
-							SVGValueConstant.NON_ZERO: SVGPolygonSolver.FillRule.NON_ZERO,
-						}[fill_rule])
-					)
-			
-			# Remove unused
-			for shape_stroke_index in range(polygon_lists.size(), _shape_fills.size()):
-				var shape = _shape_fills[shape_stroke_index]
-				shape.get_parent().remove_child(shape)
-				shape.queue_free()
-			_shape_fills = SVGHelper.array_slice(_shape_fills, 0, polygon_lists.size())
-			# Create new
-			for point_list_index in range(_shape_fills.size(), polygon_lists.size()):
-				var shape = Polygon2D.new()
-				add_child(shape)
-				_shape_fills.push_back(shape)
+		var polygon_lists = processed_polygon.fill
+		
+		# Remove unused
+		for shape_stroke_index in range(polygon_lists.size(), _shape_fills.size()):
+			var shape = _shape_fills[shape_stroke_index]
+			shape.get_parent().remove_child(shape)
+			shape.queue_free()
+		_shape_fills = SVGHelper.array_slice(_shape_fills, 0, polygon_lists.size())
+		# Create new
+		for point_list_index in range(_shape_fills.size(), polygon_lists.size()):
+			var shape = Polygon2D.new()
+			add_child(shape)
+			_shape_fills.push_back(shape)
 		
 		var fill_index = 0
 		for _shape_fill in _shape_fills:
@@ -434,25 +491,20 @@ func draw_shape(updates):
 		for shape in _shape_fills:
 			shape.hide()
 	
-	if updates.has("stroke_color") and updates.stroke_color.a > 0:
-		var point_lists = []
-		if updates.has("stroke_points"):
-			if updates.stroke_points.size() > 0:
-				if updates.stroke_points[0] is PoolVector2Array:
-					point_lists = updates.stroke_points
-				else:
-					point_lists = [updates.stroke_points]
-			# Remove unused
-			for shape_stroke_index in range(point_lists.size(), _shape_strokes.size()):
-				var shape = _shape_strokes[shape_stroke_index]
-				shape.get_parent().remove_child(shape)
-				shape.queue_free()
-			_shape_strokes = SVGHelper.array_slice(_shape_strokes, 0, point_lists.size())
-			# Create new
-			for point_list_index in range(_shape_strokes.size(), point_lists.size()):
-				var shape = SVGPolygonLines2D.new()
-				add_child(shape)
-				_shape_strokes.push_back(shape)
+	if will_stroke:
+		var point_lists = processed_polygon.stroke
+		
+		# Remove unused
+		for shape_stroke_index in range(point_lists.size(), _shape_strokes.size()):
+			var shape = _shape_strokes[shape_stroke_index]
+			shape.get_parent().remove_child(shape)
+			shape.queue_free()
+		_shape_strokes = SVGHelper.array_slice(_shape_strokes, 0, point_lists.size())
+		# Create new
+		for point_list_index in range(_shape_strokes.size(), point_lists.size()):
+			var shape = SVGPolygonLines2D.new()
+			add_child(shape)
+			_shape_strokes.push_back(shape)
 		
 		var stroke_index = 0
 		for _shape_stroke in _shape_strokes:
@@ -474,7 +526,7 @@ func draw_shape(updates):
 			_stroke_attrs.antialiased = svg_node.antialiased
 			_stroke_attrs.sharp_limit = attr_stroke_miterlimit
 			_stroke_attrs.opacity = attr_stroke_opacity.get_length(1)
-			if updates.has("stroke_width") and updates.has("scale_factor"):
+			if updates.has("stroke_width"):
 				# Commented out logic for dealing with svg_line_texture
 #				var applied_stroke_width = updates.stroke_width * updates.scale_factor.x
 #				if applied_stroke_width >= 2:
@@ -484,7 +536,7 @@ func draw_shape(updates):
 #				_stroke_attrs.width = applied_stroke_width / max(0.0001, updates.scale_factor.x)
 
 				_stroke_attrs.width = updates.stroke_width
-				var applied_stroke_width = updates.stroke_width * updates.scale_factor.x
+				var applied_stroke_width = updates.stroke_width * scale_factor.x
 				if applied_stroke_width < 1:
 					_shape_stroke.modulate = Color(1, 1, 1, applied_stroke_width)
 				else:

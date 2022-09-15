@@ -44,7 +44,7 @@ func _size_svg():
 	if _svg_2d and _svg_2d._root_viewport_renderer != null:
 		var viewport_renderer = _svg_2d._root_viewport_renderer
 		if viewport_renderer != null:
-			var view_box = viewport_renderer.calc_view_box()
+			var view_box = viewport_renderer.calculate_view_box()
 			if typeof(viewport_renderer.attr_preserve_aspect_ratio) == TYPE_STRING:
 				if viewport_renderer.attr_preserve_aspect_ratio == SVGValueConstant.NONE:
 					_svg_2d.scale = Vector2(

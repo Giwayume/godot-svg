@@ -23,17 +23,14 @@ This is the most spec-compliant SVG renderer for Godot. Every other SVG-related 
 
 Use in 2D scenes similar to how you would use a *Sprite*. The default size of the SVG2D is determined by the [`viewBox`](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/viewBox), [`width`](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/width), and [`height`](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/height) attributes on the imported [`<svg>`](https://developer.mozilla.org/en-US/docs/Web/SVG/Element/svg) element.
 
-**PROPERTIES**
-
-| Property Name | Value Type | Notes |
-|:-----|:--------------|:------|
-| svg | SVG Resource | When importing a SVG file, choose "Import As: SVG". If you try to add a SVG imported as "Texture" here, it will not work. Use Sprite instead for that. |
-| fixed_scaling_ratio | float | If the value is 0, the SVG will be redrawn every time the scale changes so jagged edges are not visible. Setting the value above 0 bakes the resolution of the paths so they are not redrawn due to scaling at runtime. A value of 1 means it is drawn to look perfect at 100% view box scale (1:1), and if you zoom in further than that you will see jagged edges. |
-| antialiased | bool | Whether or not to use the Polygon2D's "antialiased" property. It has known issues with translucent shapes, so you may want to turn it off in that scenario. |
-
 ### The SVGRect Node
 
 Use in 2D scenes similar to how you would use a *TextureRect*. How the SVG fits inside of this rectangle is determined by the [`preserveAspectRatio`](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/preserveAspectRatio) attribute on the imported [`<svg>`](https://developer.mozilla.org/en-US/docs/Web/SVG/Element/svg) element.
+
+
+### SVG2D & SVGRect Documentation
+
+These nodes share a similar API.
 
 **PROPERTIES**
 
