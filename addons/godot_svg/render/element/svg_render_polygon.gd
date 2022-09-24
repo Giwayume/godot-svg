@@ -6,7 +6,7 @@ var attr_path_length = SVGValueConstant.NONE setget _set_attr_path_length
 # Lifecycle
 
 func _init():
-	node_name = "polyline"
+	node_name = "polygon"
 
 func _process_polygon():
 	var fill_points = PoolVector2Array()
@@ -22,7 +22,7 @@ func _process_polygon():
 		"is_simple_shape": false,
 		"fill": fill_points,
 		"stroke": stroke_points,
-		"stroke_closed": false,
+		"stroke_closed": true,
 	}
 
 func _draw():

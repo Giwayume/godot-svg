@@ -178,7 +178,7 @@ func _draw():
 
 # Internal Methods
 
-func _calculate_arc_resolution(scale_factor):
+func _calculate_arc_resolution(scale_factor: Vector2): # Optional override for optimization
 	var applied_scale_x = pow(2, ceil(log(scale_factor.x) / log(2)) + 1)
 	var applied_scale_y = pow(2, ceil(log(scale_factor.y) / log(2)) + 1)
 	return Vector2(
@@ -193,8 +193,10 @@ func _process_polygon(): # Override me
 	}
 
 func _process_simplified_polygon():
+	var time_start = OS.get_system_time_msecs()
 	var polygons = _process_polygon()
 	var simplified_fills = []
+	
 	if polygons.has("fill"):
 		if polygons.fill.size() > 0:
 				if not polygons.fill[0] is PoolVector2Array:
@@ -214,15 +216,35 @@ func _process_simplified_polygon():
 						SVGValueConstant.NON_ZERO: SVGPolygonSolver.FillRule.NON_ZERO,
 					}[fill_rule])
 				)
+#	var triangulated_fills = []
+#	for simplified_fill in simplified_fills:
+#		var triangulated_vertices = PoolVector2Array()
+#		var triangulated_indices = Geometry.triangulate_polygon(simplified_fill)
+#		for index in triangulated_indices:
+#			triangulated_vertices.push_back(simplified_fill[index])
+#		triangulated_fills.push_back(triangulated_vertices)
+	
 	var simplified_strokes = []
 	if polygons.has("stroke"):
 		if polygons.stroke.size() > 0:
 			if not polygons.stroke[0] is PoolVector2Array:
 				polygons.stroke = [polygons.stroke]
 		simplified_strokes = polygons.stroke
+	
+	
+	var stroke_closed = null
+	if polygons.has("stroke_closed"):
+		stroke_closed = []
+		for stroke_index in range(0, simplified_strokes.size()):
+			if typeof(polygons.stroke_closed) == TYPE_ARRAY and stroke_index < polygons.stroke_closed.size():
+				stroke_closed.push_back(polygons.stroke_closed[stroke_index])
+			else:
+				stroke_closed.push_back(polygons.stroke_closed)
+	
 	return {
 		"fill": simplified_fills,
 		"stroke": simplified_strokes,
+		"stroke_closed": stroke_closed,
 	}
 
 func _process_simplified_polygon_complete(polygons):
@@ -471,6 +493,12 @@ func draw_shape(updates):
 		var fill_index = 0
 		for _shape_fill in _shape_fills:
 			if fill_index < polygon_lists.size():
+#				var mesh = ArrayMesh.new()
+#				var mesh_arrays = []
+#				mesh_arrays.resize(ArrayMesh.ARRAY_MAX)
+#				mesh_arrays[ArrayMesh.ARRAY_VERTEX] = polygon_lists[fill_index]
+#				mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, mesh_arrays)
+#				_shape_fill.mesh = mesh
 				_shape_fill.polygon = polygon_lists[fill_index]
 			_shape_fill.color = updates.fill_color
 			_shape_fill.self_modulate = Color(1, 1, 1, max(0, min(1, attr_fill_opacity.get_length(1))))
@@ -485,6 +513,15 @@ func draw_shape(updates):
 					updates.fill_texture.get_size(), updates.fill_texture_units
 				)
 				_shape_fill.texture = updates.fill_texture
+#			else:
+#				var gradient_texture = GradientTexture2D.new()
+#				gradient_texture.width = 1
+#				gradient_texture.height = 1
+#				var gradient = Gradient.new()
+#				gradient.set_color(0, updates.fill_color)
+#				gradient.set_color(1, updates.fill_color)
+#				gradient_texture.gradient = gradient
+#				_shape_fill.texture = gradient_texture
 			_shape_fill.show()
 			fill_index += 1
 	else:
@@ -542,11 +579,8 @@ func draw_shape(updates):
 				else:
 					_shape_stroke.modulate = Color(1, 1, 1, 1)
 				
-			if updates.has("stroke_closed"):
-				if typeof(updates.stroke_closed) == TYPE_ARRAY and stroke_index < updates.stroke_closed.size():
-					_stroke_attrs.closed = updates.stroke_closed[stroke_index]
-				else:
-					_stroke_attrs.closed = updates.stroke_closed
+			if processed_polygon.has("stroke_closed") and processed_polygon.stroke_closed != null:
+				_stroke_attrs.closed = processed_polygon.stroke_closed[stroke_index]
 			
 			_shape_stroke.line_attributes = _stroke_attrs
 			_shape_stroke.show()

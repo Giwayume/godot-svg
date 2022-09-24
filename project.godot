@@ -15,6 +15,11 @@ _global_script_classes=[ {
 "path": "res://addons/godot_svg/utility/svg_attribute_parser.gd"
 }, {
 "base": "Reference",
+"class": "SVGCubics",
+"language": "GDScript",
+"path": "res://addons/godot_svg/utility/svg_cubics.gd"
+}, {
+"base": "Reference",
 "class": "SVGDrawing",
 "language": "GDScript",
 "path": "res://addons/godot_svg/utility/svg_drawing.gd"
@@ -70,12 +75,18 @@ _global_script_classes=[ {
 "path": "res://addons/godot_svg/import/svg_resource_saver.gd"
 }, {
 "base": "Reference",
+"class": "SVGTriangulation",
+"language": "GDScript",
+"path": "res://addons/godot_svg/utility/svg_triangulation.gd"
+}, {
+"base": "Reference",
 "class": "SVGValueConstant",
 "language": "GDScript",
 "path": "res://addons/godot_svg/resource/svg_value_constant.gd"
 } ]
 _global_script_class_icons={
 "SVGAttributeParser": "",
+"SVGCubics": "",
 "SVGDrawing": "",
 "SVGHelper": "",
 "SVGLengthPercentage": "",
@@ -87,6 +98,7 @@ _global_script_class_icons={
 "SVGResourceElement": "",
 "SVGResourceFormatLoader": "",
 "SVGResourceFormatSaver": "",
+"SVGTriangulation": "",
 "SVGValueConstant": ""
 }
 

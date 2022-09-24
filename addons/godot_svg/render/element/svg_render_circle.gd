@@ -1,5 +1,7 @@
 extends "svg_render_element.gd"
 
+const ARC_POINTS_MAX = 256
+
 var attr_cx = SVGLengthPercentage.new("0") setget _set_attr_cx
 var attr_cy = SVGLengthPercentage.new("0") setget _set_attr_cy
 var attr_r = SVGLengthPercentage.new("0") setget _set_attr_r
@@ -26,6 +28,7 @@ func _process_polygon():
 		"is_simple_shape": true,
 		"fill": SVGDrawing.generate_fill_circle_arc_points(center, radius, 0, 2*PI, arc_points),
 		"stroke": SVGDrawing.generate_stroke_circle_arc_points(center, radius, 0, 2*PI, arc_points),
+		"stroke_closed": true,
 	}
 
 func _draw():
@@ -35,25 +38,38 @@ func _draw():
 	var fill_paint = resolve_fill_paint()
 	var fill_color = fill_paint.color
 	var fill_texture = fill_paint.texture
+	var fill_texture_units = fill_paint.texture_units
 	
 	var stroke_paint = resolve_stroke_paint()
 	var stroke_color = stroke_paint.color
 	var stroke_texture = stroke_paint.texture
+	var stroke_texture_units = stroke_paint.texture_units
 	
 	var stroke_width = attr_stroke_width.get_length(inherited_view_box.size.x)
 	
 	draw_shape({
-		"is_simple_shape": true,
 		"scale_factor": scale_factor,
 		"fill_color": fill_color,
 		"fill_texture": fill_texture,
+		"fill_texture_units": fill_texture_units,
 		"stroke_color": stroke_color,
 		"stroke_texture": stroke_texture,
+		"stroke_texture_units": stroke_texture_units,
 		"stroke_width": stroke_width,
-		"stroke_closed": true,
 	})
 
 # Internal Methods
+
+func _calculate_arc_resolution(scale_factor): # Override to limit max points used.
+	var arc_resolution = ._calculate_arc_resolution(scale_factor)
+	var radius = attr_r.get_length(inherited_view_box.size.x)
+	var circumference = 2 * PI * radius
+	if round(circumference * arc_resolution.x) > ARC_POINTS_MAX:
+		arc_resolution = Vector2(
+			circumference / ARC_POINTS_MAX,
+			circumference / ARC_POINTS_MAX
+		)
+	return arc_resolution
 
 func _calculate_bounding_box():
 	var center = Vector2(
@@ -77,6 +93,7 @@ func _set_attr_cx(cx):
 		attr_cx = cx
 	else:
 		attr_cx = SVGLengthPercentage.new(cx)
+	_rerender_prop_cache.erase("processed_polygon")
 	apply_props()
 
 func _set_attr_cy(cy):
@@ -85,6 +102,7 @@ func _set_attr_cy(cy):
 		attr_cy = cy
 	else:
 		attr_cy = SVGLengthPercentage.new(cy)
+	_rerender_prop_cache.erase("processed_polygon")
 	apply_props()
 
 func _set_attr_r(r):
@@ -93,6 +111,7 @@ func _set_attr_r(r):
 		attr_r = r
 	else:
 		attr_r = SVGLengthPercentage.new(r)
+	_rerender_prop_cache.erase("processed_polygon")
 	apply_props()
 
 func _set_attr_path_length(path_length):

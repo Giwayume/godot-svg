@@ -11,19 +11,8 @@ var attr_path_length = SVGValueConstant.NONE setget _set_attr_path_length
 func _init():
 	node_name = "path"
 
-func _draw():
-	._draw()
+func _process_polygon():
 	var scale_factor = get_scale_factor()
-	
-	var fill_paint = resolve_fill_paint()
-	var fill_color = fill_paint.color
-	var fill_texture = fill_paint.texture
-	
-	var stroke_paint = resolve_stroke_paint()
-	var stroke_color = stroke_paint.color
-	var stroke_texture = stroke_paint.texture
-	
-	var stroke_width = attr_stroke_width.get_length(inherited_view_box.size.x)
 	
 	var fill_point_lists = []
 	var fill_points = PoolVector2Array()
@@ -95,17 +84,38 @@ func _draw():
 	if stroke_points.size() > 0:
 		stroke_point_lists.push_back(stroke_points)
 	
+	return {
+		"is_simple_shape": false,
+		"fill": fill_point_lists,
+		"stroke": stroke_point_lists,
+		"stroke_closed": strokes_closed,
+	}
+
+func _draw():
+	._draw()
+	var scale_factor = get_scale_factor()
+	
+	var fill_paint = resolve_fill_paint()
+	var fill_color = fill_paint.color
+	var fill_texture = fill_paint.texture
+	var fill_texture_units = fill_paint.texture_units
+	
+	var stroke_paint = resolve_stroke_paint()
+	var stroke_color = stroke_paint.color
+	var stroke_texture = stroke_paint.texture
+	var stroke_texture_units = stroke_paint.texture_units
+	
+	var stroke_width = attr_stroke_width.get_length(inherited_view_box.size.x)
+	
 	draw_shape({
 		"scale_factor": scale_factor,
 		"fill_color": fill_color,
 		"fill_texture": fill_texture,
-		"fill_polygon": fill_point_lists,
-		"fill_uv": [], # TODO
+		"fill_texture_units": fill_texture_units,
 		"stroke_color": stroke_color,
 		"stroke_texture": stroke_texture,
-		"stroke_points": stroke_point_lists,
+		"stroke_texture_units": stroke_texture_units,
 		"stroke_width": stroke_width,
-		"stroke_closed": strokes_closed,
 	})
 
 

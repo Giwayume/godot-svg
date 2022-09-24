@@ -1,0 +1,55 @@
+[gd_scene load_steps=3 format=2]
+
+[sub_resource type="Shader" id=1]
+code = "shader_type canvas_item;
+
+vec4 quadratic_ps(vec2 p, vec4 color) {
+	float u = p.x;
+	float v = p.y;
+	
+	// Gradients
+	vec2 dpdx = dFdx(p);
+	vec2 dpdy = dFdy(p);
+	
+	float dudx = dpdx.x;
+	float dudy = dpdy.x;
+	float dvdx = dpdx.y;
+	float dvdy = dpdy.y;
+	
+	// Chain rule
+	float fx = (2.0 * u) * dudx - dvdx;
+	float fy = (2.0 * u) * dudy - dvdy;
+	
+	// Linear algebra
+	float sd = (u * u - v) / sqrt(fx * fx + fy * fy);
+	
+	float alpha = 0.5 - sd;
+	if (alpha > 1.0) {
+		color.a = 1.0;
+	} else if (alpha < 0.0) {
+		color.a = 0.0;
+	} else {
+		color.a = alpha;
+	}
+
+	return color;
+}
+
+void fragment() {
+	vec4 texture_color = texture(TEXTURE, UV);
+	COLOR = quadratic_ps(COLOR.rg, texture_color);
+}"
+
+[sub_resource type="ShaderMaterial" id=2]
+shader = SubResource( 1 )
+
+[node name="Node2D" type="Node2D"]
+
+[node name="Polygon2D" type="Polygon2D" parent="."]
+material = SubResource( 2 )
+position = Vector2( 10.2723, -2.28572 )
+scale = Vector2( 0.876238, 1.07143 )
+texture_scale = Vector2( 64, 64 )
+polygon = PoolVector2Array( 83, 32, 118, 144, 285, 80 )
+uv = PoolVector2Array( 0, 0, 0.5, 0, 1, 1 )
+vertex_colors = PoolColorArray( 0, 0, 0, 1, 0.498039, 0, 0, 1, 1, 1, 0, 1 )

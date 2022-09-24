@@ -40,3 +40,24 @@ static func cubic_bezier_length_recurse(p0: Vector2, p1: Vector2, p2: Vector2, p
 		var chord_length = (p3 - p0).length()
 		length += (chord_length + control_net_length) / 2.0
 	return length
+
+static func is_point_right_of_segment(segment_start: Vector2, segment_end: Vector2, point: Vector2):
+	var bx = segment_end.x - segment_start.x
+	var by = segment_end.y - segment_start.y
+	var px = point.x - segment_start.x
+	var py = point.y - segment_start.y
+	
+	var cross_product = bx * py - by * px
+	
+	if cross_product > 0:
+		return true
+	
+	return false
+
+static func point_distance_along_segment(segment_start: Vector2, segment_end: Vector2, point: Vector2):
+	var x_axis_angle = segment_start.angle_to_point(segment_end)
+	var rotate_transform = Transform2D().rotated(x_axis_angle)
+	segment_start = rotate_transform.xform(segment_start)
+	segment_end = rotate_transform.xform(segment_end)
+	point = rotate_transform.xform(point)
+	return point.x - segment_start.x

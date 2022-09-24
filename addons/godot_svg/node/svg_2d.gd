@@ -16,6 +16,7 @@ const SVGRenderLinearGradient = preload("../render/element/svg_render_linear_gra
 const SVGRenderMask = preload("../render/element/svg_render_mask.gd")
 const SVGRenderPath = preload("../render/element/svg_render_path.gd")
 const SVGRenderPattern = preload("../render/element/svg_render_pattern.gd")
+const SVGRenderPolygon = preload("../render/element/svg_render_polygon.gd")
 const SVGRenderPolyline = preload("../render/element/svg_render_polyline.gd")
 const SVGRenderRadialGradient = preload("../render/element/svg_render_radial_gradient.gd")
 const SVGRenderRect = preload("../render/element/svg_render_rect.gd")
@@ -86,6 +87,7 @@ func _get_svg_element_renderer(node_name):
 		"mask": return SVGRenderMask
 		"path": return SVGRenderPath
 		"pattern": return SVGRenderPattern
+		"polygon": return SVGRenderPolygon
 		"polyline": return SVGRenderPolyline
 		"radialGradient": return SVGRenderRadialGradient
 		"rect": return SVGRenderRect

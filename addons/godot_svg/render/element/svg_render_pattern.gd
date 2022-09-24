@@ -22,6 +22,13 @@ var attr_view_box = SVGValueConstant.NONE setget _set_attr_view_box
 
 func _init():
 	node_name = "pattern"
+	_baking_viewport = Viewport.new()
+	_baking_viewport.usage = Viewport.USAGE_2D_NO_SAMPLING
+	_baking_viewport.transparent_bg = true
+	_baking_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
+	_baking_viewport.render_target_v_flip = true
+	_baking_viewport.name = "baking_viewport"
+	.add_child(_baking_viewport)
 	hide()
 
 # Getters / Setters

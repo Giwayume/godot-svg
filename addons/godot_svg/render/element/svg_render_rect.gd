@@ -13,10 +13,8 @@ var attr_path_length = SVGValueConstant.NONE setget _set_attr_path_length
 func _init():
 	node_name = "rect"
 
-func _draw():
-	._draw()
-	var scale_factor = get_scale_factor()
-	
+
+func _process_polygon():
 	var position = Vector2(
 		attr_x.get_length(inherited_view_box.size.x),
 		attr_y.get_length(inherited_view_box.size.y)
@@ -29,6 +27,17 @@ func _draw():
 	var height = 0
 	if attr_height is SVGLengthPercentage:
 		height = attr_height.get_length(inherited_view_box.size.y)
+	
+	return {
+		"is_simple_shape": true,
+		"fill": SVGDrawing.generate_fill_rect_points(position.x, position.y, width, height),
+		"stroke": SVGDrawing.generate_stroke_rect_points(position.x, position.y, width, height),
+		"stroke_closed": true,
+	}
+
+func _draw():
+	._draw()
+	var scale_factor = get_scale_factor()
 
 	var fill_paint = resolve_fill_paint()
 	var fill_color = fill_paint.color
@@ -48,18 +57,17 @@ func _draw():
 		"fill_color": fill_color,
 		"fill_texture": fill_texture,
 		"fill_texture_units": fill_texture_units,
-		"fill_polygon": SVGDrawing.generate_fill_rect_points(position.x, position.y, width, height),
-		"fill_uv": SVGDrawing.generate_fill_rect_uv(position.x, position.y, width, height, fill_texture.get_width()) if fill_texture != null else null,
 		"stroke_color": stroke_color,
 		"stroke_texture": stroke_texture,
 		"stroke_texture_units": stroke_texture_units,
-		"stroke_points": SVGDrawing.generate_stroke_rect_points(position.x, position.y, width, height),
 		"stroke_width": stroke_width,
-		"stroke_closed": true,
 	})
 
 
 # Internal Methods
+
+func _calculate_arc_resolution(_scale_factor): # Override to disable.
+	return Vector2(1.0, 1.0)
 
 func _calculate_bounding_box():
 	var position = Vector2(
