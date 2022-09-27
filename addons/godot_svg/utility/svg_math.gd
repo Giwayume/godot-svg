@@ -3,16 +3,77 @@ class_name SVGMath
 # Gives a position vector for 3 points and timestamp that form a quadratic beizer curve
 # p0 - start, p1 - control, p2 - end, t - timestamp from 0 to 1
 # Excellent explanation here https://gamedev.stackexchange.com/questions/157642/moving-a-2d-object-along-circular-arc-between-two-points
-static func quadratic_bezier(p0: Vector2, p1: Vector2, p2: Vector2, t: float):
+static func quadratic_bezier_at(p0: Vector2, p1: Vector2, p2: Vector2, t: float):
 	var q0 = p0.linear_interpolate(p1, t)
 	var q1 = p1.linear_interpolate(p2, t)
 	var r = q0.linear_interpolate(q1, t)
 	return r
 
+static func quadratic_bezier_length(p0: Vector2, p1: Vector2, p2: Vector2):
+	var a = 0.0
+	var b = 0.0
+	var c = 0.0
+	var u = 0.0
+	
+	var v0x = p1.x * 2.0
+	var v0y = p1.y * 2.0
+	var d = p0.x - v0x + p2.x
+	var d1 = p0.y - v0y + p2.y
+	var e = v0x - 2.0 * p0.x
+	var e1 = v0y - 2.0 * p0.y
+	a = 4.0 * (d * d + d1 * d1)
+	var c1 = a
+	b = 4.0 * (d * e + d1 * e1)
+	c1 += b
+	c = e * e + e1 * e1
+	c1 += c
+	c1 = 2.0 * sqrt(c1)
+	u = sqrt(a)
+	var a1 = 2 * a * u
+	if a1 == 0.0:
+		a1 = 0.0000001
+	if u == 0.0:
+		u = 0.0000001
+	var u1 = b / u
+	a = 4.0 * c * a - b * b
+	c = 2.0 * sqrt(c)
+	if u1 + c == 0.0:
+		c += 0.0000001
+	return (
+		(a1 * c1 + u * b * (c1 - c) + a * log((2.0 * u + u1 + c1) / (u1 + c))) /
+		(4.0 * a1)
+	)
+
+# Splits quadratic bezier curve into 2, returning the new positions and control points
+static func split_quadratic_bezier(p0: Vector2, p1: Vector2, p2: Vector2, t: float):
+	var x1 = p0.x
+	var y1 = p0.y
+	var x2 = p1.x
+	var y2 = p1.y
+	var x3 = p2.x
+	var y3 = p2.y
+	
+	var x12 = (x2 - x1) * t + x1
+	var y12 = (y2 - y1) * t + y1
+	
+	var x23 = (x3 - x2) * t + x2
+	var y23 = (y3 - y2) * t + y2
+	
+	var x123 = (x23 - x12) * t + x12
+	var y123 = (y23 - y12) * t + y12
+	
+	return [
+		Vector2(x1, y1),
+		Vector2(x12, y12),
+		Vector2(x123, y123),
+		Vector2(x23, y23),
+		Vector2(x3, y3),
+	]
+
 # Gives a position vector for 4 points and timestamp that form a cubic bezier curve
 # p0 - start, p1 - start control, p2 - end control, p3 - end, t - timestamp from 0 to 1
 # https://en.wikipedia.org/wiki/B%C3%A9zier_curve
-static func cubic_bezier(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2, t: float):
+static func cubic_bezier_at(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2, t: float):
 	var q0 = pow(1 - t, 3) * p0
 	var q1 = 3 * pow(1 - t, 2) * t * p1
 	var q2 = 3 * (1 - t) * pow(t, 2) * p2
@@ -41,6 +102,46 @@ static func cubic_bezier_length_recurse(p0: Vector2, p1: Vector2, p2: Vector2, p
 		length += (chord_length + control_net_length) / 2.0
 	return length
 
+# Splits cubic bezier curve into 2, returning the new positions and control points
+# https://stackoverflow.com/questions/8369488/splitting-a-bezier-curve
+static func split_cubic_bezier(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2, t: float):
+	var x1 = p0.x
+	var y1 = p0.y
+	var x2 = p1.x
+	var y2 = p1.y
+	var x3 = p2.x
+	var y3 = p2.y
+	var x4 = p3.x
+	var y4 = p3.y
+	
+	var x12 = (x2 - x1) * t + x1
+	var y12 = (y2 - y1) * t + y1
+
+	var x23 = (x3 - x2) * t + x2
+	var y23 = (y3 - y2) * t + y2
+
+	var x34 = (x4 - x3) * t + x3
+	var y34 = (y4 - y3) * t + y3
+
+	var x123 = (x23 - x12) * t + x12
+	var y123 = (y23 - y12) * t + y12
+
+	var x234 = (x34 - x23) * t + x23
+	var y234 = (y34 - y23) * t + y23
+
+	var x1234 = (x234 - x123) * t + x123
+	var y1234 = (y234 - y123) * t + y123
+	
+	return [
+		Vector2(x1, y1),
+		Vector2(x12, y12),
+		Vector2(x123, y123),
+		Vector2(x1234, y1234),
+		Vector2(x234, y234),
+		Vector2(x34, y34),
+		Vector2(x4, y4),
+	]
+
 static func is_point_right_of_segment(segment_start: Vector2, segment_end: Vector2, point: Vector2):
 	var bx = segment_end.x - segment_start.x
 	var by = segment_end.y - segment_start.y
@@ -55,9 +156,16 @@ static func is_point_right_of_segment(segment_start: Vector2, segment_end: Vecto
 	return false
 
 static func point_distance_along_segment(segment_start: Vector2, segment_end: Vector2, point: Vector2):
-	var x_axis_angle = segment_start.angle_to_point(segment_end)
-	var rotate_transform = Transform2D().rotated(x_axis_angle)
-	segment_start = rotate_transform.xform(segment_start)
-	segment_end = rotate_transform.xform(segment_end)
-	point = rotate_transform.xform(point)
-	return point.x - segment_start.x
+	var x1 = segment_start.x
+	var y1 = segment_start.y
+	var x2 = segment_end.x
+	var y2 = segment_end.y
+	var x3 = point.x
+	var y3 = point.y
+	var px = x2 - x1
+	var py = y2 - y1
+	var dab = px * px + py * py
+	var u = ((x3 - x1) * px + (y3 - y1) * py) / dab
+	var x = x1 + u * px
+	var y = y1 + u * py
+	return segment_start.distance_to(Vector2(x, y))

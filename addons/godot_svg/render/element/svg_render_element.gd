@@ -3,6 +3,8 @@ extends Node2D
 signal bounding_box_calculated(new_bounding_box)
 
 const SVGRenderBakedShader = preload("../shader/svg_render_baked_shader.tres")
+const SVGRenderFillShaderGles2 = preload("../shader/svg_render_fill_shader_gles2.tres")
+const SVGRenderFillShaderGles3 = preload("../shader/svg_render_fill_shader_gles3.tres")
 
 const SVGLine2D = preload("../polygon/svg_line_2d.gd")
 const SVGPolygonLine2D = preload("../polygon/svg_polygon_line_2d.gd")
@@ -10,6 +12,8 @@ const SVGPolygonLines2D = preload("../polygon/svg_polygon_lines_2d.gd")
 
 export(Resource) var element_resource = null setget _set_element_resource
 export(Rect2) var inherited_view_box = Rect2()
+
+var SVGRenderFillShader = SVGRenderFillShaderGles2 if OS.get_current_video_driver() == OS.VIDEO_DRIVER_GLES2 else SVGRenderFillShaderGles3
 
 # Reference to SVG2D Node
 
@@ -199,8 +203,8 @@ func _process_simplified_polygon():
 	
 	if polygons.has("fill"):
 		if polygons.fill.size() > 0:
-				if not polygons.fill[0] is PoolVector2Array:
-					polygons.fill = [polygons.fill]
+			if not polygons.fill[0] is PoolVector2Array and not polygons.fill[0] is Array:
+				polygons.fill = [polygons.fill]
 		
 		if polygons.has("is_simple_shape") and polygons.is_simple_shape:
 			simplified_fills = polygons.fill
@@ -209,20 +213,21 @@ func _process_simplified_polygon():
 			if is_in_clip_path:
 				fill_rule = attr_clip_rule
 			
-			for fill_polygon in polygons.fill:
-				simplified_fills.append_array(
-					SVGPolygonSolver.simplify(fill_polygon, {
+			for fill_path in polygons.fill:
+				simplified_fills.push_back(
+					SVGPathSolver.simplify(fill_path, {
 						SVGValueConstant.EVEN_ODD: SVGPolygonSolver.FillRule.EVEN_ODD,
 						SVGValueConstant.NON_ZERO: SVGPolygonSolver.FillRule.NON_ZERO,
 					}[fill_rule])
 				)
-#	var triangulated_fills = []
-#	for simplified_fill in simplified_fills:
-#		var triangulated_vertices = PoolVector2Array()
-#		var triangulated_indices = Geometry.triangulate_polygon(simplified_fill)
-#		for index in triangulated_indices:
-#			triangulated_vertices.push_back(simplified_fill[index])
-#		triangulated_fills.push_back(triangulated_vertices)
+			
+	
+	var triangulated_fills = []
+	for simplified_fill in simplified_fills:
+		if simplified_fill[0] is Dictionary:
+			triangulated_fills.push_back(SVGTriangulation.triangulate_fill_path(simplified_fill))
+		else:
+			pass
 	
 	var simplified_strokes = []
 	if polygons.has("stroke"):
@@ -230,7 +235,6 @@ func _process_simplified_polygon():
 			if not polygons.stroke[0] is PoolVector2Array:
 				polygons.stroke = [polygons.stroke]
 		simplified_strokes = polygons.stroke
-	
 	
 	var stroke_closed = null
 	if polygons.has("stroke_closed"):
@@ -242,7 +246,7 @@ func _process_simplified_polygon():
 				stroke_closed.push_back(polygons.stroke_closed)
 	
 	return {
-		"fill": simplified_fills,
+		"fill": triangulated_fills,
 		"stroke": simplified_strokes,
 		"stroke_closed": stroke_closed,
 	}
@@ -479,40 +483,56 @@ func draw_shape(updates):
 		var polygon_lists = processed_polygon.fill
 		
 		# Remove unused
-		for shape_stroke_index in range(polygon_lists.size(), _shape_fills.size()):
-			var shape = _shape_fills[shape_stroke_index]
+		for shape_fill_index in range(polygon_lists.size(), _shape_fills.size()):
+			var shape = _shape_fills[shape_fill_index]
 			shape.get_parent().remove_child(shape)
 			shape.queue_free()
 		_shape_fills = SVGHelper.array_slice(_shape_fills, 0, polygon_lists.size())
 		# Create new
 		for point_list_index in range(_shape_fills.size(), polygon_lists.size()):
-			var shape = Polygon2D.new()
+			var shape = MeshInstance2D.new()
 			add_child(shape)
 			_shape_fills.push_back(shape)
 		
 		var fill_index = 0
 		for _shape_fill in _shape_fills:
 			if fill_index < polygon_lists.size():
-#				var mesh = ArrayMesh.new()
-#				var mesh_arrays = []
-#				mesh_arrays.resize(ArrayMesh.ARRAY_MAX)
-#				mesh_arrays[ArrayMesh.ARRAY_VERTEX] = polygon_lists[fill_index]
-#				mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, mesh_arrays)
-#				_shape_fill.mesh = mesh
-				_shape_fill.polygon = polygon_lists[fill_index]
-			_shape_fill.color = updates.fill_color
+				var fill_definition = polygon_lists[fill_index]
+				var mesh = ArrayMesh.new()
+				var surface = []
+				surface.resize(ArrayMesh.ARRAY_MAX)
+				var vertices = PoolVector2Array()
+				var colors = PoolColorArray()
+				vertices.append_array(fill_definition.interior_vertices)
+				for implicit_coordinate in fill_definition.interior_implicit_coordinates:
+					colors.push_back(Color(implicit_coordinate.x, implicit_coordinate.y, implicit_coordinate.z, 1.0))
+				vertices.append_array(fill_definition.quadratic_vertices)
+				for implicit_coordinate in fill_definition.quadratic_implicit_coordinates:
+					colors.push_back(Color(implicit_coordinate.x, implicit_coordinate.y, 1.0, 0.0))
+				vertices.append_array(fill_definition.cubic_vertices)
+				for implicit_coordinate in fill_definition.cubic_implicit_coordinates:
+					colors.push_back(Color(implicit_coordinate.x, implicit_coordinate.y, implicit_coordinate.z, 0.5))
+				surface[ArrayMesh.ARRAY_VERTEX] = vertices
+				surface[ArrayMesh.ARRAY_COLOR] = colors
+				mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, surface, [], Mesh.ARRAY_COMPRESS_VERTEX)
+				_shape_fill.mesh = mesh
+				_shape_fill.material = ShaderMaterial.new()
+				_shape_fill.material.shader = SVGRenderFillShader
+#				_shape_fill.polygon = polygon_lists[fill_index]
+			_shape_fill.material.set_shader_param("fill_color", updates.fill_color)
 			_shape_fill.self_modulate = Color(1, 1, 1, max(0, min(1, attr_fill_opacity.get_length(1))))
-			if updates.has("stroke_color"):
-				_shape_fill.antialiased = svg_node.antialiased and updates.stroke_color.a == 0
+#			if updates.has("stroke_color"):
+#				_shape_fill.antialiased = svg_node.antialiased and updates.stroke_color.a == 0
 			if (
 				updates.has("fill_texture") and updates.fill_texture != null and
 				updates.has("fill_texture_units") and updates.fill_texture_units != null
 			):
-				_shape_fill.uv = SVGDrawing.generate_texture_uv(
-					_shape_fill.polygon, inherited_view_box, bounding_box,
-					updates.fill_texture.get_size(), updates.fill_texture_units
-				)
-				_shape_fill.texture = updates.fill_texture
+				_shape_fill.material.set_shader_param("fill_texture", updates.fill_texture)
+#				_shape_fill.uv = SVGDrawing.generate_texture_uv(
+#					_shape_fill.polygon, inherited_view_box, bounding_box,
+#					updates.fill_texture.get_size(), updates.fill_texture_units
+#				)
+#				_shape_fill.texture = updates.fill_texture
 #			else:
 #				var gradient_texture = GradientTexture2D.new()
 #				gradient_texture.width = 1

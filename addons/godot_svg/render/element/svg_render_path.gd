@@ -20,6 +20,8 @@ func _process_polygon():
 	var stroke_points = PoolVector2Array()
 	var strokes_closed = []
 	
+	var fill_commands = []
+	
 	var current_stroke_start_point = Vector2()
 	var current_point = Vector2()
 	for i in range(0, attr_d.size()):
@@ -32,28 +34,35 @@ func _process_polygon():
 				current_point = (current_point if is_relative else Vector2()) + Vector2(values[0], values[1])
 				current_stroke_start_point = current_point
 				if not [PathCommand.MOVE_TO, PathCommand.CLOSE_PATH].has(next_instruction.command):
-					if fill_points.size() > 0:
-						if not current_stroke_start_point.is_equal_approx(current_point):
-							fill_points.push_back(current_stroke_start_point)
-						fill_point_lists.push_back(fill_points)
-						fill_points = PoolVector2Array()
 					if stroke_points.size() > 0:
 						stroke_point_lists.push_back(stroke_points)
 						strokes_closed.push_back(false)
 						stroke_points = PoolVector2Array()
-					fill_points.push_back(current_point)
+					fill_commands.push_back({
+						"command": PathCommand.MOVE_TO,
+						"points": [current_point],
+					})
 					stroke_points.push_back(current_point)
 			PathCommand.LINE_TO:
 				current_point = (current_point if is_relative else Vector2()) + Vector2(values[0], values[1])
-				fill_points.push_back(current_point)
+				fill_commands.push_back({
+					"command": PathCommand.LINE_TO,
+					"points": [current_point],
+				})
 				stroke_points.push_back(current_point)
 			PathCommand.HORIZONTAL_LINE_TO:
 				current_point = Vector2((current_point.x if is_relative else 0.0) + values[0], current_point.y)
-				fill_points.push_back(current_point)
+				fill_commands.push_back({
+					"command": PathCommand.LINE_TO,
+					"points": [current_point],
+				})
 				stroke_points.push_back(current_point)
 			PathCommand.VERTICAL_LINE_TO:
 				current_point = Vector2(current_point.x, (current_point.y if is_relative else 0.0) + values[0])
-				fill_points.push_back(current_point)
+				fill_commands.push_back({
+					"command": PathCommand.LINE_TO,
+					"points": [current_point],
+				})
 				stroke_points.push_back(current_point)
 			PathCommand.CUBIC_BEZIER_CURVE:
 				var relative_offset = (current_point if is_relative else Vector2())
@@ -61,32 +70,36 @@ func _process_polygon():
 				var p1 = relative_offset + Vector2(values[0], values[1])
 				var p2 = relative_offset + Vector2(values[2], values[3])
 				var p3 = relative_offset + Vector2(values[4], values[5])
+				fill_commands.push_back({
+					"command": PathCommand.CUBIC_BEZIER_CURVE,
+					"points": [p1, p2, p3],
+				})
 				var bezier_length = SVGMath.cubic_bezier_length(p0, p1, p2, p3)
 				var bezier_steps = float(max(4, (bezier_length * scale_factor.x) / 5)) # point every 5 pixels
 				for bezier_step_index in range(1, bezier_steps):
-					current_point = SVGMath.cubic_bezier(p0, p1, p2, p3, float(bezier_step_index) / bezier_steps)
-					fill_points.push_back(current_point)
+					current_point = SVGMath.cubic_bezier_at(p0, p1, p2, p3, float(bezier_step_index) / bezier_steps)
 					stroke_points.push_back(current_point)
 			PathCommand.CLOSE_PATH:
 				if not current_stroke_start_point.is_equal_approx(current_point):
-					fill_points.push_back(current_stroke_start_point)
+					fill_commands.push_back({
+						"command": PathCommand.LINE_TO,
+						"points": [current_stroke_start_point],
+					})
 					stroke_points.push_back(current_stroke_start_point)
-				if fill_points.size() > 0:
-					fill_point_lists.push_back(fill_points)
-					fill_points = PoolVector2Array()
+				fill_commands.push_back({
+					"command": PathCommand.CLOSE_PATH,
+				})
 				if stroke_points.size() > 0:
 					stroke_point_lists.push_back(stroke_points)
 					strokes_closed.push_back(true)
 					stroke_points = PoolVector2Array()
 	
-	if fill_points.size() > 0:
-		fill_point_lists.push_back(fill_points)
 	if stroke_points.size() > 0:
 		stroke_point_lists.push_back(stroke_points)
 	
 	return {
 		"is_simple_shape": false,
-		"fill": fill_point_lists,
+		"fill": fill_commands,
 		"stroke": stroke_point_lists,
 		"stroke_closed": strokes_closed,
 	}
@@ -120,6 +133,9 @@ func _draw():
 
 
 # Internal Methods
+
+func _calculate_arc_resolution(_scale_factor): # Override to disable.
+	return Vector2(1.0, 1.0)
 
 func _calculate_bounding_box():
 	# TODO

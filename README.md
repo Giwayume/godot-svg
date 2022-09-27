@@ -1,8 +1,10 @@
 # Godot SVG
 
-This Godot plugin **renders SVG files at runtime** by using Polygon2D nodes. It achieves the effect of infinite scaling and smooth curves by varying the number of vertices used to draw each shape.
+This Godot plugin **renders SVG files at runtime**. It achieves the effect of infinite scaling and smooth curves by calculating the curves in shaders drawn on polygons.
 
 This is the most spec-compliant SVG renderer for Godot. Every other SVG-related project I see only attempts to make simple things like shapes and solid lines work.
+
+> It is **HIGHLY RECOMMENDED** to use this plugin with the GLES3 renderer, as GLES2 does not support many of the functions used to render SVG on the GPU (dFdx/dFdy/fwidth is used for anti-aliasing).
 
 ## Usage
 
@@ -45,7 +47,7 @@ These nodes share a similar API.
 
 ***SVGs vs Sprites***
 
-Godot is much faster at drawing raster textures in 2D. Whenever you can get away with it, you should prefer using Sprites instead of SVGs.
+Godot is generally much faster at drawing raster textures in 2D. Whenever you can get away with it, you should prefer using Sprites instead of SVGs.
 
 ***Scaling***
 

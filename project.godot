@@ -50,6 +50,11 @@ _global_script_classes=[ {
 "path": "res://addons/godot_svg/utility/svg_paint_server.gd"
 }, {
 "base": "Reference",
+"class": "SVGPathSolver",
+"language": "GDScript",
+"path": "res://addons/godot_svg/utility/svg_path_solver.gd"
+}, {
+"base": "Reference",
 "class": "SVGPolygonSolver",
 "language": "GDScript",
 "path": "res://addons/godot_svg/utility/svg_polygon_solver.gd"
@@ -93,6 +98,7 @@ _global_script_class_icons={
 "SVGMath": "",
 "SVGPaint": "",
 "SVGPaintServer": "",
+"SVGPathSolver": "",
 "SVGPolygonSolver": "",
 "SVGResource": "",
 "SVGResourceElement": "",

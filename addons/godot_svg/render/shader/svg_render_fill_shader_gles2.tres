@@ -3,31 +3,20 @@
 [resource]
 code = "shader_type canvas_item;
 
-uniform vec4 base_color = vec4(1.0, 1.0, 1.0, 1.0);
-uniform sampler2D albedo_texture;
+uniform vec4 fill_color = vec4(1.0, 1.0, 1.0, 1.0);
+uniform sampler2D fill_texture;
 
 vec4 quadratic_ps(vec2 p, vec4 color) {
 	float u = p.x;
 	float v = p.y;
 	
-	// Gradients
-	vec2 dpdx = dFdx(p);
-	vec2 dpdy = dFdy(p);
-
-	// Chain rule
-	float fx = (2.0 * u) * dpdx.x - dpdx.y;
-	float fy = (2.0 * u) * dpdy.x - dpdy.y;
-	
 	// Linear algebra
-	float sd = (u * u - v) / sqrt(fx * fx + fy * fy);
+	float sd = (u * u - v);
 	
-	float alpha = 0.5 - sd;
-	if (alpha > 1.0) {
+	if (sd > 0.0) {
 		color.a = 1.0;
-	} else if (alpha < 0.0) {
-		color.a = 0.0;
 	} else {
-		color.a = alpha;
+		color.a = 0.0;
 	}
 
 	return color;
@@ -47,11 +36,13 @@ vec4 cubic_ps(vec3 klm, vec4 color) {
 }
 
 void fragment() {
-	vec4 blend_color = texture(albedo_texture, UV) * base_color;
+	vec4 blend_color = texture(fill_texture, UV) * fill_color;
 	if (COLOR.a < 0.3) {
 		COLOR = quadratic_ps(COLOR.rg, blend_color);
 	} else if (COLOR.a < 0.6) {
 		COLOR = cubic_ps(COLOR.rgb, blend_color);
+	} else {
+		COLOR = blend_color;
 	}
 }
 "

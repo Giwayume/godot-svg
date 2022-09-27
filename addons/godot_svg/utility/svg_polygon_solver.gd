@@ -38,7 +38,6 @@ static func get_polygon_bounds(polygon: PoolVector2Array):
 			bottom = point.y
 	return Rect2(left, top, right - left, bottom - top)
 
-
 static func simplify(input_points, fill_rule = FillRule.EVEN_ODD):
 	input_points = Array(input_points)
 	if not input_points[input_points.size() - 1].is_equal_approx(input_points[0]):

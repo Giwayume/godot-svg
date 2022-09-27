@@ -7,6 +7,8 @@ export(Resource) var svg = null setget _set_svg, _get_svg
 export(float) var fixed_scaling_ratio = 0 setget _set_fixed_scaling_ratio, _get_fixed_scaling_ratio
 export(bool) var antialiased = true setget _set_antialiased, _get_antialiased
 
+var is_gles2 = OS.get_current_video_driver() == OS.VIDEO_DRIVER_GLES2
+
 var _svg = null
 var _fixed_scaling_ratio = 0
 var _antialiased = true
@@ -97,6 +99,17 @@ func _size_svg():
 						var leftover_space = rect_size.x - (view_box.size.x * _svg_2d.scale.x)
 						_svg_2d.position = Vector2(x_align_ratio * leftover_space, 0.0)
 						
+
+# Editor
+
+func _get_configuration_warning():
+	if _svg is Texture:
+		return "You added an SVG file that is imported as \"Texture\". In the Import tab, choose \"Import As: SVG\" instead!"
+	elif _svg != null and not _svg is SVGResource:
+		return "You must import your SVG file as \"GodotSVG\" in the import settings!"
+	elif is_gles2 and _antialiased:
+		return "\"antialiased\" is enabled, but GLES2 does not support the antialiasing technique used by this plugin. Use GLES3 instead."
+	return ""
 
 # Getters / Setters
 

@@ -1,6 +1,7 @@
 extends "svg_render_element.gd"
 
 const ARC_POINTS_MAX = 256
+const PathCommand = SVGValueConstant.PathCommand
 
 var attr_cx = SVGLengthPercentage.new("0") setget _set_attr_cx
 var attr_cy = SVGLengthPercentage.new("0") setget _set_attr_cy
@@ -24,9 +25,56 @@ func _process_polygon():
 	var radius = attr_r.get_length(inherited_view_box.size.x)
 	var circumference = 2 * PI * radius
 	var arc_points = max(20.0, round(circumference * _current_arc_resolution.x))
+	
+	var arc_angle = PI / 2
+	var bezier_segments = (2.0 * PI) / arc_angle
+	var handle_offset_unit = (4.0/3.0) * tan(PI / (2 * bezier_segments))
+	var handle_offset = handle_offset_unit * radius
+	var fill = [
+		{
+			"command": PathCommand.MOVE_TO,
+			"points": [center + Vector2(0.0, -radius)],
+		},
+		{
+			"command": PathCommand.CUBIC_BEZIER_CURVE,
+			"points": [
+				center + Vector2(handle_offset, -radius),
+				center + Vector2(radius, -handle_offset),
+				center + Vector2(radius, 0.0),
+			],
+		},
+		{
+			"command": PathCommand.CUBIC_BEZIER_CURVE,
+			"points": [
+				center + Vector2(radius, handle_offset),
+				center + Vector2(handle_offset, radius),
+				center + Vector2(0.0, radius),
+			],
+		},
+		{
+			"command": PathCommand.CUBIC_BEZIER_CURVE,
+			"points": [
+				center + Vector2(-handle_offset, radius),
+				center + Vector2(-radius, handle_offset),
+				center + Vector2(-radius, 0.0),
+			],
+		},
+		{
+			"command": PathCommand.CUBIC_BEZIER_CURVE,
+			"points": [
+				center + Vector2(-radius, -handle_offset),
+				center + Vector2(-handle_offset, -radius),
+				center + Vector2(0.0, -radius),
+			],
+		},
+		{
+			"command": PathCommand.CLOSE_PATH,
+		}
+	]
+	
 	return {
 		"is_simple_shape": true,
-		"fill": SVGDrawing.generate_fill_circle_arc_points(center, radius, 0, 2*PI, arc_points),
+		"fill": fill,
 		"stroke": SVGDrawing.generate_stroke_circle_arc_points(center, radius, 0, 2*PI, arc_points),
 		"stroke_closed": true,
 	}
@@ -60,16 +108,19 @@ func _draw():
 
 # Internal Methods
 
-func _calculate_arc_resolution(scale_factor): # Override to limit max points used.
-	var arc_resolution = ._calculate_arc_resolution(scale_factor)
-	var radius = attr_r.get_length(inherited_view_box.size.x)
-	var circumference = 2 * PI * radius
-	if round(circumference * arc_resolution.x) > ARC_POINTS_MAX:
-		arc_resolution = Vector2(
-			circumference / ARC_POINTS_MAX,
-			circumference / ARC_POINTS_MAX
-		)
-	return arc_resolution
+func _calculate_arc_resolution(_scale_factor): # Override to disable.
+	return Vector2(1.0, 1.0)
+
+#func _calculate_arc_resolution(scale_factor): # Override to limit max points used.
+#	var arc_resolution = ._calculate_arc_resolution(scale_factor)
+#	var radius = attr_r.get_length(inherited_view_box.size.x)
+#	var circumference = 2 * PI * radius
+#	if round(circumference * arc_resolution.x) > ARC_POINTS_MAX:
+#		arc_resolution = Vector2(
+#			circumference / ARC_POINTS_MAX,
+#			circumference / ARC_POINTS_MAX
+#		)
+#	return arc_resolution
 
 func _calculate_bounding_box():
 	var center = Vector2(

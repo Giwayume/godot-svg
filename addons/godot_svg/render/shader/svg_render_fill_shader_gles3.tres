@@ -1,0 +1,88 @@
+[gd_resource type="Shader" format=2]
+
+[resource]
+code = "shader_type canvas_item;
+
+uniform vec4 fill_color = vec4(1.0, 1.0, 1.0, 1.0);
+uniform sampler2D fill_texture;
+
+vec4 quadratic_ps(vec2 p, vec4 color) {
+	float u = p.x;
+	float v = p.y;
+	
+	// Gradients
+	vec2 dpdx = dFdx(p);
+	vec2 dpdy = dFdy(p);
+
+	// Chain rule
+	float fx = (2.0 * u) * dpdx.x - dpdx.y;
+	float fy = (2.0 * u) * dpdy.x - dpdy.y;
+	
+	// Linear algebra
+	float sd = (u * u - v) / sqrt(fx * fx + fy * fy);
+	
+	float alpha = 0.5 - sd;
+	if (alpha > 1.0) {
+		color.a = 1.0;
+	} else if (alpha < 0.0) {
+		color.a = 0.0;
+	} else {
+		color.a = alpha;
+	}
+
+	return color;
+}
+
+vec4 cubic_ps(vec3 klm, vec4 color) {
+	// Linear algebra
+	float sd = klm.x * klm.x * klm.x - klm.y * klm.z;
+	
+	if (sd < 0.0) {
+		color.a = 1.0;
+	} else {
+		color.a = 0.0;
+	}
+
+	return color;
+}
+
+vec2 linearstep(vec2 edge0, vec2 edge1, vec2 x) {
+	return clamp((x - (edge0)) / (edge1 - (edge0)), 0.0, 1.0);
+}
+
+vec4 triangle_antialiased(vec3 uv, vec4 color) {
+	vec2 uv_pixel = fwidth(uv.xy);
+
+	vec2 corner_border = linearstep(vec2(0.0), uv_pixel, uv.xy);
+	vec2 hypotenuse_border = linearstep(vec2(1.0), vec2(1.0) - uv_pixel * 1.41, vec2(uv.x + uv.y));
+	
+	//  uv.z controls whether each edge has antialiasing.
+	//  0           N/A     0.0
+	//  0   to 1/6  a       0.08
+	//  1/6 to 2/6  ab      0.25
+	//  2/6 to 3/6  abc     0.42
+	//  3/6 to 4/6  b       0.58
+	//  4/6 to 5/6  bc      0.75
+	//  5/6 to 6/6  c       0.92
+
+	float a = max(step(uv.z, 0.01), step(0.5, uv.z));
+	float b = max(step(uv.z, 0.16), step(0.83, uv.z));
+	float c = min(step(uv.z, 0.66), max(step(uv.z, 0.33), step(0.5, uv.z)));
+	
+	float alpha = max(a, corner_border.x) * max(b, corner_border.y) * max(c, hypotenuse_border.x * hypotenuse_border.y);
+	color.a *= alpha;
+	
+	return color;
+}
+
+void fragment() {
+	vec4 blend_color = texture(fill_texture, UV) * fill_color;
+	if (COLOR.a < 0.3) {
+		COLOR = quadratic_ps(COLOR.rg, blend_color);
+	} else if (COLOR.a < 0.6) {
+		COLOR = cubic_ps(COLOR.rgb, blend_color);
+	} else {
+		COLOR = triangle_antialiased(COLOR.rgb, blend_color);
+	}
+}
+"

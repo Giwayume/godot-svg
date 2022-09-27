@@ -6,20 +6,15 @@ code = "shader_type canvas_item;
 vec4 quadratic_ps(vec2 p, vec4 color) {
 	float u = p.x;
 	float v = p.y;
-	
+
 	// Gradients
 	vec2 dpdx = dFdx(p);
 	vec2 dpdy = dFdy(p);
-	
-	float dudx = dpdx.x;
-	float dudy = dpdy.x;
-	float dvdx = dpdx.y;
-	float dvdy = dpdy.y;
-	
+
 	// Chain rule
-	float fx = (2.0 * u) * dudx - dvdx;
-	float fy = (2.0 * u) * dudy - dvdy;
-	
+	float fx = (2.0 * u) * dpdx.x - dpdx.y;
+	float fy = (2.0 * u) * dpdy.x - dpdy.y;
+
 	// Linear algebra
 	float sd = (u * u - v) / sqrt(fx * fx + fy * fy);
 	
@@ -31,7 +26,7 @@ vec4 quadratic_ps(vec2 p, vec4 color) {
 	} else {
 		color.a = alpha;
 	}
-
+	
 	return color;
 }
 
