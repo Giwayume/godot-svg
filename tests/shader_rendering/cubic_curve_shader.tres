@@ -3,48 +3,31 @@
 [resource]
 code = "shader_type canvas_item;
 
-vec4 cubic_ps(vec4 klm, vec4 color) {
+vec4 cubic_ps(vec3 klm, vec4 color) {
 	float k = klm.x;
 	float l = klm.y;
 	float m = klm.z;
 	
 	// Gradients
-	vec4 dpdx = dFdx(klm);
-	vec4 dpdy = dFdy(klm);
+	vec3 dpdx = dFdx(klm);
+	vec3 dpdy = dFdy(klm);
 	
 	// Chain rule
-	float fx = (
-		((3.0 * (k * k)) * dpdx.x - dpdx.y) +
-		((-m) * dpdx.x - dpdx.y) +
-		((-l) * dpdx.x - dpdx.y)
-	);
-	float fy = (
-		((3.0 * (k * k)) * dpdy.x - dpdy.y) +
-		((-m) * dpdy.x - dpdy.y) +
-		((-l) * dpdy.x - dpdy.y)
-	);
+	vec3 dfdp = vec3(3.0 * k * k, -l, -m);
+	vec2 f = vec2(dot(dfdp, dpdx), dot(dfdp, dpdy));
 
 	// Linear algebra
-	float sd = (k * k * k - l * m);
+	float isoval = (k * k * k - l * m);
+	float miplevel = length(f);
+	isoval /= miplevel;
 	
-	float alpha = 0.5 - sd;
-	if (alpha > 1.0) {
-		color.a = 1.0;
-	} else if (alpha < 0.0) {
-		color.a = 0.0;
-	} else {
-		color.a = alpha;
-	}
-//	if (sd < 0.0) {
-//		color.a = 1.0;
-//	} else {
-//		color.a = 0.0;
-//	}
+	isoval = 0.5 - isoval;
+	color.a = clamp(isoval, 0.0, 1.0);
 
 	return color;
 }
 
 void fragment() {
-	COLOR = cubic_ps(COLOR, vec4(1.0, 0.0, 0.0, 1.0));
+	COLOR = cubic_ps(COLOR.rgb, vec4(0.0, 0.0, 0.0, 1.0));
 }
 "

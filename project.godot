@@ -10,6 +10,11 @@ config_version=4
 
 _global_script_classes=[ {
 "base": "Reference",
+"class": "SVGArcs",
+"language": "GDScript",
+"path": "res://addons/godot_svg/utility/svg_arcs.gd"
+}, {
+"base": "Reference",
 "class": "SVGAttributeParser",
 "language": "GDScript",
 "path": "res://addons/godot_svg/utility/svg_attribute_parser.gd"
@@ -90,6 +95,7 @@ _global_script_classes=[ {
 "path": "res://addons/godot_svg/resource/svg_value_constant.gd"
 } ]
 _global_script_class_icons={
+"SVGArcs": "",
 "SVGAttributeParser": "",
 "SVGCubics": "",
 "SVGDrawing": "",
@@ -140,4 +146,5 @@ common/enable_pause_aware_picking=true
 
 [rendering]
 
+environment/default_clear_color=Color( 0.509804, 0.941176, 0.498039, 1 )
 environment/default_environment="res://default_env.tres"

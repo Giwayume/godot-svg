@@ -89,7 +89,15 @@ static func parse_transform_list(transform_attr):
 			for command_index in range(split.size() - 1, -1, -1):
 				var transform_command = split[command_index]
 				transform_command = transform_command.strip_edges()
-				if transform_command.begins_with("rotate("):
+				if transform_command.begins_with("matrix("):
+					var values = parse_number_list(transform_command.replace("matrix(", "").rstrip(")"))
+					if values.size() == 6:
+						transform_matrix = Transform2D(
+							Vector2(values[0], values[1]),
+							Vector2(values[2], values[3]),
+							Vector2(values[4], values[5])
+						)
+				elif transform_command.begins_with("rotate("):
 					var values = parse_number_list(transform_command.replace("rotate(", "").rstrip(")"))
 					if values.size() == 1:
 						transform_matrix = transform_matrix.rotated(Vector3(0, 0, 1), deg2rad(values[0]))

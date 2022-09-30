@@ -214,18 +214,22 @@ func _process_simplified_polygon():
 				fill_rule = attr_clip_rule
 			
 			for fill_path in polygons.fill:
-				simplified_fills.push_back(
-					SVGPathSolver.simplify(fill_path, {
-						SVGValueConstant.EVEN_ODD: SVGPolygonSolver.FillRule.EVEN_ODD,
-						SVGValueConstant.NON_ZERO: SVGPolygonSolver.FillRule.NON_ZERO,
-					}[fill_rule])
-				)
+				var simplified_fill = SVGPathSolver.simplify(fill_path, {
+					SVGValueConstant.EVEN_ODD: SVGPolygonSolver.FillRule.EVEN_ODD,
+					SVGValueConstant.NON_ZERO: SVGPolygonSolver.FillRule.NON_ZERO,
+				}[fill_rule])
+				if simplified_fill.size() > 0:
+					simplified_fills.push_back(simplified_fill)
+				else:
+					print("\nError occurred when simplifying fill path ", fill_path)
+					simplified_fills.push_back(fill_path)
 			
 	
 	var triangulated_fills = []
 	for simplified_fill in simplified_fills:
 		if simplified_fill[0] is Dictionary:
-			triangulated_fills.push_back(SVGTriangulation.triangulate_fill_path(simplified_fill))
+			var fill_triangulation = SVGTriangulation.triangulate_fill_path(simplified_fill)
+			triangulated_fills.push_back(fill_triangulation)
 		else:
 			pass
 	
@@ -244,6 +248,8 @@ func _process_simplified_polygon():
 				stroke_closed.push_back(polygons.stroke_closed[stroke_index])
 			else:
 				stroke_closed.push_back(polygons.stroke_closed)
+	
+#	print_debug(OS.get_system_time_msecs() - time_start)
 	
 	return {
 		"fill": triangulated_fills,
@@ -503,18 +509,39 @@ func draw_shape(updates):
 				surface.resize(ArrayMesh.ARRAY_MAX)
 				var vertices = PoolVector2Array()
 				var colors = PoolColorArray()
+				var coordinate_index = 0
+				# Interior faces
 				vertices.append_array(fill_definition.interior_vertices)
 				for implicit_coordinate in fill_definition.interior_implicit_coordinates:
-					colors.push_back(Color(implicit_coordinate.x, implicit_coordinate.y, implicit_coordinate.z, 1.0))
+					colors.push_back(Color(implicit_coordinate.x, implicit_coordinate.y, implicit_coordinate.z, 0.7))
+				# Quadratic edges
 				vertices.append_array(fill_definition.quadratic_vertices)
+				coordinate_index = 0
 				for implicit_coordinate in fill_definition.quadratic_implicit_coordinates:
-					colors.push_back(Color(implicit_coordinate.x, implicit_coordinate.y, 1.0, 0.0))
+					colors.push_back(Color(
+						implicit_coordinate.x, implicit_coordinate.y, 1.0,
+						0.1 + 0.15 * float(fill_definition.quadratic_signs[coordinate_index])
+					))
+					coordinate_index += 1
+				# Cubic edges
 				vertices.append_array(fill_definition.cubic_vertices)
+				coordinate_index = 0
 				for implicit_coordinate in fill_definition.cubic_implicit_coordinates:
-					colors.push_back(Color(implicit_coordinate.x, implicit_coordinate.y, implicit_coordinate.z, 0.5))
+					colors.push_back(Color(
+						implicit_coordinate.x, implicit_coordinate.y, implicit_coordinate.z,
+						0.31 + 0.15 * float(fill_definition.cubic_signs[coordinate_index])
+					))
+					coordinate_index += 1
+				# Antialiased line edges
+				vertices.append_array(fill_definition.antialias_edge_vertices)
+				for implicit_coordinate in fill_definition.antialias_edge_implicit_coordinates:
+					colors.push_back(Color(
+						implicit_coordinate.x, implicit_coordinate.y, 0.0, 0.9
+					))
+				# Create the mesh
 				surface[ArrayMesh.ARRAY_VERTEX] = vertices
 				surface[ArrayMesh.ARRAY_COLOR] = colors
-				mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, surface, [], Mesh.ARRAY_COMPRESS_VERTEX)
+				mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, surface, [], 0)
 				_shape_fill.mesh = mesh
 				_shape_fill.material = ShaderMaterial.new()
 				_shape_fill.material.shader = SVGRenderFillShader

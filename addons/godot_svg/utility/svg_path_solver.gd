@@ -291,6 +291,10 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 						intersections_at_positions[i].push_back(intersection)
 						intersections_at_positions[j].push_back(intersection)
 	
+	# If no intersections, does not need simplification.
+	if intersections.size() == 0:
+		return paths
+	
 	# For each intersection point, follow the intersection lines forward, then take right turns until it comes back to the initial point
 	for intersection in intersections:
 		for shape_start_array_index in range(0, intersection.intersected_shape_indices.size()):

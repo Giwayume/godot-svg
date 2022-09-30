@@ -79,6 +79,86 @@ func _process_polygon():
 				for bezier_step_index in range(1, bezier_steps):
 					current_point = SVGMath.cubic_bezier_at(p0, p1, p2, p3, float(bezier_step_index) / bezier_steps)
 					stroke_points.push_back(current_point)
+				current_point = p3
+			PathCommand.SMOOTH_CUBIC_BEZIER_CURVE:
+				var relative_offset = (current_point if is_relative else Vector2())
+				var p0 = current_point
+				var p1 = Vector2()
+				var p2 = relative_offset + Vector2(values[0], values[1])
+				var p3 = relative_offset + Vector2(values[2], values[3])
+				var last_fill_command = fill_commands.back()
+				if last_fill_command.command == PathCommand.CUBIC_BEZIER_CURVE:
+					p1 = last_fill_command.points[2] + (last_fill_command.points[2] - last_fill_command.points[1])
+				else:
+					p1 = last_fill_command.points[2]
+				fill_commands.push_back({
+					"command": PathCommand.CUBIC_BEZIER_CURVE,
+					"points": [p1, p2, p3],
+				})
+				var bezier_length = SVGMath.cubic_bezier_length(p0, p1, p2, p3)
+				var bezier_steps = float(max(4, (bezier_length * scale_factor.x) / 5)) # point every 5 pixels
+				for bezier_step_index in range(1, bezier_steps):
+					current_point = SVGMath.cubic_bezier_at(p0, p1, p2, p3, float(bezier_step_index) / bezier_steps)
+					stroke_points.push_back(current_point)
+				current_point = p3
+			PathCommand.QUADRATIC_BEZIER_CURVE:
+				var relative_offset = (current_point if is_relative else Vector2())
+				var p0 = current_point
+				var p1 = relative_offset + Vector2(values[0], values[1])
+				var p2 = relative_offset + Vector2(values[2], values[3])
+				fill_commands.push_back({
+					"command": PathCommand.QUADRATIC_BEZIER_CURVE,
+					"points": [p1, p2],
+				})
+				var bezier_length = SVGMath.quadratic_bezier_length(p0, p1, p2)
+				var bezier_steps = float(max(4, (bezier_length * scale_factor.x) / 5)) # point every 5 pixels
+				for bezier_step_index in range(1, bezier_steps):
+					current_point = SVGMath.quadratic_bezier_at(p0, p1, p2, float(bezier_step_index) / bezier_steps)
+					stroke_points.push_back(current_point)
+				current_point = p2
+			PathCommand.SMOOTH_QUADRATIC_BEZIER_CURVE:
+				var relative_offset = (current_point if is_relative else Vector2())
+				var p0 = current_point
+				var p1 = Vector2()
+				var p2 = relative_offset + Vector2(values[2], values[3])
+				var last_fill_command = fill_commands.back()
+				if last_fill_command.command == PathCommand.QUADRATIC_BEZIER_CURVE:
+					p1 = last_fill_command.points[1] + (last_fill_command.points[1] - last_fill_command.points[0])
+				else:
+					p1 = last_fill_command.points[1]
+				fill_commands.push_back({
+					"command": PathCommand.QUADRATIC_BEZIER_CURVE,
+					"points": [p1, p2],
+				})
+				var bezier_length = SVGMath.quadratic_bezier_length(p0, p1, p2)
+				var bezier_steps = float(max(4, (bezier_length * scale_factor.x) / 5)) # point every 5 pixels
+				for bezier_step_index in range(1, bezier_steps):
+					current_point = SVGMath.quadratic_bezier_at(p0, p1, p2, float(bezier_step_index) / bezier_steps)
+					stroke_points.push_back(current_point)
+				current_point = p2
+			PathCommand.ELLIPTICAL_ARC_CURVE:
+				var relative_offset = (current_point if is_relative else Vector2())
+				var translated_bezier_commands = SVGArcs.arc_to_cubic_bezier(
+					current_point,
+					relative_offset + Vector2(values[5], values[6]),
+					Vector2(values[0], values[1]),
+					values[2],
+					values[3],
+					values[4]
+				)
+				if translated_bezier_commands.size() > 0:
+					fill_commands.append_array(translated_bezier_commands)
+					for translated_command in translated_bezier_commands:
+						var p0 = current_point
+						var p1 = translated_command.points[0]
+						var p2 = translated_command.points[1]
+						var p3 = translated_command.points[2]
+						var bezier_length = SVGMath.cubic_bezier_length(p0, p1, p2, p3)
+						var bezier_steps = float(max(4, (bezier_length * scale_factor.x) / 5)) # point every 5 pixels
+						for bezier_step_index in range(1, bezier_steps):
+							current_point = SVGMath.cubic_bezier_at(p0, p1, p2, p3, float(bezier_step_index) / bezier_steps)
+							stroke_points.push_back(current_point)
+						current_point = p3
 			PathCommand.CLOSE_PATH:
 				if not current_stroke_start_point.is_equal_approx(current_point):
 					fill_commands.push_back({

@@ -6,7 +6,7 @@ code = "shader_type canvas_item;
 uniform vec4 fill_color = vec4(1.0, 1.0, 1.0, 1.0);
 uniform sampler2D fill_texture;
 
-vec4 quadratic_ps(vec2 p, vec4 color) {
+vec4 quadratic_ps(vec2 p, float inside_sign, vec4 color) {
 	float u = p.x;
 	float v = p.y;
 	
@@ -19,29 +19,29 @@ vec4 quadratic_ps(vec2 p, vec4 color) {
 	float fy = (2.0 * u) * dpdy.x - dpdy.y;
 	
 	// Linear algebra
-	float sd = (u * u - v) / sqrt(fx * fx + fy * fy);
+	float sd = inside_sign * (u * u - v) / sqrt(fx * fx + fy * fy);
 	
 	float alpha = 0.5 - sd;
-	if (alpha > 1.0) {
-		color.a = 1.0;
-	} else if (alpha < 0.0) {
-		color.a = 0.0;
-	} else {
-		color.a = alpha;
-	}
+	color.a = clamp(sd, 0.0, 1.0);
 
 	return color;
 }
 
-vec4 cubic_ps(vec3 klm, vec4 color) {
-	// Linear algebra
-	float sd = klm.x * klm.x * klm.x - klm.y * klm.z;
+vec4 cubic_ps(vec3 klm, float inside_sign, vec4 color) {
 	
-	if (sd < 0.0) {
-		color.a = 1.0;
-	} else {
-		color.a = 0.0;
-	}
+	// Gradients
+	vec3 dpdx = dFdx(klm);
+	vec3 dpdy = dFdy(klm);
+	
+	// Chain rule
+	vec3 dfdp = vec3(3.0 * klm.x * klm.x, -klm.y, -klm.z);
+	vec2 f = vec2(dot(dfdp, dpdx), dot(dfdp, dpdy));
+	
+	// Linear algebra
+	float sd = inside_sign * (klm.x * klm.x * klm.x - klm.y * klm.z) / length(f);
+	
+	sd = 0.5 - sd;
+	color.a = clamp(sd, 0.0, 1.0);
 
 	return color;
 }
@@ -50,7 +50,7 @@ vec2 linearstep(vec2 edge0, vec2 edge1, vec2 x) {
 	return clamp((x - (edge0)) / (edge1 - (edge0)), 0.0, 1.0);
 }
 
-vec4 triangle_antialiased(vec3 uv, vec4 color) {
+vec4 antialiased_triangle(vec3 uv, vec4 color) {
 	vec2 uv_pixel = fwidth(uv.xy);
 
 	vec2 corner_border = linearstep(vec2(0.0), uv_pixel, uv.xy);
@@ -75,14 +75,24 @@ vec4 triangle_antialiased(vec3 uv, vec4 color) {
 	return color;
 }
 
+vec4 antialiased_edge(vec2 uv, vec4 color) {
+	vec2 half_uv_pixel = fwidth(uv.xy) / 2.0;
+	vec2 line_antialias = linearstep(vec2(0.5), vec2(0.5 + half_uv_pixel.y, 0.5 - half_uv_pixel.y), uv.yy);
+	color.a *= (1.0 - line_antialias.y) * (1.0 - line_antialias.x);
+//	color = vec4(0.5, 0.5, 0.5, 1.0);
+	return color;
+}
+
 void fragment() {
 	vec4 blend_color = texture(fill_texture, UV) * fill_color;
 	if (COLOR.a < 0.3) {
-		COLOR = quadratic_ps(COLOR.rg, blend_color);
+		COLOR = quadratic_ps(COLOR.rg, 2.0 * (0.5 - step(COLOR.a, 0.15)), blend_color);
 	} else if (COLOR.a < 0.6) {
-		COLOR = cubic_ps(COLOR.rgb, blend_color);
+		COLOR = cubic_ps(COLOR.rgb, 2.0 * (0.5 - step(COLOR.a, 0.45)), blend_color);
+	} else if (COLOR.a < 0.8) {
+		COLOR = antialiased_triangle(COLOR.rgb, blend_color);
 	} else {
-		COLOR = triangle_antialiased(COLOR.rgb, blend_color);
+		COLOR = antialiased_edge(COLOR.rg, blend_color);
 	}
 }
 "

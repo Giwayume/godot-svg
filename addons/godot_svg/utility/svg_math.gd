@@ -142,6 +142,7 @@ static func split_cubic_bezier(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector
 		Vector2(x4, y4),
 	]
 
+# Find which side of a segment a point is on, left or right. Assuming straight is the direction from start to end.
 static func is_point_right_of_segment(segment_start: Vector2, segment_end: Vector2, point: Vector2):
 	var bx = segment_end.x - segment_start.x
 	var by = segment_end.y - segment_start.y
@@ -155,6 +156,10 @@ static func is_point_right_of_segment(segment_start: Vector2, segment_end: Vecto
 	
 	return false
 
+# If you have the coordinate of a point along a segment, finds the distance from the start of the segment to that point.
+# If the point isn't on the segment:
+# Projects a line perpendicular to the specified segment that intersects "point".
+# The distance from the start of the segment to the intersection point of the segment & the perpendicular is returned.
 static func point_distance_along_segment(segment_start: Vector2, segment_end: Vector2, point: Vector2):
 	var x1 = segment_start.x
 	var y1 = segment_start.y
