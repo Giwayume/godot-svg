@@ -14,6 +14,8 @@ class PathShape:
 	var segments = []
 	var bounding_box
 	var intersections = []
+	var exit_direction = Vector2.ZERO
+	var pend
 	
 	func intersect_with(other_shape):
 		var new_intersections = []
@@ -68,9 +70,11 @@ class PathSegment extends PathShape:
 	func _init(new_p0, new_p1):
 		p0 = new_p0
 		p1 = new_p1
+		pend = new_p1
 		length = p0.distance_to(p1)
 		segments = [p0, p1]
 		_compute_bounding_box()
+		exit_direction = find_direction_at(1.0)
 	
 	func _compute_bounding_box():
 		bounding_box = SVGHelper.get_point_list_bounds(segments)
@@ -108,9 +112,11 @@ class PathQuadraticBezier extends PathShape:
 		p0 = new_p0
 		p1 = new_p1
 		p2 = new_p2
+		pend = new_p2
 		length = SVGMath.quadratic_bezier_length(p0, p1, p2)
 		_compute_segments()
 		_compute_bounding_box()
+		exit_direction = find_direction_at(1.0)
 	
 	func _compute_segments():
 		var resolution = max(5, floor(length / 5.0))
@@ -158,9 +164,11 @@ class PathCubicBezier extends PathShape:
 		p1 = new_p1
 		p2 = new_p2
 		p3 = new_p3
+		pend = new_p3
 		length = SVGMath.cubic_bezier_length(p0, p1, p2, p3)
 		_compute_segments()
 		_compute_bounding_box()
+		exit_direction = find_direction_at(1.0)
 	
 	func _compute_segments():
 		var resolution = max(5, floor(length / 5.0))
@@ -307,6 +315,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 			var check_t = shape_start_t
 			var current_shape_index = shape_start_index
 			var new_path = []
+			var final_rotation = 0.0
 			var infinite_loop_iterator = 0
 			var existing_solutions = []
 			while infinite_loop_iterator < 100000:
@@ -316,9 +325,6 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 				
 				# Gather information about the current path traced position in the current shape
 				var current_shape = path_shapes[current_shape_index]
-#				var check_t = 0.0 if traverse_direction > 0 else 1.0
-#				if current_shape_index == last_passed_intersection_start_shape_index:
-#					check_t = last_passed_intersection.intersected_shape_t[last_passed_intersection.intersected_shape_indices.find(last_passed_intersection_start_shape_index)]
 				
 				# Find the next intersection at the current path segment, if applicable
 				if intersections_at_positions.has(current_shape_index):
@@ -364,6 +370,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 							winning_t = current_check_t
 							traverse_direction = -1
 					if winning_index > -1:
+						final_rotation += sign(closest_angle) * (PI - abs(closest_angle))
 						current_shape_index = winning_index
 						check_t = winning_t
 						has_looped_from_beginning = false
@@ -400,13 +407,19 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 					elif current_shape_index < path_loop_range.start:
 						current_shape_index = path_loop_range.end
 						has_looped_from_beginning = true
+					
+					var next_shape = path_shapes[current_shape_index]
+					final_rotation += current_shape.find_direction_at(check_t).angle_to(
+						traverse_direction * next_shape.find_direction_at(1.0 if traverse_direction > 0.0 else 0.0)
+					)
+					
 					check_t = 0.0 if traverse_direction > 0.0 else 1.0
 			
+			var trumps_all_existing_solutions = true
 			if existing_solutions.size() > 0:
-				var trumps_all_existing_solutions = true
 				for existing_solution in existing_solutions:
 					if not is_path_subset_of_path(
-						existing_solution.intersection.solved[str(existing_solution.shape_index) + "_" + str(existing_solution.shape_t)],
+						existing_solution.intersection.solved[str(existing_solution.shape_index) + "_" + str(existing_solution.shape_t)].path,
 						new_path
 					):
 						trumps_all_existing_solutions = false
@@ -414,16 +427,54 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 				if trumps_all_existing_solutions:
 					for existing_solution in existing_solutions:
 						existing_solution.intersection.solved.erase(str(existing_solution.shape_index) + "_" + str(existing_solution.shape_t))
-					intersection.solved[str(shape_start_index) + "_" + str(shape_start_t)] = new_path
-			else:
-				intersection.solved[str(shape_start_index) + "_" + str(shape_start_t)] = new_path
+			if trumps_all_existing_solutions:
+				intersection.solved[str(shape_start_index) + "_" + str(shape_start_t)] = {
+					"path": new_path,
+					"is_clockwise": final_rotation < 0.0,
+				}
 	
 	for intersection in intersections:
 		for solved_key in intersection.solved:
 			solved_paths.push_back(intersection.solved[solved_key])
 	
 	# Apply fill rule
-	var filled_paths = solved_paths
+	var filled_paths = []
+	for solved_path_info in solved_paths:
+		var solved_path = solved_path_info.path
+		var is_clockwise = solved_path_info.is_clockwise
+		var check_point = (
+			solved_path[0].p0 +
+			(solved_path[0].p0.direction_to(solved_path[0].pend).rotated(-PI / 128 if is_clockwise else PI / 128)) *
+			(solved_path[0].pend - solved_path[0].p0).length() / 128
+		)
+		var insideness = 0
+		for shape_index in range(0, path_shapes.size()):
+			var shape = path_shapes[shape_index]
+			# Count collisions for a line that starts at check point and travels infinitely in -y direction
+			if (
+				check_point.x >= shape.bounding_box.position.x and
+				check_point.x <= shape.bounding_box.position.x + shape.bounding_box.size.x and
+				check_point.y >= shape.bounding_box.position.y
+			):
+				var check_collision_segment = PathSegment.new(check_point, Vector2(check_point.x, shape.bounding_box.position.y - 1.0))
+				var line_intersections = check_collision_segment.intersect_with(shape)
+				if line_intersections.size() % 2 == 1:
+					if shape.p0.x <= check_point.x and shape.pend.x >= check_point.x:
+						insideness += 1
+					elif shape.p0.x >= check_point.x and shape.pend.x <= check_point.x:
+						insideness -= 1
+		
+		var is_filled = false
+		match fill_rule:
+			FillRule.EVEN_ODD:
+				if int(abs(insideness)) % 2 == 1:
+					is_filled = true
+			FillRule.NON_ZERO:
+				if insideness != 0:
+					is_filled = true
+		
+		if is_filled:
+			filled_paths.push_back(solved_path)
 	
 	# Translate classes back into commands.
 	var fill_commands = []

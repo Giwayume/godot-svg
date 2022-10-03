@@ -334,7 +334,7 @@ func _on_svg_resources_reimported(resource_names):
 
 func _on_editor_viewport_scale_changed(new_scale):
 	_last_known_viewport_scale = new_scale
-	emit_signal("viewport_scale_changed", new_scale)
+#	emit_signal("viewport_scale_changed", new_scale)
 
 # Getters / Setters
 

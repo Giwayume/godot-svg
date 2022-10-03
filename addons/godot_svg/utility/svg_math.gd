@@ -174,3 +174,47 @@ static func point_distance_along_segment(segment_start: Vector2, segment_end: Ve
 	var x = x1 + u * px
 	var y = y1 + u * py
 	return segment_start.distance_to(Vector2(x, y))
+
+static func triangle_intersects_triangle_cross(points, triangle):
+	var pa = points[0]
+	var pb = points[1]
+	var pc = points[2]
+	var p0 = triangle[0]
+	var p1 = triangle[1]
+	var p2 = triangle[2]
+	var dxa = pa.x - p2.x
+	var dya = pa.y - p2.y
+	var dxb = pb.x - p2.x
+	var dyb = pb.y - p2.y
+	var dxc = pc.x - p2.x
+	var dyc = pc.y - p2.y
+	var dx21 = p2.x - p1.x
+	var dy12 = p1.y - p2.y
+	var d = dy12 * (p0.x - p2.x) + dx21 * (p0.y - p2.y)
+	var sa = dy12 * dxa + dx21 + dya
+	var sb = dy12 * dxb + dx21 * dyb
+	var sc = dy12 * dxc + dx21 * dyc
+	var ta = (p2.y - p0.y) * dxa + (p0.x - p2.x) * dya
+	var tb = (p2.y - p0.y) * dxb + (p0.x - p2.x) * dyb
+	var tc = (p2.y - p0.y) * dxc + (p0.x - p2.x) * dyc
+	if d < 0.0:
+		return (
+			(sa >= 0 and sb >= 0 and sc >= 0) or
+			(ta >=0 and tb >= 0 and tc >= 0) or
+			(sa + ta <= d and sb + tb <= d and sc + tc <= d)
+		)
+	return (
+		(sa <= 0 and sb <= 0 and sc <= 0) or
+		(ta <= 0 and tb <= 0 and tc <= 0) or
+		(sa + ta >= d and sb + tb >= d and sc + tc >= d)
+	)
+
+static func triangle_intersects_triangle(t0, t1):
+	return not (triangle_intersects_triangle_cross(t0, t1) or triangle_intersects_triangle_cross(t1, t0))
+
+static func triangle_area(t):
+	var side1 = t[0].distance_to(t[1])
+	var side2 = t[1].distance_to(t[2])
+	var side3 = t[0].distance_to(t[2])
+	var s = (side1 + side2 + side3) / 2.0
+	return sqrt(s * ((s - side1) * (s - side2) * (s - side3)))

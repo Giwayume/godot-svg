@@ -38,17 +38,22 @@ func _input(event):
 				if event.button_index == BUTTON_WHEEL_UP:
 					is_zooming_in = true
 					zoom_at_point = mouse_position
-					zoom_timer = 0.15
+					zoom_timer = 0.3
+					zoom_step = 4.0
 				elif event.button_index == BUTTON_WHEEL_DOWN:
 					is_zooming_in = false
 					zoom_at_point = mouse_position
-					zoom_timer = 0.15
+					zoom_timer = 0.3
+					zoom_step = 4.0
 			if event.button_index == BUTTON_LEFT or event.button_index == BUTTON_MIDDLE:
 				is_panning = event.is_pressed()
 	if event is InputEventKey:
 		if event.is_pressed() and not event.is_echo():
 			if event.physical_scancode == KEY_0:
-				camera.zoom = Vector2(1.0, 1.0)
+				zoom_timer = 0.3
+				is_zooming_in = false
+				zoom_step = 10.0
+#				camera.zoom = Vector2(1.0, 1.0)
 
 func _zoom_at_point(zoom_change, point):
 	var c0 = camera.global_position

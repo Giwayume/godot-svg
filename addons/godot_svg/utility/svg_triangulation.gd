@@ -36,6 +36,80 @@ static func add_duplicate_edge(duplicate_edges, p0, p1, index = -1):
 		duplicate_edges[edge_key] = []
 	duplicate_edges[edge_key].push_back([index, p0, p1])
 
+static func subdivide_quadratic_bezier_triangles(p0, p1, p2, subdivision_count = 1):
+	var triangles = []
+	if subdivision_count > 1:
+		for i in range(subdivision_count + 1, 0, -1):
+			var t = 1.0 / float(i)
+			var subdivide_results = SVGMath.split_quadratic_bezier(p0, p1, p2, t)
+			triangles.push_back([
+				subdivide_results[0],
+				subdivide_results[1],
+				subdivide_results[2],
+			])
+			p0 = subdivide_results[2]
+			p1 = subdivide_results[3]
+	else:
+		triangles = [[p0, p1, p2]]
+	return triangles
+
+static func subdivide_quadratic_bezier_path(p0, p1, p2, subdivision_count = 1):
+	var instructions = []
+	for i in range(subdivision_count + 1, 0, -1):
+		var t = 1.0 / float(i)
+		var subdivide_results = SVGMath.split_quadratic_bezier(p0, p1, p2, t)
+		instructions.push_back({
+			"command": PathCommand.QUADRATIC_BEZIER_CURVE,
+			"points": [subdivide_results[1], subdivide_results[2]]
+		})
+		p0 = subdivide_results[2]
+		p1 = subdivide_results[3]
+	return instructions
+
+static func subdivide_cubic_bezier_triangles(p0, p1, p2, p3, subdivision_count = 1):
+	var triangles = []
+	if subdivision_count > 1:
+		for i in range(subdivision_count + 1, 0, -1):
+			var t = 1.0 / float(i)
+			var subdivide_results = SVGMath.split_cubic_bezier(p0, p1, p2, p3, t)
+			triangles.push_back([
+				subdivide_results[0],
+				subdivide_results[1],
+				subdivide_results[2],
+			])
+			triangles.push_back([
+				subdivide_results[0],
+				subdivide_results[2],
+				subdivide_results[3],
+			])
+			p0 = subdivide_results[3]
+			p1 = subdivide_results[4]
+			p2 = subdivide_results[5]
+	else:
+		triangles = [[p0, p1, p2], [p0, p2, p3]]
+	return triangles
+
+static func subdivide_cubic_bezier_path(p0, p1, p2, p3, subdivision_count = 1):
+	var instructions = []
+	for i in range(subdivision_count + 1, 0, -1):
+		var t = 1.0 / float(i)
+		var subdivide_results = SVGMath.split_cubic_bezier(p0, p1, p2, p3, t)
+		instructions.push_back({
+			"command": PathCommand.CUBIC_BEZIER_CURVE,
+			"points": [subdivide_results[1], subdivide_results[2], subdivide_results[3]]
+		})
+		p0 = subdivide_results[3]
+		p1 = subdivide_results[4]
+		p2 = subdivide_results[5]
+	return instructions
+
+static func is_curve_triangles_intersects_other_curve_triangles(curve_1_triangles, curve_2_triangles):
+	for curve_1_triangle in curve_1_triangles:
+		for curve_2_triangle in curve_2_triangles:
+			if SVGMath.triangle_intersects_triangle(curve_1_triangle, curve_2_triangle):
+				return true
+	return false
+
 # This method assumes a simple shape with no self-intersections
 # path is an array of dictionaries following the format:
 # { "command": PathCommand, "points": [Vector()] }
@@ -45,10 +119,16 @@ static func triangulate_fill_path(path: Array):
 	var current_path_start_point = current_point
 
 	# Check if the polygon is clockwise or counter-clockwise. Used to determine the inside of the path.
+	# Also build a list of triangle intersection checks.
 	var clockwise_check_polygon = []
+	var path_intersection_checks = []
+	var has_any_overlapping_occurred = false
 	for i in range(0, path.size()):
 		var instruction = path[i]
 		var next_instruction = path[i + 1] if i < path.size() - 1 else instruction
+		var control_points = []
+		var triangles_to_check = []
+		var current_split_count = 1
 		match instruction.command:
 			PathCommand.MOVE_TO:
 				current_point = instruction.points[0]
@@ -56,17 +136,73 @@ static func triangulate_fill_path(path: Array):
 				if not [PathCommand.MOVE_TO, PathCommand.CLOSE_PATH].has(next_instruction.command):
 					clockwise_check_polygon.push_back(current_point)
 			PathCommand.LINE_TO:
+				control_points = [current_point, current_point, instruction.points[0]]
+				triangles_to_check.push_back([current_point, current_point, instruction.points[0]])
 				current_point = instruction.points[0]
 				clockwise_check_polygon.push_back(current_point)
 			PathCommand.QUADRATIC_BEZIER_CURVE:
+				control_points = [current_point, instruction.points[0], instruction.points[1]]
+				triangles_to_check = subdivide_quadratic_bezier_triangles(current_point, instruction.points[0], instruction.points[1], 1)
 				current_point = instruction.points[1]
 				clockwise_check_polygon.push_back(current_point)
 			PathCommand.CUBIC_BEZIER_CURVE:
+				control_points = [current_point, instruction.points[0], instruction.points[1], instruction.points[2]]
+				triangles_to_check = subdivide_cubic_bezier_triangles(current_point, instruction.points[0], instruction.points[1], instruction.points[2], 1)
 				current_point = instruction.points[2]
 				clockwise_check_polygon.push_back(current_point)
 			PathCommand.CLOSE_PATH:
 				if not current_path_start_point.is_equal_approx(current_point):
 					clockwise_check_polygon.push_back(current_path_start_point)
+		
+		# Split up bezier curves based on triangle bounding box collisions
+		for other_path_check in path_intersection_checks:
+			var tessellation_counter = 0
+			while is_curve_triangles_intersects_other_curve_triangles(triangles_to_check, other_path_check.triangles):
+				has_any_overlapping_occurred = true
+				if SVGMath.triangle_area(triangles_to_check[0]) > SVGMath.triangle_area(other_path_check.triangles[0]):
+					current_split_count += 1
+					triangles_to_check = (
+						subdivide_quadratic_bezier_triangles(control_points[0], control_points[1], control_points[2], current_split_count) if
+						control_points.size() == 3 else
+						subdivide_cubic_bezier_triangles(control_points[0], control_points[1], control_points[2], control_points[3], current_split_count)
+					)
+				else:
+					other_path_check.split_count += 1
+					other_path_check.triangles = (
+						subdivide_quadratic_bezier_triangles(other_path_check.control_points[0], other_path_check.control_points[1], other_path_check.control_points[2], other_path_check.split_count) if
+						other_path_check.control_points.size() == 3 else
+						subdivide_cubic_bezier_triangles(other_path_check.control_points[0], other_path_check.control_points[1], other_path_check.control_points[2], other_path_check.control_points[3], other_path_check.split_count)
+					)
+				tessellation_counter += 1
+				if tessellation_counter >= 32: # Prevent infinite loop if things go terribly wrong
+					print("Infinite loop encountered during bezier tessellation.")
+					break
+		
+		path_intersection_checks.push_back({
+			"control_points": control_points,
+			"split_count": current_split_count,
+			"triangles": triangles_to_check,
+		})
+	
+	# Rebuild path based on new tessellation from triangle intersections.
+	if has_any_overlapping_occurred:
+		var old_path = path
+		path = []
+		for i in range(0, old_path.size()):
+			var instruction = old_path[i]
+			var split_count = path_intersection_checks[i].split_count
+			if split_count > 1:
+				var control_points = path_intersection_checks[i].control_points
+				if instruction.command == PathCommand.QUADRATIC_BEZIER_CURVE:
+					path.append_array(
+						subdivide_quadratic_bezier_path(control_points[0], control_points[1], control_points[2], split_count)
+					)
+				elif instruction.command == PathCommand.CUBIC_BEZIER_CURVE:
+					path.append_array(
+						subdivide_cubic_bezier_path(control_points[0], control_points[1], control_points[2], control_points[3], split_count)
+					)
+			else:
+				path.push_back(instruction)
 	
 	# Build an "interior" polygon with straight edges, and other triangles to draw the bezier curves.
 	var is_clockwise = Geometry.is_polygon_clockwise(PoolVector2Array(clockwise_check_polygon))
@@ -218,39 +354,20 @@ static func triangulate_fill_path(path: Array):
 						edges_to_recalculate.push_back(triangle_index)
 			duplicate_edges[edge_key].push_back([i, p0, p1])
 		
-		# Recalculate edge implicit coordinate for duplicate edges that were found in previous triangles
-		for triangle_index in edges_to_recalculate:
-			var is_prev_outer_edge = [false, false, false]
-			for j in range(0, 3):
-				var p0 = interior_polygon[interior_triangulation[triangle_index + j]]
-				var p1 = interior_polygon[interior_triangulation[triangle_index + j + 1] if j < 2 else interior_triangulation[triangle_index]]
-				var edge_key = generate_edge_compare_key(p0, p1)
-				var existing_edge_size = duplicate_edges[edge_key].size()
-				is_prev_outer_edge[j] = existing_edge_size <= 1
-			var prev_edge_implicit_coordinate = get_outer_edge_implicit_coordinate(is_prev_outer_edge)
-			prev_edge_implicit_coordinate = 0.0
-			var interior_implicit_coordinates_size = interior_implicit_coordinates.size()
-			for j in range(0, 3):
-				if triangle_index + j < interior_implicit_coordinates_size:
-					interior_implicit_coordinates[triangle_index + j].z = prev_edge_implicit_coordinate
-				else:
-					print("\nError when recalculating implicit coordinate ", triangle_index + j)
-		
 		# Build vertex arrays
-		var edge_implicit_coordinate = get_outer_edge_implicit_coordinate(is_outer_edge)
-		edge_implicit_coordinate = 0.0
 		for j in range(0, 3):
 			var vertex_index = interior_triangulation[i + j]
 			interior_vertices.push_back(interior_polygon[vertex_index])
 			var index_mod = j % 3
 			match index_mod:
 				0:
-					interior_implicit_coordinates.push_back(Vector3(0.0, 0.0, edge_implicit_coordinate))
+					interior_implicit_coordinates.push_back(Vector3(0.0, 0.0, 0.0))
 				1:
-					interior_implicit_coordinates.push_back(Vector3(1.0, 0.0, edge_implicit_coordinate))
+					interior_implicit_coordinates.push_back(Vector3(1.0, 0.0, 0.0))
 				2:
-					interior_implicit_coordinates.push_back(Vector3(0.0, 1.0, edge_implicit_coordinate))
+					interior_implicit_coordinates.push_back(Vector3(0.0, 1.0, 0.0))
 	
+	# Create antialiasing lines for edges on the outside of the shape
 	for edge_key in duplicate_edges:
 		if duplicate_edges[edge_key].size() == 1:
 			var p0 = duplicate_edges[edge_key][0][1]

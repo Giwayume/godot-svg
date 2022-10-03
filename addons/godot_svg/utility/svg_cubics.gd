@@ -88,7 +88,7 @@ class Matrix:
 			if not other_is_matrix or i < other_matrix.rows.size():
 				var new_row = []
 				for j in range(0, rows[i].size()):
-					if not other_is_matrix or j < other_matrix.rows.size():
+					if not other_is_matrix or j < other_matrix.rows[i].size():
 						if other_is_matrix:
 							new_row.push_back(rows[i][j] + other_matrix.rows[i][j])
 						else:
@@ -103,7 +103,7 @@ class Matrix:
 			if not other_is_matrix or i < other_matrix.rows.size():
 				var new_row = []
 				for j in range(0, rows[i].size()):
-					if not other_is_matrix or j < other_matrix.rows.size():
+					if not other_is_matrix or j < other_matrix.rows[i].size():
 						if other_is_matrix:
 							new_row.push_back(rows[i][j] - other_matrix.rows[i][j])
 						else:
@@ -210,10 +210,22 @@ static func H(d: Array, t: float, s: float):
 
 static func evaluate_control_points(control_points: Array):
 	var B = Matrix.new([
-		Vector3(0.0, 0.0, 1.0),
-		Vector3(0.0, 0.0, 1.0),
-		Vector3(1.0, 1.0, 1.0),
-		Vector3(1.0, 1.0, 1.0)
+		[0.0, 0.0, 1.0],
+		[0.0, 0.0, 1.0],
+		[1.0, 1.0, 1.0],
+		[1.0, 1.0, 1.0]
+	])
+	
+	var M2 = Matrix.new([
+		[1.0, 0.0, 0.0],
+		[-2.0, 2.0, 0.0],
+		[1.0, -2.0, 1.0],
+	])
+	
+	var M2_inv = Matrix.new([
+		[1.0, 0.0, 0.0],
+		[1.0, 1.0 / 2.0, 0.0],
+		[1.0, 1.0, 1.0],
 	])
 	
 	var M3 = Matrix.new([
@@ -251,7 +263,19 @@ static func evaluate_control_points(control_points: Array):
 		]
 	
 	var C = M3.multiply(B)
-
+	
+	var Q = Matrix.new([
+		B.rows[0],
+		(
+			Matrix.new([B.rows[1]]).add(Matrix.new([B.rows[2]])).multiply(3.0).subtract(
+				Matrix.new([B.rows[0]]).add(Matrix.new([B.rows[3]])).multiply(0.25)
+			).rows[0]
+		),
+		B.rows[3]
+	])
+	
+	var C2 = M2.multiply(Q)
+	
 	var d = [
 		Matrix.new([C.get_row(3), C.get_row(2), C.get_row(1)]).determinant(),
 		-Matrix.new([C.get_row(3), C.get_row(2), C.get_row(0)]).determinant(),
@@ -273,7 +297,7 @@ static func evaluate_control_points(control_points: Array):
 	var tex_coords = Matrix.new(4, 4)
 	
 	var needs_subdivision = false
-	var epsilon = 0.000001
+	var epsilon = 0.0001
 	
 	if abs(d[1]) > epsilon:
 		if delta >= 0.0:
@@ -298,32 +322,28 @@ static func evaluate_control_points(control_points: Array):
 					tl * tm,
 					tl * tl * tl,
 					tm * tm * tm,
-					1.0
 				],
 				[
 					-sm * tl - sl * tm,
 					-3.0 * sl * tl * tl,
 					-3.0 * sm * tm * tm,
-					0.0
 				],
 				[
 					sl * sm,
 					3.0 * sl * sl * tl,
 					3.0 * sm * sm * tm,
-					0.0
 				],
 				[
 					0.0,
 					-sl * sl * sl,
 					-sm * sm * sm,
-					0.0
 				]
 			])
 			
 			tex_coords = M3_inv.multiply(F)
 			
 			if d[1] < 0.0:
-				tex_coords = tex_coords.multiply(Matrix.from_diagonal([-1.0, -1.0, 1.0, 1.0]))
+				tex_coords = tex_coords.multiply(Matrix.from_diagonal([-1.0, -1.0, 1.0]))
 		
 		elif delta < 0.0:
 			classification = CurveClass.LOOP
@@ -339,25 +359,21 @@ static func evaluate_control_points(control_points: Array):
 					td * te,
 					td * td * te,
 					td * te * te,
-					1.0
 				],
 				[
 					-se * td - sd * te,
 					-se * td * td - 2.0 * sd * te * td,
 					-sd * te * te - 2.0 * se * td * te,
-					0.0
 				],
 				[
 					sd * se,
 					te * sd * sd + 2.0 * se * td * sd,
 					td * se * se + 2.0 * sd * te * se,
-					0.0
 				],
 				[
 					0.0,
 					-sd * sd * se,
 					-sd * se * se,
-					0.0
 				]
 			])
 			
@@ -369,7 +385,7 @@ static func evaluate_control_points(control_points: Array):
 				needs_subdivision = true
 			
 			if d[1] * H(d, 0.5, 1.0) > 0.0:
-				tex_coords = tex_coords.multiply(Matrix.from_diagonal([-1.0, -1.0, 1.0, 1.0]))
+				tex_coords = tex_coords.multiply(Matrix.from_diagonal([-1.0, -1.0, 1.0]))
 			
 	else:
 		if abs(d[2]) > epsilon:
@@ -387,25 +403,21 @@ static func evaluate_control_points(control_points: Array):
 					tl,
 					tl * tl * tl,
 					1.0,
-					1.0
 				],
 				[
 					-sl,
 					-3.0 * sl * tl * tl,
 					0.0,
-					0.0
 				],
 				[
 					0.0,
 					3.0 * sl * sl * tl,
 					0.0,
-					0.0
 				],
 				[
 					0.0,
 					-sl * sl * sl,
 					0.0,
-					0.0
 				]
 			])
 			
@@ -416,10 +428,10 @@ static func evaluate_control_points(control_points: Array):
 				classification = CurveClass.QUADRATIC
 				
 				tex_coords = Matrix.new([
-					[0.0, 0.0, 1.0, 1.0],
-					[0.5, 0.0, 1.0, 1.0],
-					[1.0, 1.0, 1.0, 1.0],
-					[0.0, 0.0, 0.0, 0.0],
+					[0.0, 0.0, 1.0],
+					[0.5, 0.0, 1.0],
+					[1.0, 1.0, 1.0],
+					[0.0, 0.0, 0.0],
 				])
 				
 				for i in range(0, 4):

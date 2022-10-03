@@ -34,7 +34,7 @@ vec4 cubic_ps(vec3 klm, float inside_sign, vec4 color) {
 	vec3 dpdy = dFdy(klm);
 	
 	// Chain rule
-	vec3 dfdp = vec3(3.0 * klm.x * klm.x, -klm.y, -klm.z);
+	vec3 dfdp = vec3(3.0 * klm.x * klm.x, -klm.z, -klm.y);
 	vec2 f = vec2(dot(dfdp, dpdx), dot(dfdp, dpdy));
 	
 	// Linear algebra
@@ -51,7 +51,7 @@ vec2 linearstep(vec2 edge0, vec2 edge1, vec2 x) {
 }
 
 vec4 antialiased_triangle(vec3 uv, vec4 color) {
-	vec2 uv_pixel = fwidth(uv.xy);
+	vec2 uv_pixel = fwidth(uv.xy) / 2.0;
 
 	vec2 corner_border = linearstep(vec2(0.0), uv_pixel, uv.xy);
 	vec2 hypotenuse_border = linearstep(vec2(1.0), vec2(1.0) - uv_pixel * 1.41, vec2(uv.x + uv.y));
@@ -90,7 +90,7 @@ void fragment() {
 	} else if (COLOR.a < 0.6) {
 		COLOR = cubic_ps(COLOR.rgb, 2.0 * (0.5 - step(COLOR.a, 0.45)), blend_color);
 	} else if (COLOR.a < 0.8) {
-		COLOR = antialiased_triangle(COLOR.rgb, blend_color);
+		COLOR = blend_color;
 	} else {
 		COLOR = antialiased_edge(COLOR.rg, blend_color);
 	}

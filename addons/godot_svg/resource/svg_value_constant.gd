@@ -43,6 +43,9 @@ const SPACING_AND_GLYPHS = "spacingAndGlyphs"
 const NON_ZERO = "nonzero"
 const EVEN_ODD = "evenodd"
 
+const INHERIT = "inherit"
+const CURRENT_COLOR = "currentColor"
+
 enum PathCommand {
 	MOVE_TO,
 	LINE_TO,

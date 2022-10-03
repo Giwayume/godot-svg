@@ -12,16 +12,6 @@ func _init():
 	node_name = "line"
 
 func _process_polygon():
-	var fill_points = PoolVector2Array([
-		Vector2(
-			attr_x1.get_length(inherited_view_box.size.x),
-			attr_y1.get_length(inherited_view_box.size.y)
-		),
-		Vector2(
-			attr_x2.get_length(inherited_view_box.size.x),
-			attr_y2.get_length(inherited_view_box.size.y)
-		)
-	])
 	var stroke_points = PoolVector2Array([
 		Vector2(
 			attr_x1.get_length(inherited_view_box.size.x),
@@ -34,12 +24,12 @@ func _process_polygon():
 	])
 	return {
 		"is_simple_shape": true,
-		"fill": fill_points,
+		"fill": [],
 		"stroke": stroke_points,
 	}
 
-func _draw():
-	._draw()
+func _props_applied():
+	._props_applied()
 	var scale_factor = get_scale_factor()
 	
 	var fill_paint = resolve_fill_paint()

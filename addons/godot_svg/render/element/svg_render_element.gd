@@ -43,7 +43,7 @@ var attr_system_language = null
 # Presentation Attributes
 var attr_clip_path = SVGValueConstant.NONE setget _set_attr_clip_path
 var attr_clip_rule = SVGValueConstant.NON_ZERO setget _set_attr_clip_rule
-var attr_color = null
+var attr_color = null setget _set_attr_color
 var attr_color_interpolation = null
 var attr_color_rendering = null
 var attr_cursor = null
@@ -756,6 +756,9 @@ func resolve_paint(attr_paint, server_name: String):
 		else:
 			free_paint_server_texture(server_name)
 			paint.color = attr_paint.color
+	elif typeof(attr_paint) == TYPE_STRING:
+		if attr_paint == SVGValueConstant.CURRENT_COLOR:
+			paint = resolve_paint(attr_color, server_name)
 	return paint
 
 func resolve_href():
@@ -801,6 +804,21 @@ func _set_attr_clip_rule(clip_rule):
 	attr_clip_rule = clip_rule
 	apply_props()
 
+func _set_attr_color(color):
+	if typeof(color) != TYPE_STRING:
+		attr_color = color
+	else:
+		if color == SVGValueConstant.INHERIT:
+			attr_color = null
+		else:
+			attr_color = SVGPaint.new(color)
+	_rerender_prop_cache.erase("stroke")
+	_rerender_prop_cache.erase("fill")
+	_rerender_prop_cache.erase("stop_color")
+	_rerender_prop_cache.erase("flood_color")
+	_rerender_prop_cache.erase("lighting_color")
+	apply_props()
+
 func _set_attr_display(display):
 	display = get_style("display", display)
 	attr_display = display
@@ -811,7 +829,9 @@ func _set_attr_fill(fill):
 	if typeof(fill) != TYPE_STRING:
 		attr_fill = fill
 	else:
-		if [SVGValueConstant.NONE, SVGValueConstant.CONTEXT_FILL, SVGValueConstant.CONTEXT_STROKE].has(fill):
+		if fill == SVGValueConstant.CURRENT_COLOR:
+			attr_fill = fill
+		elif [SVGValueConstant.NONE, SVGValueConstant.CONTEXT_FILL, SVGValueConstant.CONTEXT_STROKE].has(fill):
 			attr_fill = SVGPaint.new("#00000000")
 		else:
 			attr_fill = SVGPaint.new(fill)
@@ -859,7 +879,9 @@ func _set_attr_stroke(stroke):
 	if typeof(stroke) != TYPE_STRING:
 		attr_stroke = stroke
 	else:
-		if [SVGValueConstant.NONE, SVGValueConstant.CONTEXT_FILL, SVGValueConstant.CONTEXT_STROKE].has(stroke):
+		if stroke == SVGValueConstant.CURRENT_COLOR:
+			attr_stroke = stroke
+		elif [SVGValueConstant.NONE, SVGValueConstant.CONTEXT_FILL, SVGValueConstant.CONTEXT_STROKE].has(stroke):
 			attr_stroke = SVGPaint.new("#00000000")
 		else:
 			attr_stroke = SVGPaint.new(stroke)

@@ -69,7 +69,7 @@ func _process_polygon():
 		},
 		{
 			"command": PathCommand.CLOSE_PATH,
-		}
+		},
 	]
 	
 	return {
@@ -79,8 +79,8 @@ func _process_polygon():
 		"stroke_closed": true,
 	}
 
-func _draw():
-	._draw()
+func _props_applied():
+	._props_applied()
 	var scale_factor = get_scale_factor()
 	
 	var fill_paint = resolve_fill_paint()

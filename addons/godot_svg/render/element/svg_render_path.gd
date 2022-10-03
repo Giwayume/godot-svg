@@ -184,8 +184,10 @@ func _process_polygon():
 		"stroke_closed": strokes_closed,
 	}
 
-func _draw():
-	._draw()
+var draw_cached = false
+
+func _props_applied():
+	._props_applied()
 	var scale_factor = get_scale_factor()
 	
 	var fill_paint = resolve_fill_paint()
@@ -236,6 +238,8 @@ func _set_attr_d(d):
 		var current_values = ""
 		var letter_regex = RegEx.new()
 		letter_regex.compile("[a-zA-Z$]")
+		var negative_split_regex = RegEx.new()
+		negative_split_regex.compile("(?=-)")
 		for c in d:
 			if letter_regex.search(c) != null:
 				var values = []
@@ -243,7 +247,12 @@ func _set_attr_d(d):
 				for space_token in space_split:
 					var comma_split = space_token.split(",", false)
 					for comma_token in comma_split:
-						values.push_back(comma_token.to_float())
+						var negative_split = comma_token.split("-")
+						var negative_multiplier = 1.0
+						for negative_token in negative_split:
+							if negative_token != "":
+								values.push_back(negative_multiplier * negative_token.to_float())
+							negative_multiplier = -1.0
 				
 				# Split out implicit commands
 				var implicit_commands = []

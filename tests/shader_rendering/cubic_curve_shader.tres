@@ -13,7 +13,7 @@ vec4 cubic_ps(vec3 klm, vec4 color) {
 	vec3 dpdy = dFdy(klm);
 	
 	// Chain rule
-	vec3 dfdp = vec3(3.0 * k * k, -l, -m);
+	vec3 dfdp = vec3(3.0 * k * k, -m, -l);
 	vec2 f = vec2(dot(dfdp, dpdx), dot(dfdp, dpdy));
 
 	// Linear algebra

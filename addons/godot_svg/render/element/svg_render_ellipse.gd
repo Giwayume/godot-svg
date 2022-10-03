@@ -1,5 +1,7 @@
 extends "svg_render_element.gd"
 
+const PathCommand = SVGValueConstant.PathCommand
+
 var attr_cx = SVGLengthPercentage.new("0") setget _set_attr_cx
 var attr_cy = SVGLengthPercentage.new("0") setget _set_attr_cy
 var attr_rx = SVGValueConstant.AUTO setget _set_attr_rx
@@ -21,15 +23,63 @@ func _process_polygon():
 	var radius_y = attr_ry.get_length(inherited_view_box.size.y)
 	var circumference = PI * (radius_x + radius_y)
 	var arc_points = max(20.0, round(circumference * _current_arc_resolution.x))
+	
+	var arc_angle = PI / 2
+	var bezier_segments = (2.0 * PI) / arc_angle
+	var handle_offset_unit = (4.0/3.0) * tan(PI / (2 * bezier_segments))
+	var handle_offset_x = handle_offset_unit * radius_x
+	var handle_offset_y = handle_offset_unit * radius_y
+	var fill = [
+		{
+			"command": PathCommand.MOVE_TO,
+			"points": [center + Vector2(0.0, -radius_y)],
+		},
+		{
+			"command": PathCommand.CUBIC_BEZIER_CURVE,
+			"points": [
+				center + Vector2(handle_offset_x, -radius_y),
+				center + Vector2(radius_x, -handle_offset_y),
+				center + Vector2(radius_x, 0.0),
+			],
+		},
+		{
+			"command": PathCommand.CUBIC_BEZIER_CURVE,
+			"points": [
+				center + Vector2(radius_x, handle_offset_y),
+				center + Vector2(handle_offset_x, radius_y),
+				center + Vector2(0.0, radius_y),
+			],
+		},
+		{
+			"command": PathCommand.CUBIC_BEZIER_CURVE,
+			"points": [
+				center + Vector2(-handle_offset_x, radius_y),
+				center + Vector2(-radius_x, handle_offset_y),
+				center + Vector2(-radius_x, 0.0),
+			],
+		},
+		{
+			"command": PathCommand.CUBIC_BEZIER_CURVE,
+			"points": [
+				center + Vector2(-radius_x, -handle_offset_y),
+				center + Vector2(-handle_offset_x, -radius_y),
+				center + Vector2(0.0, -radius_y),
+			],
+		},
+		{
+			"command": PathCommand.CLOSE_PATH,
+		},
+	]
+	
 	return {
 		"is_simple_shape": true,
-		"fill": SVGDrawing.generate_fill_ellipse_arc_points(center, radius_x, radius_y, 0, 2*PI, arc_points),
+		"fill": fill,
 		"stroke": SVGDrawing.generate_stroke_ellipse_arc_points(center, radius_x, radius_y, 0, 2*PI, arc_points),
 		"stroke_closed": true,
 	}
 
-func _draw():
-	._draw()
+func _props_applied():
+	._props_applied()
 	var scale_factor = get_scale_factor()
 	
 	var fill_paint = resolve_fill_paint()

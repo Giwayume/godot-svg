@@ -1,5 +1,7 @@
 extends "svg_render_element.gd"
 
+const PathCommand = SVGValueConstant.PathCommand
+
 var attr_x = SVGLengthPercentage.new("0") setget _set_attr_x
 var attr_y = SVGLengthPercentage.new("0") setget _set_attr_y
 var attr_width = SVGValueConstant.AUTO setget _set_attr_width
@@ -28,15 +30,37 @@ func _process_polygon():
 	if attr_height is SVGLengthPercentage:
 		height = attr_height.get_length(inherited_view_box.size.y)
 	
+	var fill = [
+		{
+			"command": PathCommand.MOVE_TO,
+			"points": [position],
+		},
+		{
+			"command": PathCommand.LINE_TO,
+			"points": [position + Vector2(width, 0.0)],
+		},
+		{
+			"command": PathCommand.LINE_TO,
+			"points": [position + Vector2(width, height)],
+		},
+		{
+			"command": PathCommand.LINE_TO,
+			"points": [position + Vector2(0.0, height)],
+		},
+		{
+			"command": PathCommand.CLOSE_PATH,
+		},
+	]
+	
 	return {
 		"is_simple_shape": true,
-		"fill": SVGDrawing.generate_fill_rect_points(position.x, position.y, width, height),
+		"fill": fill,
 		"stroke": SVGDrawing.generate_stroke_rect_points(position.x, position.y, width, height),
 		"stroke_closed": true,
 	}
 
-func _draw():
-	._draw()
+func _props_applied():
+	._props_applied()
 	var scale_factor = get_scale_factor()
 
 	var fill_paint = resolve_fill_paint()
