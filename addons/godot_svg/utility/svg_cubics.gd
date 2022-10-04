@@ -296,7 +296,7 @@ static func evaluate_control_points(control_points: Array):
 	var F = Matrix.new(4, 4)
 	var tex_coords = Matrix.new(4, 4)
 	
-	var needs_subdivision = false
+	var needs_subdivision_at = []
 	var epsilon = 0.0001
 	
 	if abs(d[1]) > epsilon:
@@ -381,8 +381,10 @@ static func evaluate_control_points(control_points: Array):
 			
 			var Td = td / sd
 			var Te = te / se
-			if (Td >= 0.0 and Td <= 1.0) or (Te >= 0.0 and Te <= 1.0):
-				needs_subdivision = true
+			if (Td >= 0.0 and Td <= 1.0):
+				needs_subdivision_at.push_back(Td)
+			if (Te >= 0.0 and Te <= 1.0):
+				needs_subdivision_at.push_back(Te)
 			
 			if d[1] * H(d, 0.5, 1.0) > 0.0:
 				tex_coords = tex_coords.multiply(Matrix.from_diagonal([-1.0, -1.0, 1.0]))
@@ -460,9 +462,10 @@ static func evaluate_control_points(control_points: Array):
 			tex_coords.rows[i][2]
 		))
 	
-	return [
-		{
-			"vertices": vertices,
-			"implicit_coordinates": implicit_coordinates,
-		}
-	]
+	needs_subdivision_at.sort()
+	
+	return {
+		"vertices": vertices,
+		"implicit_coordinates": implicit_coordinates,
+		"needs_subdivision_at": needs_subdivision_at,
+	}
