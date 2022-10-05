@@ -28,7 +28,6 @@ vec4 quadratic_ps(vec2 p, float inside_sign, vec4 color) {
 }
 
 vec4 cubic_ps(vec3 klm, float inside_sign, vec4 color) {
-	
 	// Gradients
 	vec3 dpdx = dFdx(klm);
 	vec3 dpdy = dFdy(klm);

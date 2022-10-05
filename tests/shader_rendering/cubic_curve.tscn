@@ -12,8 +12,9 @@ shader = ExtResource( 2 )
 
 [node name="PolygonControl" type="Polygon2D" parent="."]
 material = SubResource( 2 )
+position = Vector2( 0, 0.046875 )
 scale = Vector2( 0.773566, 0.736119 )
-polygon = PoolVector2Array( 0, 0, 1.73709, 1.02947, 1.5755, 3.00351, -0.0201987, 3.22638 )
+polygon = PoolVector2Array( 143.301, 281.626, 54, 273, 89.1973, 385.743, 145.43, 398.649 )
 vertex_colors = PoolColorArray( 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0 )
 script = ExtResource( 3 )
 

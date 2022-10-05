@@ -1,17 +1,32 @@
-[gd_scene load_steps=4 format=2]
+[gd_scene load_steps=6 format=2]
 
 [ext_resource path="res://addons/godot_svg/node/svg_2d.gd" type="Script" id=1]
 [ext_resource path="res://tests/_test_scene_control.gd" type="Script" id=2]
-[ext_resource path="res://tests/w3c_1.1_test_suite/svg/custom/painting_thin_fill_curve.svg" type="Resource" id=3]
+[ext_resource path="res://tests/w3c_1.1_test_suite/svg/custom/painting_hole.svg" type="Resource" id=3]
+[ext_resource path="res://tests/w3c_1.1_test_suite/svg/custom/painting_thin_fill_curve.svg" type="Resource" id=4]
+[ext_resource path="res://icon.svg" type="Resource" id=5]
 
 [node name="SVGTestScene" type="Node2D"]
 script = ExtResource( 2 )
 
 [node name="SVG2D" type="Node2D" parent="."]
+scale = Vector2( 0.5, 0.5 )
 script = ExtResource( 1 )
-svg = ExtResource( 3 )
+svg = ExtResource( 5 )
 fixed_scaling_ratio = 0
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2( 250, 158 )
 current = true
+
+[node name="SVG2D2" type="Node2D" parent="."]
+position = Vector2( 440, -16 )
+script = ExtResource( 1 )
+svg = ExtResource( 3 )
+fixed_scaling_ratio = 0
+
+[node name="SVG2D3" type="Node2D" parent="."]
+position = Vector2( 288, 302 )
+script = ExtResource( 1 )
+svg = ExtResource( 4 )
+fixed_scaling_ratio = 0

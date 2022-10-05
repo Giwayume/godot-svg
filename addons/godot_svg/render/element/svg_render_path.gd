@@ -74,6 +74,7 @@ func _process_polygon():
 					"command": PathCommand.CUBIC_BEZIER_CURVE,
 					"points": [p1, p2, p3],
 				})
+				
 				var bezier_length = SVGMath.cubic_bezier_length(p0, p1, p2, p3)
 				var bezier_steps = float(max(4, (bezier_length * scale_factor.x) / 5)) # point every 5 pixels
 				for bezier_step_index in range(1, bezier_steps):
@@ -95,6 +96,7 @@ func _process_polygon():
 					"command": PathCommand.CUBIC_BEZIER_CURVE,
 					"points": [p1, p2, p3],
 				})
+				
 				var bezier_length = SVGMath.cubic_bezier_length(p0, p1, p2, p3)
 				var bezier_steps = float(max(4, (bezier_length * scale_factor.x) / 5)) # point every 5 pixels
 				for bezier_step_index in range(1, bezier_steps):

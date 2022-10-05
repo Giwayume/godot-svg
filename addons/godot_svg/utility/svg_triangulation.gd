@@ -55,15 +55,21 @@ static func subdivide_quadratic_bezier_triangles(p0, p1, p2, subdivision_count =
 
 static func subdivide_quadratic_bezier_path(p0, p1, p2, subdivision_count = 1):
 	var instructions = []
-	for i in range(subdivision_count + 1, 0, -1):
-		var t = 1.0 / float(i)
-		var subdivide_results = SVGMath.split_quadratic_bezier(p0, p1, p2, t)
+	if subdivision_count > 1:
+		for i in range(subdivision_count + 1, 0, -1):
+			var t = 1.0 / float(i)
+			var subdivide_results = SVGMath.split_quadratic_bezier(p0, p1, p2, t)
+			instructions.push_back({
+				"command": PathCommand.QUADRATIC_BEZIER_CURVE,
+				"points": [subdivide_results[1], subdivide_results[2]]
+			})
+			p0 = subdivide_results[2]
+			p1 = subdivide_results[3]
+	else:
 		instructions.push_back({
 			"command": PathCommand.QUADRATIC_BEZIER_CURVE,
-			"points": [subdivide_results[1], subdivide_results[2]]
+			"points": [p1, p2],
 		})
-		p0 = subdivide_results[2]
-		p1 = subdivide_results[3]
 	return instructions
 
 static func subdivide_cubic_bezier_triangles(p0, p1, p2, p3, subdivision_count = 1):
@@ -91,17 +97,24 @@ static func subdivide_cubic_bezier_triangles(p0, p1, p2, p3, subdivision_count =
 
 static func subdivide_cubic_bezier_path(p0, p1, p2, p3, subdivision_count = 1):
 	var instructions = []
-	for i in range(subdivision_count + 1, 0, -1):
-		var t = 1.0 / float(i)
-		var subdivide_results = SVGMath.split_cubic_bezier(p0, p1, p2, p3, t)
+	if subdivision_count > 1:
+		for i in range(subdivision_count + 1, 0, -1):
+			var t = 1.0 / float(i)
+			var subdivide_results = SVGMath.split_cubic_bezier(p0, p1, p2, p3, t)
+			instructions.push_back({
+				"command": PathCommand.CUBIC_BEZIER_CURVE,
+				"points": [subdivide_results[1], subdivide_results[2], subdivide_results[3]],
+				"current_point": subdivide_results[0],
+			})
+			p0 = subdivide_results[3]
+			p1 = subdivide_results[4]
+			p2 = subdivide_results[5]
+	else:
 		instructions.push_back({
 			"command": PathCommand.CUBIC_BEZIER_CURVE,
-			"points": [subdivide_results[1], subdivide_results[2], subdivide_results[3]],
-			"current_point": subdivide_results[0],
+			"points": [p1, p2, p3],
+			"current_point": p0,
 		})
-		p0 = subdivide_results[3]
-		p1 = subdivide_results[4]
-		p2 = subdivide_results[5]
 	return instructions
 
 static func is_curve_triangles_intersects_other_curve_triangles(curve_1_triangles, curve_2_triangles):
@@ -123,7 +136,6 @@ static func triangulate_fill_path(path: Array):
 	# Also build a list of triangle intersection checks.
 	var clockwise_check_polygon = []
 	var path_intersection_checks = []
-	var has_any_overlapping_occurred = false
 	for i in range(0, path.size()):
 		var instruction = path[i]
 		var next_instruction = path[i + 1] if i < path.size() - 1 else instruction
@@ -159,7 +171,6 @@ static func triangulate_fill_path(path: Array):
 		for other_path_check in path_intersection_checks:
 			var tessellation_counter = 0
 			while is_curve_triangles_intersects_other_curve_triangles(triangles_to_check, other_path_check.triangles):
-				has_any_overlapping_occurred = true
 				if SVGMath.triangle_area(triangles_to_check[0]) > SVGMath.triangle_area(other_path_check.triangles[0]):
 					current_split_count += 1
 					triangles_to_check = (
@@ -184,47 +195,50 @@ static func triangulate_fill_path(path: Array):
 			"split_count": current_split_count,
 			"triangles": triangles_to_check,
 		})
-	var is_clockwise = Geometry.is_polygon_clockwise(PoolVector2Array(clockwise_check_polygon))
+	
+	# This method must work in a different coordinate space than Godot 2D, it gives the OPPOSITE result.
+	var is_clockwise = !Geometry.is_polygon_clockwise(PoolVector2Array(clockwise_check_polygon)) 
 	
 	# Rebuild path based on new tessellation from triangle intersections.
 	var cubic_evaluations = {}
-	if has_any_overlapping_occurred:
-		var old_path = path
-		path = []
-		for i in range(0, old_path.size()):
-			var instruction = old_path[i]
-			var split_count = path_intersection_checks[i].split_count
-			if split_count > 1:
-				var control_points = path_intersection_checks[i].control_points
-				if instruction.command == PathCommand.QUADRATIC_BEZIER_CURVE:
-					path.append_array(
-						subdivide_quadratic_bezier_path(control_points[0], control_points[1], control_points[2], split_count)
-					)
-				elif instruction.command == PathCommand.CUBIC_BEZIER_CURVE:
-					var subdivided_paths = subdivide_cubic_bezier_path(control_points[0], control_points[1], control_points[2], control_points[3], split_count)
-					var final_subdivided_paths = []
-					for subdivided_path in subdivided_paths:
-						var cubic_evaluation = SVGCubics.evaluate_control_points([subdivided_path.current_point, subdivided_path.points[0], subdivided_path.points[1], subdivided_path.points[2]])
-						var subdivided_evaluations = []
-						if cubic_evaluation.needs_subdivision_at.size() > 0:
-							cubic_evaluation.needs_subdivision_at.push_back(1.0)
-							var last_subdivide_at = 0.0
-							var subdivide_results = [0.0, 0.0, 0.0, subdivided_path.current_point, subdivided_path.points[0], subdivided_path.points[1], subdivided_path.points[2]]
-							for subdivide_t in cubic_evaluation.needs_subdivision_at:
-								subdivide_results = SVGMath.split_cubic_bezier(
-									subdivide_results[3], subdivide_results[4], subdivide_results[5], subdivide_results[6],
-									(subdivide_t - last_subdivide_at) / (1.0 - last_subdivide_at)
-								)
-								final_subdivided_paths.push_back({
-									"command": PathCommand.CUBIC_BEZIER_CURVE,
-									"points": [subdivide_results[1], subdivide_results[2], subdivide_results[3]],
-								})
-						else:
-							final_subdivided_paths.push_back(subdivided_path)
-							cubic_evaluations[i] = cubic_evaluation
-					path.append_array(final_subdivided_paths)
-			else:
-				path.push_back(instruction)
+	var old_path = path
+	path = []
+	for i in range(0, old_path.size()):
+		var instruction = old_path[i]
+		var split_count = path_intersection_checks[i].split_count
+		if split_count > 1 or instruction.command == PathCommand.CUBIC_BEZIER_CURVE:
+			var control_points = path_intersection_checks[i].control_points
+			if instruction.command == PathCommand.QUADRATIC_BEZIER_CURVE:
+				path.append_array(
+					subdivide_quadratic_bezier_path(control_points[0], control_points[1], control_points[2], split_count)
+				)
+			elif instruction.command == PathCommand.CUBIC_BEZIER_CURVE:
+				var subdivided_paths = subdivide_cubic_bezier_path(control_points[0], control_points[1], control_points[2], control_points[3], split_count)
+				var final_subdivided_paths = []
+				var subdivide_index = 0
+				for subdivided_path in subdivided_paths:
+					var cubic_evaluation = SVGCubics.evaluate_control_points([subdivided_path.current_point, subdivided_path.points[0], subdivided_path.points[1], subdivided_path.points[2]])
+					var subdivided_evaluations = []
+					if cubic_evaluation.needs_subdivision_at.size() > 0:
+						cubic_evaluation.needs_subdivision_at.push_back(1.0)
+						var last_subdivide_at = 0.0
+						var subdivide_results = [0.0, 0.0, 0.0, subdivided_path.current_point, subdivided_path.points[0], subdivided_path.points[1], subdivided_path.points[2]]
+						for subdivide_t in cubic_evaluation.needs_subdivision_at:
+							subdivide_results = SVGMath.split_cubic_bezier(
+								subdivide_results[3], subdivide_results[4], subdivide_results[5], subdivide_results[6],
+								(subdivide_t - last_subdivide_at) / (1.0 - last_subdivide_at)
+							)
+							final_subdivided_paths.push_back({
+								"command": PathCommand.CUBIC_BEZIER_CURVE,
+								"points": [subdivide_results[1], subdivide_results[2], subdivide_results[3]],
+							})
+					else:
+						final_subdivided_paths.push_back(subdivided_path)
+						cubic_evaluations[path.size() + subdivide_index] = cubic_evaluation
+					subdivide_index += 1
+				path.append_array(final_subdivided_paths)
+		else:
+			path.push_back(instruction)
 	
 	# Build an "interior" polygon with straight edges, and other triangles to draw the bezier curves.
 	var interior_polygon = []
@@ -302,7 +316,10 @@ static func triangulate_fill_path(path: Array):
 						add_duplicate_edge(duplicate_edges, second_control_point, end_point)
 					else:
 						add_duplicate_edge(duplicate_edges, control_intersection, end_point)
-				elif SVGMath.is_point_right_of_segment(start_point, end_point, control_point_1) != is_clockwise:
+				elif (
+					(start_point != control_point_1 and end_point != control_point_1 and SVGMath.is_point_right_of_segment(start_point, end_point, control_point_1) == is_clockwise) or
+					(start_point != control_point_2 and end_point != control_point_2 and SVGMath.is_point_right_of_segment(start_point, end_point, control_point_2) == is_clockwise)
+				):
 					is_concave = true
 					interior_polygon.push_back(control_point_1)
 					interior_polygon.push_back(control_point_2)
@@ -314,18 +331,15 @@ static func triangulate_fill_path(path: Array):
 				interior_polygon.push_back(end_point)
 				
 				var cubic_evaluation = (
-					(
-						cubic_evaluations[i]
-						if cubic_evaluations.has(i) else
-						SVGCubics.evaluate_control_points([end_point, control_point_2, control_point_1, start_point])
-					)
-					if is_clockwise != is_concave else
+					cubic_evaluations[i]
+					if cubic_evaluations.has(i) else
 					SVGCubics.evaluate_control_points([start_point, control_point_1, control_point_2, end_point])
 				)
 				cubic_vertices.append_array(cubic_evaluation.vertices)
 				cubic_implicit_coordinates.append_array(cubic_evaluation.implicit_coordinates)
 				for ti in range(0, cubic_evaluation.implicit_coordinates.size()):
-					cubic_signs.push_back(0 if is_concave else 1)
+					# 0 flips the sign (clockwise curves look correct by default), 1 keeps the sign.
+					cubic_signs.push_back(1 if is_clockwise else 0)
 				
 				current_point = instruction.points[2]
 			PathCommand.CLOSE_PATH:
