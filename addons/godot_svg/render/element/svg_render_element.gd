@@ -200,6 +200,7 @@ func _process_simplified_polygon():
 	var time_start = OS.get_system_time_msecs()
 	var polygons = _process_polygon()
 	var simplified_fills = []
+	var simplified_holes = []
 	
 	if polygons.has("fill"):
 		if polygons.fill.size() > 0:
@@ -208,30 +209,37 @@ func _process_simplified_polygon():
 		
 		if polygons.has("is_simple_shape") and polygons.is_simple_shape:
 			simplified_fills = polygons.fill
+			simplified_holes = [[]]
 		else:
 			var fill_rule = attr_fill_rule
 			if is_in_clip_path:
 				fill_rule = attr_clip_rule
 			
 			for fill_path in polygons.fill:
-				var simplified_fill = SVGPathSolver.simplify(fill_path, {
+				var path_simplifications = SVGPathSolver.simplify(fill_path, {
 					SVGValueConstant.EVEN_ODD: SVGPolygonSolver.FillRule.EVEN_ODD,
 					SVGValueConstant.NON_ZERO: SVGPolygonSolver.FillRule.NON_ZERO,
 				}[fill_rule])
-				if simplified_fill.size() > 0:
-					simplified_fills.push_back(simplified_fill)
-				else:
-					print("\nError occurred when simplifying fill path ", fill_path)
-					simplified_fills.push_back(fill_path)
+				for path_simplification in path_simplifications:
+					var simplified_fill = path_simplification.fill_instructions
+					var simplified_hole = path_simplification.hole_instructions
+					if simplified_fill.size() > 0:
+						simplified_fills.push_back(simplified_fill)
+					else:
+						print("\nError occurred when simplifying fill path ", fill_path)
+						simplified_fills.push_back(fill_path)
+					simplified_holes.push_back(simplified_hole)
 			
 	
 	var triangulated_fills = []
+	var simplified_fill_index = 0
 	for simplified_fill in simplified_fills:
 		if simplified_fill[0] is Dictionary:
-			var fill_triangulation = SVGTriangulation.triangulate_fill_path(simplified_fill)
+			var fill_triangulation = SVGTriangulation.triangulate_fill_path(simplified_fill, simplified_holes[simplified_fill_index])
 			triangulated_fills.push_back(fill_triangulation)
 		else:
 			pass
+		simplified_fill_index += 1
 	
 	var simplified_strokes = []
 	if polygons.has("stroke"):

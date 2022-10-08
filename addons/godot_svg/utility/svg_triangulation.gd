@@ -128,7 +128,7 @@ static func is_curve_triangles_intersects_other_curve_triangles(curve_1_triangle
 # path is an array of dictionaries following the format:
 # { "command": PathCommand, "points": [Vector()] }
 # It only supports a subset of PathCommand. Points are absolute coordinates.
-static func triangulate_fill_path(path: Array):
+static func triangulate_fill_path(path: Array, holes: Array = []):
 	var current_point = Vector2()
 	var current_path_start_point = current_point
 
