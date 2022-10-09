@@ -131,14 +131,28 @@ static func is_curve_triangles_intersects_other_curve_triangles(curve_1_triangle
 static func triangulate_fill_path(path: Array, holes: Array = []):
 	var current_point = Vector2()
 	var current_path_start_point = current_point
+	var has_holes = false # holes.size() > 0
+	
+	# Combine base fill path instruction with hole instructions for the following intersection checks.
+	var all_paths = []
+	var holes_path_start_index = path.size()
+	if false and has_holes:
+		all_paths.append_array(path)
+		for hole_path in holes:
+			all_paths.append_array(hole_path)
+	else:
+		all_paths = path
+	var all_path_size = all_paths.size()
 
 	# Check if the polygon is clockwise or counter-clockwise. Used to determine the inside of the path.
 	# Also build a list of triangle intersection checks.
+	var clockwise_check_polygons = []
 	var clockwise_check_polygon = []
 	var path_intersection_checks = []
-	for i in range(0, path.size()):
-		var instruction = path[i]
-		var next_instruction = path[i + 1] if i < path.size() - 1 else instruction
+	var fill_path_size = path.size()
+	for i in range(0, all_path_size):
+		var instruction = all_paths[i]
+		var next_instruction = all_paths[i + 1] if i < all_path_size - 1 else instruction
 		var control_points = []
 		var triangles_to_check = []
 		var current_split_count = 1
@@ -166,6 +180,8 @@ static func triangulate_fill_path(path: Array, holes: Array = []):
 			PathCommand.CLOSE_PATH:
 				if not current_path_start_point.is_equal_approx(current_point):
 					clockwise_check_polygon.push_back(current_path_start_point)
+				clockwise_check_polygons.push_back(clockwise_check_polygon)
+				clockwise_check_polygon = []
 		
 		# Split up bezier curves based on triangle bounding box collisions
 		for other_path_check in path_intersection_checks:
@@ -196,14 +212,20 @@ static func triangulate_fill_path(path: Array, holes: Array = []):
 			"triangles": triangles_to_check,
 		})
 	
-	# This method must work in a different coordinate space than Godot 2D, it gives the OPPOSITE result.
-	var is_clockwise = !Geometry.is_polygon_clockwise(PoolVector2Array(clockwise_check_polygon)) 
+	# This method must work in a different coordinate space than Godot 2D, as it gives the OPPOSITE result.
+	var clockwise_checks = []
+	for check_polygon in clockwise_check_polygons:
+		clockwise_checks.push_back(!Geometry.is_polygon_clockwise(PoolVector2Array(clockwise_check_polygon)))
 	
 	# Rebuild path based on new tessellation from triangle intersections.
 	var cubic_evaluations = {}
-	var old_path = path
+	var old_holes_path_start_index = holes_path_start_index
+	var old_path = all_paths
 	path = []
 	for i in range(0, old_path.size()):
+		if old_holes_path_start_index != null and i >= old_holes_path_start_index:
+			old_holes_path_start_index = null
+			holes_path_start_index = i
 		var instruction = old_path[i]
 		var split_count = path_intersection_checks[i].split_count
 		if split_count > 1 or instruction.command == PathCommand.CUBIC_BEZIER_CURVE:
@@ -252,6 +274,8 @@ static func triangulate_fill_path(path: Array, holes: Array = []):
 	var antialias_edge_implicit_coordinates = PoolVector2Array()
 	var polygon_break_indices = []
 	var duplicate_edges = {}
+	var current_path_index = 0
+	
 	
 	if path[path.size() - 1].command != PathCommand.CLOSE_PATH:
 		path.push_back({ "command": PathCommand.CLOSE_PATH })
@@ -259,6 +283,7 @@ static func triangulate_fill_path(path: Array, holes: Array = []):
 	for i in range(0, path.size()):
 		var instruction = path[i]
 		var next_instruction = path[i + 1] if i < path.size() - 1 else instruction
+		var is_clockwise = clockwise_checks[current_path_index]
 		match instruction.command:
 			PathCommand.MOVE_TO:
 				current_point = instruction.points[0]
@@ -346,6 +371,7 @@ static func triangulate_fill_path(path: Array, holes: Array = []):
 				if not current_path_start_point.is_equal_approx(current_point):
 					interior_polygon.push_back(current_path_start_point)
 				polygon_break_indices.push_back(interior_polygon.size())
+				current_path_index += 1
 	
 	# Triangulate the interior polygon(s).
 	var interior_vertices = PoolVector2Array()
@@ -353,11 +379,15 @@ static func triangulate_fill_path(path: Array, holes: Array = []):
 	var interior_triangulation = PoolIntArray()
 	var last_break_index = 0
 	for break_index in polygon_break_indices:
+		var sliced_polygon = SVGHelper.array_slice(interior_polygon, last_break_index, break_index)
+		var triangulation = []
+		if has_holes:
+			triangulation = SVGEarcut.earcut_polygon_2d(sliced_polygon)
+		else:
+			triangulation = Geometry.triangulate_polygon(sliced_polygon)
 		interior_triangulation.append_array(
 			SVGHelper.array_add(
-				Geometry.triangulate_polygon(
-					SVGHelper.array_slice(interior_polygon, last_break_index, break_index)
-				),
+				triangulation,
 				last_break_index
 			)
 		)
@@ -426,7 +456,7 @@ static func triangulate_fill_path(path: Array, holes: Array = []):
 			antialias_edge_implicit_coordinates.push_back(Vector2(1.0, 1.0))
 			antialias_edge_implicit_coordinates.push_back(Vector2(0.0, 1.0))
 	
-	return {
+	var triangulation_result = {
 		"interior_vertices": interior_vertices,
 		"interior_implicit_coordinates": interior_implicit_coordinates,
 		"quadratic_vertices": quadratic_vertices,
@@ -438,5 +468,8 @@ static func triangulate_fill_path(path: Array, holes: Array = []):
 		"antialias_edge_vertices": antialias_edge_vertices,
 		"antialias_edge_implicit_coordinates": antialias_edge_implicit_coordinates,
 	}
+	print_debug(JSON.print(triangulation_result, "  "))
+	
+	return triangulation_result
 
 
