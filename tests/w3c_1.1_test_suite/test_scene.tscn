@@ -12,7 +12,6 @@ position = Vector2( 250, 158 )
 current = true
 
 [node name="SVG2D2" type="Node2D" parent="."]
-position = Vector2( 96, -107 )
 script = ExtResource( 1 )
 svg = ExtResource( 3 )
 fixed_scaling_ratio = 0

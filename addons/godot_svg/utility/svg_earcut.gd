@@ -74,7 +74,7 @@ static func get_leftmost(start):
 		if p.x < leftmost.x or (p.x == leftmost.x and p.y < leftmost.y):
 			leftmost = p
 		p = p.next
-		if p != start:
+		if not (p != start):
 			break
 	return leftmost
 
@@ -103,7 +103,7 @@ static func find_hole_bridge(hole, outer_node):
 	var hx = hole.x
 	var hy = hole.y
 	var qx = -INF
-	var m
+	var m = null
 	while true:
 		if hy <= p.y and p.next.y and p.next.y != p.y:
 			var x = p.x + (hy - p.y) * (p.next.x - p.x) / (p.next.y - p.y)
@@ -113,7 +113,7 @@ static func find_hole_bridge(hole, outer_node):
 				if x == hx:
 					return m
 		p = p.next
-		if p != outer_node:
+		if not (p != outer_node):
 			break
 	if not m:
 		return null
@@ -137,7 +137,7 @@ static func find_hole_bridge(hole, outer_node):
 				m = p
 				tangential_min = tangential
 		p = p.next
-		if p != stop:
+		if not (p != stop):
 			break
 	return m
 
@@ -174,7 +174,7 @@ static func filter_points(start, end = null):
 			again = true
 		else:
 			p = p.next
-		if again or p != end:
+		if not (again or p != end):
 			break
 	return end
 
@@ -186,7 +186,7 @@ static func eliminate_hole(hole, outer_node):
 	filter_points(bridge_reverse, bridge_reverse.next)
 	return filter_points(bridge, bridge.next)
 
-static func eliminate_holes(data, hole_indices, outer_node):
+static func eliminate_holes(data, hole_indices, outer_node, is_outer_clockwise):
 	var queue = []
 	var hole_count = hole_indices.size()
 	var start = null
@@ -195,8 +195,8 @@ static func eliminate_holes(data, hole_indices, outer_node):
 	
 	for i in range(0, hole_count):
 		start = hole_indices[i]
-		end = hole_indices[i + 1] if i < hole_count else data.size()
-		list = linked_list(data, start, end, false)
+		end = hole_indices[i + 1] if i < hole_count - 1 else data.size()
+		list = linked_list(data, start, end, !is_outer_clockwise)
 		if list == list.next:
 			list.steiner = true
 		queue.push_back(get_leftmost(list))
@@ -250,7 +250,7 @@ static func sort_linked(list):
 			p = q
 		tail.next_z = null
 		in_size *= 2
-		if num_merges > 1:
+		if not (num_merges > 1):
 			break
 	return list
 
@@ -278,7 +278,7 @@ static func index_curve(start, min_x, min_y, inv_size):
 		p.prev_z = p.prev
 		p.next_z = p.next
 		p = p.next
-		if p != start:
+		if not (p != start):
 			break
 	p.prev_z.next_z = null
 	p.prev_z = null
@@ -387,7 +387,7 @@ static func cure_local_intersections(start, triangles):
 			p = b
 			start = b
 		p  = p.next
-		if p != start:
+		if not (p != start):
 			break
 	return filter_points(p)
 
@@ -397,7 +397,7 @@ static func intersects_polygon(a, b):
 		if p.i != a.i and p.next.i != a.i and p.i != b.i and p.next.i != b.i and intersects(p, p.next, a, b):
 			return true
 		p = p.next
-		if p != a:
+		if not (p != a):
 			break
 	return false
 
@@ -417,7 +417,7 @@ static func middle_inside(a, b):
 			)
 		):
 			inside = !inside;
-		if p != a:
+		if not (p != a):
 			break
 	return inside
 
@@ -447,7 +447,7 @@ static func split_earcut(start, triangles, min_x, min_y, inv_size):
 				return
 			b = b.next
 		a = a.next
-		if a != start:
+		if not (a != start):
 			break
 
 static func earcut_linked(ear, triangles, min_x, min_y, inv_size, process_pass):
@@ -480,11 +480,11 @@ static func earcut_linked(ear, triangles, min_x, min_y, inv_size, process_pass):
 				split_earcut(ear, triangles, min_x, min_y, inv_size) 
 			break
 
-static func earcut_polygon_2d(data, hole_indices = []):
+static func earcut_polygon_2d(data, hole_indices = [], is_outer_clockwise = true):
 	
 	var has_holes = hole_indices.size() > 0
 	var outer_length = hole_indices[0] if has_holes else data.size()
-	var outer_node = linked_list(data, 0, outer_length, true)
+	var outer_node = linked_list(data, 0, outer_length, is_outer_clockwise)
 	var triangles = []
 	
 	if not outer_node or outer_node.next == outer_node.prev:
@@ -499,7 +499,7 @@ static func earcut_polygon_2d(data, hole_indices = []):
 	var inv_size = 0.0
 	
 	if has_holes:
-		outer_node = eliminate_holes(data, hole_indices, outer_node)
+		outer_node = eliminate_holes(data, hole_indices, outer_node, is_outer_clockwise)
 	
 	if data.size() > 80:
 		min_x = INF

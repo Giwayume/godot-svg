@@ -579,7 +579,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 		elif is_hole_candidate:
 			hole_candidates.push_back({
 				"second_closest_hit_shape_index": second_closest_hit_shape_index,
-				"solved_path": solved_path,
+				"solved_path_info": solved_path_info,
 			})
 		
 		current_solved_path_index += 1
@@ -589,8 +589,8 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 		var paths_that_use_shape = find_solved_paths_that_use_shape_index(solved_paths, hole_candidate.second_closest_hit_shape_index)
 		for solved_path_index in paths_that_use_shape:
 			var found_index = filled_paths_solved_path_indices.find(solved_path_index)
-			if found_index > -1:
-				hole_paths[found_index].push_back(hole_candidate.solved_path)
+			if found_index > -1: # TODO TODO - check the bounding box to make sure one is inside the other, roughly.
+				hole_paths[found_index].push_back(hole_candidate.solved_path_info.path)
 				break
 	
 	# Translate shape classes back into instruction commands.
