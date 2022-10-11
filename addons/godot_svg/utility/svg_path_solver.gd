@@ -211,6 +211,35 @@ static func get_path_loop_range(loop_ranges, current_index):
 			return loop_range
 	return null
 
+static func create_new_bounding_box():
+	return {
+		"left": INF,
+		"right": -INF,
+		"top": INF,
+		"bottom": -INF,
+	}
+
+static func apply_shape_to_bounding_box(bounding_box, path_shape):
+	if path_shape.bounding_box.position.x < bounding_box.left:
+		bounding_box.left = path_shape.bounding_box.position.x
+	if path_shape.bounding_box.position.x + path_shape.bounding_box.size.x > bounding_box.right:
+		bounding_box.right = path_shape.bounding_box.position.x + path_shape.bounding_box.size.x
+	if path_shape.bounding_box.position.y < bounding_box.top:
+		bounding_box.top = path_shape.bounding_box.position.y
+	if path_shape.bounding_box.position.y + path_shape.bounding_box.size.y > bounding_box.bottom:
+		bounding_box.bottom = path_shape.bounding_box.position.y + path_shape.bounding_box.size.y
+	return bounding_box
+
+static func is_bounding_box_inside_other_bounding_box(expect_inside, expect_outside):
+	if (
+		expect_inside.left <= expect_outside.left or
+		expect_inside.top <= expect_outside.top or
+		expect_inside.right >= expect_outside.right or
+		expect_inside.bottom >= expect_outside.bottom
+	):
+		return false
+	return true
+
 # During path intersection traversal, some shapes may be formed in self-intersecting loops that
 # are just smaller versions of a larger shape outline. This checks for that so they aren't included.
 static func is_path_subset_of_path(find, in_path):
@@ -326,10 +355,12 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 	var current_loop_range_has_any_intersection = false
 	var current_loop_range_rotation = 0.0
 	var path_shapes_size = path_shapes.size()
+	var current_path_bounding_box = create_new_bounding_box()
 	for i in range(0, path_shapes_size):
 		var path_shape = path_shapes[i]
 		var next_path_shape = path_shapes[i + 1 if i < path_shapes_size - 1 else 0]
 		var current_loop_range = shape_loop_ranges[current_loop_range_index]
+		current_path_bounding_box = apply_shape_to_bounding_box(current_path_bounding_box, path_shape)
 		if i > 1:
 			for j in range(0, i - 1):
 				var other_path_shape = path_shapes[j]
@@ -368,14 +399,17 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 				solved_paths.push_back({
 					"path": SVGHelper.array_slice(path_shapes, current_loop_range.start, current_loop_range.end + 1),
 					"path_ranges": [[current_loop_range.start, current_loop_range.end]],
+					"bounding_box": current_path_bounding_box,
 					"is_clockwise": current_loop_range_rotation < 0.0,
 				})
 			current_loop_range_index += 1
 			current_loop_range_has_any_intersection = false
 			current_loop_range_rotation = 0.0
+			current_path_bounding_box = create_new_bounding_box()
 	
 	# For each intersection point, follow the intersection lines forward, then take right turns until it comes back to the initial point
 	if intersections.size() > 0:
+		current_path_bounding_box = create_new_bounding_box()
 		for intersection in intersections:
 			for shape_start_array_index in range(0, intersection.intersected_shape_indices.size()):
 				var shape_start_index = intersection.intersected_shape_indices[shape_start_array_index]
@@ -446,6 +480,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 								winning_t = current_check_t
 								traverse_direction = -1
 						if winning_index > -1:
+							current_path_bounding_box = apply_shape_to_bounding_box(current_path_bounding_box, current_shape)
 							final_rotation += sign(closest_angle) * (PI - abs(closest_angle))
 							new_path_current_range[1] = current_shape_index
 							new_path_ranges.push_back(new_path_current_range)
@@ -477,6 +512,8 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 								(1.0 if traverse_direction > 0.0 else 0.0)
 							)
 						)
+						
+						current_path_bounding_box = apply_shape_to_bounding_box(current_path_bounding_box, current_shape)
 						
 						var path_loop_range = get_path_loop_range(shape_loop_ranges, current_shape_index)
 						current_shape_index += traverse_direction
@@ -510,8 +547,10 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 					intersection.solved[str(shape_start_index) + "_" + str(shape_start_t)] = {
 						"path": new_path,
 						"path_ranges": new_path_ranges,
+						"bounding_box": current_path_bounding_box,
 						"is_clockwise": final_rotation > 0.0,
 					}
+					current_path_bounding_box = create_new_bounding_box()
 		
 		for intersection in intersections:
 			for solved_key in intersection.solved:
@@ -589,7 +628,13 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 		var paths_that_use_shape = find_solved_paths_that_use_shape_index(solved_paths, hole_candidate.second_closest_hit_shape_index)
 		for solved_path_index in paths_that_use_shape:
 			var found_index = filled_paths_solved_path_indices.find(solved_path_index)
-			if found_index > -1: # TODO TODO - check the bounding box to make sure one is inside the other, roughly.
+			if (
+				found_index > -1 and
+				is_bounding_box_inside_other_bounding_box(
+					hole_candidate.solved_path_info.bounding_box,
+					solved_paths[solved_path_index].bounding_box
+				)
+			):
 				hole_paths[found_index].push_back(hole_candidate.solved_path_info.path)
 				break
 	
