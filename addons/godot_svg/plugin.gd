@@ -21,8 +21,14 @@ func _process(_delta):
 func _enter_tree():
 	svg_import_plugin = preload("./import/svg_import.gd").new()
 	add_import_plugin(svg_import_plugin)
-	add_custom_type("SVG2D", "Node2D", preload("./node/svg_2d.gd"), preload("./node/svg_2d.png"))
-	add_custom_type("SVGRect", "Control", preload("./node/svg_rect.gd"), preload("./node/svg_rect.png"))
+	var svg_2d_icon = null
+	if ResourceLoader.exists("res://addons/godot_svg/node/svg_2d.png"):
+		svg_2d_icon = load("res://addons/godot_svg/node/svg_2d.png")
+	add_custom_type("SVG2D", "Node2D", preload("./node/svg_2d.gd"), svg_2d_icon)
+	var svg_rect_icon = null
+	if ResourceLoader.exists("res://addons/godot_svg/node/svg_rect.png"):
+		svg_rect_icon = load("res://addons/godot_svg/node/svg_rect.png")
+	add_custom_type("SVGRect", "Control", preload("./node/svg_rect.gd"), svg_rect_icon)
 	add_autoload_singleton("SVGLine2DTexture", "res://addons/godot_svg/render/polygon/svg_line_texture.gd")
 
 	var editor_interface = get_editor_interface()
