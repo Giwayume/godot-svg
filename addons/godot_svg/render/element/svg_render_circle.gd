@@ -1,7 +1,6 @@
 extends "svg_render_element.gd"
 
 const ARC_POINTS_MAX = 256
-const PathCommand = SVGValueConstant.PathCommand
 
 var attr_cx = SVGLengthPercentage.new("0") setget _set_attr_cx
 var attr_cy = SVGLengthPercentage.new("0") setget _set_attr_cy
@@ -71,11 +70,52 @@ func _process_polygon():
 			"command": PathCommand.CLOSE_PATH,
 		},
 	]
+	var stroke = [
+		{
+			"command": PathCommand.MOVE_TO,
+			"points": [center + Vector2(0.0, -radius)],
+		},
+		{
+			"command": PathCommand.CUBIC_BEZIER_CURVE,
+			"points": [
+				center + Vector2(handle_offset, -radius),
+				center + Vector2(radius, -handle_offset),
+				center + Vector2(radius, 0.0),
+			],
+		},
+		{
+			"command": PathCommand.CUBIC_BEZIER_CURVE,
+			"points": [
+				center + Vector2(radius, handle_offset),
+				center + Vector2(handle_offset, radius),
+				center + Vector2(0.0, radius),
+			],
+		},
+		{
+			"command": PathCommand.CUBIC_BEZIER_CURVE,
+			"points": [
+				center + Vector2(-handle_offset, radius),
+				center + Vector2(-radius, handle_offset),
+				center + Vector2(-radius, 0.0),
+			],
+		},
+		{
+			"command": PathCommand.CUBIC_BEZIER_CURVE,
+			"points": [
+				center + Vector2(-radius, -handle_offset),
+				center + Vector2(-handle_offset, -radius),
+				center + Vector2(0.0, -radius),
+			],
+		},
+		{
+			"command": PathCommand.CLOSE_PATH,
+		},
+	]
 	
 	return {
 		"is_simple_shape": true,
 		"fill": fill,
-		"stroke": SVGDrawing.generate_stroke_circle_arc_points(center, radius, 0, 2*PI, arc_points),
+		"stroke": stroke,
 		"stroke_closed": true,
 	}
 

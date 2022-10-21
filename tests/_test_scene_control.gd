@@ -45,7 +45,7 @@ func _input(event):
 					zoom_at_point = mouse_position
 					zoom_timer = 0.3
 					zoom_step = 4.0
-			if event.button_index == BUTTON_LEFT or event.button_index == BUTTON_MIDDLE:
+			if event.button_index == BUTTON_LEFT or event.button_index == BUTTON_MIDDLE or event.button_index == BUTTON_RIGHT:
 				is_panning = event.is_pressed()
 	if event is InputEventKey:
 		if event.is_pressed() and not event.is_echo():

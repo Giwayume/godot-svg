@@ -1,7 +1,5 @@
 extends "svg_render_element.gd"
 
-const PathCommand = SVGValueConstant.PathCommand
-
 var attr_points = [] setget _set_attr_points
 var attr_path_length = SVGValueConstant.NONE setget _set_attr_path_length
 
@@ -11,11 +9,10 @@ func _init():
 	node_name = "polygon"
 
 func _process_polygon():
-	var stroke_points = PoolVector2Array()
-	
 	var current_stroke_start_point = Vector2()
 	
 	var fill = []
+	var stroke = []
 	
 	var point_index = 0
 	for current_point in attr_points:
@@ -23,16 +20,22 @@ func _process_polygon():
 			"command": PathCommand.MOVE_TO if point_index == 0 else PathCommand.LINE_TO,
 			"points": [current_point],
 		})
-		stroke_points.push_back(current_point)
+		stroke.push_back({
+			"command": PathCommand.MOVE_TO if point_index == 0 else PathCommand.LINE_TO,
+			"points": [current_point],
+		})
 		point_index += 1
 	fill.push_back({
+		"command": PathCommand.CLOSE_PATH,
+	})
+	stroke.push_back({
 		"command": PathCommand.CLOSE_PATH,
 	})
 	
 	return {
 		"is_simple_shape": false,
 		"fill": fill,
-		"stroke": stroke_points,
+		"stroke": stroke,
 		"stroke_closed": true,
 	}
 

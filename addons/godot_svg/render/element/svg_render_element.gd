@@ -2,6 +2,8 @@ extends Node2D
 
 signal bounding_box_calculated(new_bounding_box)
 
+const PathCommand = SVGValueConstant.PathCommand
+
 const SVGRenderBakedShader = preload("../shader/svg_render_baked_shader.tres")
 const SVGRenderFillShaderGles2 = preload("../shader/svg_render_fill_shader_gles2.tres")
 const SVGRenderFillShaderGles3 = preload("../shader/svg_render_fill_shader_gles3.tres")
@@ -241,28 +243,33 @@ func _process_simplified_polygon():
 			pass
 		simplified_fill_index += 1
 	
-	var simplified_strokes = []
+	var triangulated_strokes = []
 	if polygons.has("stroke"):
-		if polygons.stroke.size() > 0:
-			if not polygons.stroke[0] is PoolVector2Array:
-				polygons.stroke = [polygons.stroke]
-		simplified_strokes = polygons.stroke
-	
-	var stroke_closed = null
-	if polygons.has("stroke_closed"):
-		stroke_closed = []
-		for stroke_index in range(0, simplified_strokes.size()):
-			if typeof(polygons.stroke_closed) == TYPE_ARRAY and stroke_index < polygons.stroke_closed.size():
-				stroke_closed.push_back(polygons.stroke_closed[stroke_index])
-			else:
-				stroke_closed.push_back(polygons.stroke_closed)
+		var stroke_width = get_visible_stroke_width()
+		if polygons.stroke.size() > 0 and stroke_width > 0.0:
+			var current_stroke = []
+			var stroke_instruction_index = 0
+			var stroke_instruction_size = polygons.stroke.size()
+			for i in range(0, stroke_instruction_size + 1):
+				var instruction = polygons.stroke[min(i, stroke_instruction_size - 1)]
+				if instruction.command == PathCommand.MOVE_TO or stroke_instruction_index > stroke_instruction_size - 1:
+					if current_stroke.size() > 0:
+						triangulated_strokes.push_back(
+							SVGTriangulation.triangulate_stroke_path(
+								current_stroke, stroke_width, attr_stroke_linecap,
+								attr_stroke_linejoin, attr_stroke_miterlimit,
+								current_stroke[current_stroke.size() -1].command == PathCommand.CLOSE_PATH
+							)
+						)
+					current_stroke = []
+				current_stroke.push_back(instruction)
+				stroke_instruction_index += 1
 	
 #	print_debug(OS.get_system_time_msecs() - time_start)
 	
 	return {
 		"fill": triangulated_fills,
-		"stroke": simplified_strokes,
-		"stroke_closed": stroke_closed,
+		"stroke": triangulated_strokes,
 	}
 
 func _process_simplified_polygon_complete(polygons):
@@ -511,46 +518,7 @@ func draw_shape(updates):
 		var fill_index = 0
 		for _shape_fill in _shape_fills:
 			if fill_index < polygon_lists.size():
-				var fill_definition = polygon_lists[fill_index]
-				var mesh = ArrayMesh.new()
-				var surface = []
-				surface.resize(ArrayMesh.ARRAY_MAX)
-				var vertices = PoolVector2Array()
-				var colors = PoolColorArray()
-				var coordinate_index = 0
-				# Interior faces
-				vertices.append_array(fill_definition.interior_vertices)
-				for implicit_coordinate in fill_definition.interior_implicit_coordinates:
-					colors.push_back(Color(implicit_coordinate.x, implicit_coordinate.y, implicit_coordinate.z, 0.7))
-				# Quadratic edges
-				vertices.append_array(fill_definition.quadratic_vertices)
-				coordinate_index = 0
-				for implicit_coordinate in fill_definition.quadratic_implicit_coordinates:
-					colors.push_back(Color(
-						implicit_coordinate.x, implicit_coordinate.y, 1.0,
-						0.1 + 0.15 * float(fill_definition.quadratic_signs[coordinate_index])
-					))
-					coordinate_index += 1
-				# Cubic edges
-				vertices.append_array(fill_definition.cubic_vertices)
-				coordinate_index = 0
-				for implicit_coordinate in fill_definition.cubic_implicit_coordinates:
-					colors.push_back(Color(
-						implicit_coordinate.x, implicit_coordinate.y, implicit_coordinate.z,
-						0.31 + 0.15 * float(fill_definition.cubic_signs[coordinate_index])
-					))
-					coordinate_index += 1
-				# Antialiased line edges
-				vertices.append_array(fill_definition.antialias_edge_vertices)
-				for implicit_coordinate in fill_definition.antialias_edge_implicit_coordinates:
-					colors.push_back(Color(
-						implicit_coordinate.x, implicit_coordinate.y, 0.0, 0.9
-					))
-				# Create the mesh
-				surface[ArrayMesh.ARRAY_VERTEX] = vertices
-				surface[ArrayMesh.ARRAY_COLOR] = colors
-				mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, surface, [], 0)
-				_shape_fill.mesh = mesh
+				_shape_fill.mesh = _create_mesh_from_triangulation(polygon_lists[fill_index])
 				_shape_fill.material = ShaderMaterial.new()
 				_shape_fill.material.shader = SVGRenderFillShader
 #				_shape_fill.polygon = polygon_lists[fill_index]
@@ -584,60 +552,52 @@ func draw_shape(updates):
 			shape.hide()
 	
 	if will_stroke:
-		var point_lists = processed_polygon.stroke
+		var polygon_lists = processed_polygon.stroke
 		
 		# Remove unused
-		for shape_stroke_index in range(point_lists.size(), _shape_strokes.size()):
+		for shape_stroke_index in range(polygon_lists.size(), _shape_strokes.size()):
 			var shape = _shape_strokes[shape_stroke_index]
 			shape.get_parent().remove_child(shape)
 			shape.queue_free()
-		_shape_strokes = SVGHelper.array_slice(_shape_strokes, 0, point_lists.size())
+		_shape_strokes = SVGHelper.array_slice(_shape_strokes, 0, polygon_lists.size())
 		# Create new
-		for point_list_index in range(_shape_strokes.size(), point_lists.size()):
-			var shape = SVGPolygonLines2D.new()
+		for stroke_list_index in range(_shape_strokes.size(), polygon_lists.size()):
+			var shape = MeshInstance2D.new()
 			add_child(shape)
 			_shape_strokes.push_back(shape)
 		
 		var stroke_index = 0
 		for _shape_stroke in _shape_strokes:
-			var _stroke_attrs = {}
-			if stroke_index < point_lists.size():
-				_shape_stroke.points = point_lists[stroke_index]
+			if stroke_index < polygon_lists.size():
+				_shape_stroke.mesh = _create_mesh_from_triangulation(polygon_lists[stroke_index])
+				_shape_stroke.material = ShaderMaterial.new()
+				_shape_stroke.material.shader = SVGRenderFillShader
 			else:
-				_shape_stroke.points = []
-			if attr_stroke_dasharray.size() > 0:
-				var full_percentage_size = sqrt((pow(inherited_view_box.size.x, 2) + pow(inherited_view_box.size.y, 2)) / 2)
-				var dash_array = []
-				for size in attr_stroke_dasharray:
-					dash_array.push_back(size.get_length(full_percentage_size))
-				_shape_stroke.dash_offset = attr_stroke_dashoffset.get_length(full_percentage_size)
-				_shape_stroke.dash_array = dash_array
-			_stroke_attrs.color = updates.stroke_color
-			_stroke_attrs.cap_mode = attr_stroke_linecap
-			_stroke_attrs.joint_mode = attr_stroke_linejoin
-			_stroke_attrs.antialiased = svg_node.antialiased
-			_stroke_attrs.sharp_limit = attr_stroke_miterlimit
-			_stroke_attrs.opacity = attr_stroke_opacity.get_length(1)
+				_shape_stroke.mesh = null
+			_shape_stroke.material.set_shader_param("fill_color", updates.stroke_color)
+			_shape_stroke.self_modulate = Color(1, 1, 1, max(0, min(1, attr_stroke_opacity.get_length(1))))
+			
+			if (
+				updates.has("stroke_texture") and updates.stroke_texture != null and
+				updates.has("stroke_texture_units") and updates.stroke_texture_units != null
+			):
+				_shape_stroke.material.set_shader_param("fill_texture", updates.stroke_texture)
+			
+#			if attr_stroke_dasharray.size() > 0:
+#				var full_percentage_size = sqrt((pow(inherited_view_box.size.x, 2) + pow(inherited_view_box.size.y, 2)) / 2)
+#				var dash_array = []
+#				for size in attr_stroke_dasharray:
+#					dash_array.push_back(size.get_length(full_percentage_size))
+#				_shape_stroke.dash_offset = attr_stroke_dashoffset.get_length(full_percentage_size)
+#				_shape_stroke.dash_array = dash_array
+			
 			if updates.has("stroke_width"):
-				# Commented out logic for dealing with svg_line_texture
-#				var applied_stroke_width = updates.stroke_width * updates.scale_factor.x
-#				if applied_stroke_width >= 2:
-#					applied_stroke_width += 2
-#				elif applied_stroke_width > 1:
-#					applied_stroke_width = applied_stroke_width + ((applied_stroke_width - 1) * 2)
-#				_stroke_attrs.width = applied_stroke_width / max(0.0001, updates.scale_factor.x)
-
-				_stroke_attrs.width = updates.stroke_width
 				var applied_stroke_width = updates.stroke_width * scale_factor.x
 				if applied_stroke_width < 1:
 					_shape_stroke.modulate = Color(1, 1, 1, applied_stroke_width)
 				else:
 					_shape_stroke.modulate = Color(1, 1, 1, 1)
-				
-			if processed_polygon.has("stroke_closed") and processed_polygon.stroke_closed != null:
-				_stroke_attrs.closed = processed_polygon.stroke_closed[stroke_index]
 			
-			_shape_stroke.line_attributes = _stroke_attrs
 			_shape_stroke.show()
 			stroke_index += 1
 	else:
@@ -791,6 +751,49 @@ func free_paint_server_texture(store_name: String):
 		if old_store.has("texture_rect"):
 			old_store.texture_rect.queue_free()
 	_paint_server_textures.erase(store_name)
+
+# Internal Methods
+
+func _create_mesh_from_triangulation(fill_definition):
+	var mesh = ArrayMesh.new()
+	var surface = []
+	surface.resize(ArrayMesh.ARRAY_MAX)
+	var vertices = PoolVector2Array()
+	var colors = PoolColorArray()
+	var coordinate_index = 0
+	# Interior faces
+	vertices.append_array(fill_definition.interior_vertices)
+	for implicit_coordinate in fill_definition.interior_implicit_coordinates:
+		colors.push_back(Color(implicit_coordinate.x, implicit_coordinate.y, implicit_coordinate.z, 0.7))
+	# Quadratic edges
+	vertices.append_array(fill_definition.quadratic_vertices)
+	coordinate_index = 0
+	for implicit_coordinate in fill_definition.quadratic_implicit_coordinates:
+		colors.push_back(Color(
+			implicit_coordinate.x, implicit_coordinate.y, 1.0,
+			0.1 + 0.15 * float(fill_definition.quadratic_signs[coordinate_index])
+		))
+		coordinate_index += 1
+	# Cubic edges
+	vertices.append_array(fill_definition.cubic_vertices)
+	coordinate_index = 0
+	for implicit_coordinate in fill_definition.cubic_implicit_coordinates:
+		colors.push_back(Color(
+			implicit_coordinate.x, implicit_coordinate.y, implicit_coordinate.z,
+			0.31 + 0.15 * float(fill_definition.cubic_signs[coordinate_index])
+		))
+		coordinate_index += 1
+	# Antialiased line edges
+	vertices.append_array(fill_definition.antialias_edge_vertices)
+	for implicit_coordinate in fill_definition.antialias_edge_implicit_coordinates:
+		colors.push_back(Color(
+			implicit_coordinate.x, implicit_coordinate.y, 0.0, 0.9
+		))
+	# Create the mesh
+	surface[ArrayMesh.ARRAY_VERTEX] = vertices
+	surface[ArrayMesh.ARRAY_COLOR] = colors
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, surface, [], 0)
+	return mesh
 
 # Getters / Setters
 

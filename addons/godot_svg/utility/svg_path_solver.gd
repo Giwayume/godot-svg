@@ -1,5 +1,7 @@
 class_name SVGPathSolver
 
+const PATH_SEGMENTATION_MIN = 5
+const PATH_SEGMENTATION_MAX = 1024
 const PathCommand = SVGValueConstant.PathCommand
 
 enum FillRule {
@@ -50,6 +52,24 @@ class PathShape:
 						"other_t": new_intersection.self_t,
 					})
 		return new_intersections
+	
+	func find_self_intersections():
+		var self_intersections = []
+		var self_segment_range = segments.size() - 1
+		for i in range(0, self_segment_range):
+			var a0 = segments[i]
+			var a1 = segments[i + 1]
+			for j in range(i + 1, self_segment_range):
+				var b0 = segments[j]
+				var b1 = segments[j + 1]
+				var intersection = Geometry.segment_intersects_segment_2d(a0, a1, b0, b1)
+				if intersection != null and not intersection.is_equal_approx(a0) and not intersection.is_equal_approx(b0):
+					var new_intersection = {
+						"point": intersection,
+						"t1": (i / (self_segment_range + 1)) + SVGMath.point_distance_along_segment(a0, a1, intersection) / length,
+						"t2": (j / (self_segment_range + 1)) + SVGMath.point_distance_along_segment(b0, b1, intersection) / length,
+					}
+		return self_intersections
 	
 	func find_next_intersection(t, traverse_direction = 1):
 		var closest_t = INF
@@ -103,6 +123,9 @@ class PathSegment extends PathShape:
 				new_p0 if is_reversed else new_p1
 			)
 	
+	func to_array():
+		return [p0, p1]
+	
 class PathQuadraticBezier extends PathShape:
 	var p0
 	var p1
@@ -119,7 +142,7 @@ class PathQuadraticBezier extends PathShape:
 		exit_direction = find_direction_at(1.0)
 	
 	func _compute_segments():
-		var resolution = max(5, floor(length / 5.0))
+		var resolution = min(PATH_SEGMENTATION_MAX, max(PATH_SEGMENTATION_MIN, floor(length / 5.0)))
 		for i in range(0, resolution + 1):
 			segments.push_back(SVGMath.quadratic_bezier_at(p0, p1, p2, i / resolution))
 	
@@ -131,7 +154,7 @@ class PathQuadraticBezier extends PathShape:
 		var epsilon = 0.00001
 		if t == 1.0:
 			t -= epsilon
-		return SVGMath.quadratic_bezier_at(p0, p1, p2, t).direction_to(SVGMath.quadratic_bezier_at(p0, p1, p2, t + epsilon))
+		return SVGMath.quadratic_bezier_at(p0, p1, p2, t - epsilon).direction_to(SVGMath.quadratic_bezier_at(p0, p1, p2, t + epsilon))
 	
 	func slice(start_t, end_t):
 		var is_reversed = false
@@ -152,6 +175,9 @@ class PathQuadraticBezier extends PathShape:
 				return PathQuadraticBezier.new(right_split[2], right_split[1], right_split[20])
 			else:
 				return PathQuadraticBezier.new(right_split[0], right_split[1], right_split[2])
+	
+	func to_array():
+		return [p0, p1, p2]
 
 class PathCubicBezier extends PathShape:
 	var p0
@@ -171,7 +197,7 @@ class PathCubicBezier extends PathShape:
 		exit_direction = find_direction_at(1.0)
 	
 	func _compute_segments():
-		var resolution = max(5, floor(length / 5.0))
+		var resolution = min(PATH_SEGMENTATION_MAX, max(PATH_SEGMENTATION_MIN, floor(length / 5.0)))
 		for i in range(0, resolution + 1):
 			segments.push_back(SVGMath.cubic_bezier_at(p0, p1, p2, p3, i / resolution))
 	
@@ -183,7 +209,7 @@ class PathCubicBezier extends PathShape:
 		var epsilon = 0.00001
 		if t == 1.0:
 			t -= epsilon
-		return SVGMath.cubic_bezier_at(p0, p1, p2, p3, t).direction_to(SVGMath.cubic_bezier_at(p0, p1, p2, p3, t + epsilon))
+		return SVGMath.cubic_bezier_at(p0, p1, p2, p3, t - epsilon).direction_to(SVGMath.cubic_bezier_at(p0, p1, p2, p3, t + epsilon))
 	
 	func slice(start_t, end_t):
 		var is_reversed = false
@@ -204,6 +230,9 @@ class PathCubicBezier extends PathShape:
 				return PathCubicBezier.new(right_split[3], right_split[2], right_split[1], right_split[0])
 			else:
 				return PathCubicBezier.new(right_split[0], right_split[1], right_split[2], right_split[3])
+	
+	func to_array():
+		return [p0, p1, p2, p3]
 
 static func get_path_loop_range(loop_ranges, current_index):
 	for loop_range in loop_ranges:

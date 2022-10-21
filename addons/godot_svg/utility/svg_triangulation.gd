@@ -124,6 +124,123 @@ static func is_curve_triangles_intersects_other_curve_triangles(curve_1_triangle
 				return true
 	return false
 
+static func find_path_direction_at(path: Array, path_index: int, is_start: bool, closed: bool):
+	var epsilon = 0.00001
+	var passed_point = null
+	var p0 = null
+	var p1 = null
+	var p2 = null
+	var p3 = null
+	var path_size = path.size()
+	for unused_index in range(0, path_size):
+		if path_index >= 0 and path_index < path_size:
+			var instruction = path[path_index]
+			if p1 != null and p0 == null:
+				if instruction.command == PathCommand.MOVE_TO or instruction.command == PathCommand.LINE_TO:
+					p0 = instruction.points[0]
+				elif instruction.command == PathCommand.QUADRATIC_BEZIER_CURVE:
+					p0 = instruction.points[1]
+				elif instruction.command == PathCommand.CUBIC_BEZIER_CURVE:
+					p0 = instruction.points[2]
+			if p1 != null and p3 == null: # Quadratic
+				if is_start:
+					return SVGMath.quadratic_bezier_at(p0, p1, p2, 0.0 - epsilon).direction_to(SVGMath.quadratic_bezier_at(p0, p1, p2, epsilon))
+				else:
+					return SVGMath.quadratic_bezier_at(p0, p1, p2, 1.0 - epsilon).direction_to(SVGMath.quadratic_bezier_at(p0, p1, p2, 1.0 + epsilon))
+			elif p3 != null: # Cubic
+				if is_start:
+					return SVGMath.cubic_bezier_at(p0, p1, p2, p3, 0.0 - epsilon).direction_to(SVGMath.cubic_bezier_at(p0, p1, p2, p3, epsilon))
+				else:
+					return SVGMath.cubic_bezier_at(p0, p1, p2, p3, 1.0 - epsilon).direction_to(SVGMath.cubic_bezier_at(p0, p1, p2, p3, 1.0 + epsilon))
+			else:
+				match instruction.command:
+					PathCommand.MOVE_TO, PathCommand.LINE_TO:
+						if instruction.command == PathCommand.MOVE_TO and is_start:
+							if path_index < path_size - 1:
+								match path[path_index + 1].command:
+									PathCommand.LINE_TO:
+										return instruction.points[0].direction_to(path[path_index + 1].points[0])
+									PathCommand.QUADRATIC_BEZIER_CURVE:
+										return SVGMath.quadratic_bezier_at(p0, p1, p2, 0.0 - epsilon).direction_to(SVGMath.quadratic_bezier_at(p0, p1, p2, epsilon))
+									PathCommand.CUBIC_BEZIER_CURVE:
+										return SVGMath.cubic_bezier_at(p0, p1, p2, p3, 0.0 - epsilon).direction_to(SVGMath.cubic_bezier_at(p0, p1, p2, p3, epsilon))
+							else:
+								return Vector2.ZERO
+						elif passed_point != null: # Line
+							if not instruction.points[0].is_equal_approx(passed_point):
+								return instruction.points[0].direction_to(passed_point)
+						else:
+							passed_point = instruction.points[0]
+					PathCommand.QUADRATIC_BEZIER_CURVE:
+						p1 = instruction.points[0]
+						p2 = instruction.points[1]
+					PathCommand.CUBIC_BEZIER_CURVE:
+						p1 = instruction.points[0]
+						p2 = instruction.points[1]
+						p3 = instruction.points[2]
+			path_index -= 1
+		if path_index < 0:
+			if closed:
+				path_index = path_size - 1
+			else:
+				return Vector2.ZERO
+		elif path_index > path_size - 1:
+			if closed:
+				path_index = 0
+			else:
+				return Vector2.ZERO
+	return Vector2.ZERO
+
+# Intersects two path commands and joins them at their ends
+static func intersect_inside_path_corner(previous_points, current_points):
+	var new_previous_points = null
+	var new_current_points = null
+	if previous_points == null:
+		new_current_points = current_points
+	else:
+		var previous_shape = null
+		match previous_points.size():
+			2: previous_shape = SVGPathSolver.PathSegment.new(previous_points[0], previous_points[1])
+			3: previous_shape = SVGPathSolver.PathQuadraticBezier.new(previous_points[0], previous_points[1], previous_points[2])
+			4: previous_shape = SVGPathSolver.PathCubicBezier.new(previous_points[0], previous_points[1], previous_points[2], previous_points[3])
+		var current_shape = null
+		match current_points.size():
+			2: current_shape = SVGPathSolver.PathSegment.new(current_points[0], current_points[1])
+			3: current_shape = SVGPathSolver.PathQuadraticBezier.new(current_points[0], current_points[1], current_points[2])
+			4: current_shape = SVGPathSolver.PathCubicBezier.new(current_points[0], current_points[1], current_points[2], current_points[3])
+		var intersections = previous_shape.intersect_with(current_shape)
+		if intersections.size() > 0:
+			var winning_intersection = null
+			var winning_other_t = INF
+			for intersection in intersections:
+				if intersection.other_t < winning_other_t:
+					winning_intersection = intersection
+					winning_other_t = intersection.other_t
+			new_previous_points = previous_shape.slice(0.0, winning_intersection.self_t).to_array()
+			new_current_points = current_shape.slice(winning_intersection.other_t, 1.0).to_array()
+		else:
+			new_previous_points = previous_points
+			new_current_points = current_points
+	return {
+		"previous": new_previous_points,
+		"current": new_current_points
+	}
+
+static func circle_segment_to_quadratic_bezier(start_point, end_point, start_direction, end_direction, point_width, angle):
+	var abs_angle = abs(angle)
+	var bezier_segments = (2.0 * PI) / abs_angle
+	var handle_offset_unit = (4.0/3.0) * tan(PI / (2 * bezier_segments))
+	return {
+		"command": PathCommand.CUBIC_BEZIER_CURVE,
+		"type": "Circle Cap",
+		"points": [
+			start_point + (start_direction * handle_offset_unit * (point_width / 2)),
+			end_point + (-end_direction * handle_offset_unit * (point_width / 2)),
+			end_point,
+		],
+		"start_point": start_point,
+	}
+
 # This method assumes a simple shape with no self-intersections
 # path is an array of dictionaries following the format:
 # { "command": PathCommand, "points": [Vector()] }
@@ -278,7 +395,7 @@ static func triangulate_fill_path(path: Array, holes: Array = []):
 	var duplicate_edges = {}
 	var current_path_index = 0
 	
-	if path[path.size() - 1].command != PathCommand.CLOSE_PATH:
+	if path.size() > 0 and path[path.size() - 1].command != PathCommand.CLOSE_PATH:
 		path.push_back({ "command": PathCommand.CLOSE_PATH })
 	
 	for i in range(0, path.size()):
@@ -482,4 +599,428 @@ static func triangulate_fill_path(path: Array, holes: Array = []):
 		"antialias_edge_implicit_coordinates": antialias_edge_implicit_coordinates,
 	}
 
+static func offset_segment(segment_points, curve, handle_normal, offset):
+	var is_first = segment_points[1] == curve.p0
+	var offset_vector = curve.find_direction_at(0 if is_first else 1).rotated(PI / 2) * offset
+	var point = segment_points[1] + offset_vector
+	var new_segment = [point, point, point]
+	var handle_index = 2 if is_first else 0
+	new_segment[handle_index] = segment_points[handle_index] + ((handle_normal + offset_vector) / 2.0)
+	return new_segment
+
+static func adaptive_offset_curve(curve_points, offset, recursion_count = 0):
+	var h_normal = SVGPathSolver.PathCubicBezier.new(
+		curve_points[0] + curve_points[1], Vector2.ZERO, Vector2.ZERO, curve_points[2] + curve_points[3]
+	).find_direction_at(0.5).rotated(PI / 2) * offset
+	var curve = SVGPathSolver.PathCubicBezier.new(curve_points[0], curve_points[1], curve_points[2], curve_points[3])
+	var segment1 = offset_segment([-curve_points[1], curve_points[0], curve_points[1]], curve, h_normal, offset)
+	var segment2 = offset_segment([curve_points[2], curve_points[3], -curve_points[2]], curve, h_normal, offset)
+	var offset_curve = SVGPathSolver.PathCubicBezier.new(segment1[1], segment1[2], segment2[0], segment2[1])
+	if recursion_count < 16 and offset_curve.find_self_intersections().size() == 0:
+		var threshold = min(abs(offset) / 10.0, 1.0)
+		var mid_offset = SVGMath.cubic_bezier_at(offset_curve.p0, offset_curve.p1, offset_curve.p2, offset_curve.p3, 0.5).distance_to(
+			SVGMath.cubic_bezier_at(curve.p0, curve.p1, curve.p2, curve.p3, 0.5)
+		)
+		if abs(mid_offset - abs(offset)) > threshold:
+			var curve_split = SVGMath.split_cubic_bezier(curve.p0, curve.p1, curve.p2, curve.p3, 0.5)
+			var return_splits = []
+			return_splits.append_array(adaptive_offset_curve([curve_split[0], curve_split[1], curve_split[2], curve_split[3]], offset, recursion_count + 1))
+			return_splits.append_array(adaptive_offset_curve([curve_split[3], curve_split[4], curve_split[5], curve_split[6]], offset, recursion_count + 1))
+	return [segment1[1], segment1[2], segment2[0], segment2[1]]
+
+# Outlines a path with specified width and other line join attributes.
+# path is an array of dictionaries following the format:
+# { "command": PathCommand, "points": [Vector()] }
+# It only supports a subset of PathCommand. Points are absolute coordinates.
+static func triangulate_stroke_path(path: Array, width, cap_mode, joint_mode, sharp_limit, closed: bool):
+	var half_width = width / 2.0
+	
+	if path.size() < 2 or not path[0].has("points"):
+		return triangulate_fill_path([])
+	
+	var current_point = path[0].points[0]
+	var full_path_start_point = current_point
+	
+	# Create a LINE_TO command when path closes at different point from start
+	var path_begin = path[0]
+	var path_end = path[path.size() - 1]
+	if path_end.command == PathCommand.CLOSE_PATH and path.size() > 2:
+		var second_last_instruction = path[path.size() - 2]
+		if second_last_instruction.has("points"):
+			var last_point = second_last_instruction.points[second_last_instruction.points.size() - 1]
+			if not last_point.is_equal_approx(full_path_start_point):
+				var close_instruction = path.pop_back()
+				path.push_back({
+					"command": PathCommand.LINE_TO,
+					"points": [full_path_start_point]
+				})
+				path.push_back(close_instruction)
+	
+	var path_size = path.size()
+	
+	var last_instruction_index = -1 if closed else 0
+	if closed:
+		for i in range(path_size - 1, -1, -1):
+			if path[i].command != PathCommand.CLOSE_PATH:
+				last_instruction_index = (i - path_size) - 1
+				if abs(last_instruction_index) > path_size:
+					last_instruction_index = 0
+				break
+	
+	var left_path = []
+	var right_path = []
+	
+	var circular_handle_offset_unit = (4.0/3.0) * tan(PI / (8.0))
+	
+	var previous_inside_points = null
+	var previous_outside_points = null
+	var previous_outside_is_right = false
+	var inside_points = null
+	var outside_points = null
+	var outside_is_right = false
+	
+	for i in range(last_instruction_index, path_size):
+		var instruction = path[i]
+		
+		var previous_direction = find_path_direction_at(path, i - 1, false, closed)
+		var current_direction = find_path_direction_at(path, i, true, closed)
+		var next_direction = find_path_direction_at(path, i, false, closed)
+		
+		if current_direction.length() == 0:
+			current_direction = Vector2(1.0, 0.0)
+		if previous_direction == Vector2.ZERO:
+			previous_direction = current_direction
+		
+		# Create begin line caps
+		if not closed and i == 0:
+			match cap_mode:
+				SVGValueConstant.SQUARE:
+					left_path.push_back({
+						"command": PathCommand.LINE_TO,
+						"points": [current_point + (current_direction.rotated(-PI / 2) * half_width) - (current_direction * half_width)],
+						"start_point": current_point - (current_direction * half_width),
+					})
+					left_path.push_back({
+						"command": PathCommand.LINE_TO,
+						"points": [current_point + (current_direction.rotated(-PI / 2) * half_width)],
+						"start_point": current_point + (current_direction.rotated(-PI / 2) * half_width) - (current_direction * half_width),
+					})
+					right_path.push_back({
+						"command": PathCommand.LINE_TO,
+						"points": [current_point + (current_direction.rotated(PI / 2) * half_width) - (current_direction * half_width)],
+						"start_point": current_point - (current_direction * half_width),
+					})
+					right_path.push_back({
+						"command": PathCommand.LINE_TO,
+						"points": [current_point + (current_direction.rotated(PI / 2) * half_width)],
+						"start_point": current_point + (current_direction.rotated(PI / 2) * half_width) - (current_direction * half_width),
+					})
+				SVGValueConstant.ROUND:
+					var start_point = current_point + current_direction.rotated(PI / 2) * half_width
+					var end_point = current_point + current_direction.rotated(-PI / 2) * half_width
+					full_path_start_point = start_point
+					var new_circle_segment = circle_segment_to_quadratic_bezier(
+						start_point,
+						end_point,
+						-current_direction,
+						current_direction,
+						width,
+						PI
+					)
+					left_path.push_back(new_circle_segment)
+		
+		# Create interior lines and joints
+		if not (instruction.command == PathCommand.MOVE_TO or instruction.command == PathCommand.CLOSE_PATH):
+			var corner_angle = previous_direction.angle_to(current_direction)
+			previous_outside_is_right = outside_is_right
+			outside_is_right = corner_angle <= 0
+			
+			var inside_path = left_path if outside_is_right else right_path
+			var outside_path = right_path if outside_is_right else left_path
+			var inside_90_rotation = -PI / 2 if outside_is_right else PI / 2
+			var outside_90_rotation = PI / 2 if outside_is_right else -PI / 2
+			
+			var temp_previous_inside_points = previous_inside_points
+			var temp_previous_outside_points = previous_outside_points
+			previous_inside_points = temp_previous_inside_points if outside_is_right == previous_outside_is_right else temp_previous_outside_points
+			previous_outside_points = temp_previous_outside_points if outside_is_right == previous_outside_is_right else temp_previous_inside_points
+			
+			inside_points = [current_point + current_direction.rotated(inside_90_rotation) * half_width]
+			outside_points = [current_point + current_direction.rotated(outside_90_rotation) * half_width]
+			
+			match instruction.command:
+				PathCommand.LINE_TO:
+					inside_points.push_back(instruction.points[0] + current_direction.rotated(inside_90_rotation) * half_width)
+					outside_points.push_back(instruction.points[0] + current_direction.rotated(outside_90_rotation) * half_width)
+				PathCommand.QUADRATIC_BEZIER_CURVE, PathCommand.CUBIC_BEZIER_CURVE:
+					var curve_points = [current_point, instruction.points[0]]
+					curve_points.push_back(instruction.points[0] if instruction.command == PathCommand.QUADRATIC_BEZIER_CURVE else instruction.points[1])
+					curve_points.push_back(instruction.points[1] if instruction.command == PathCommand.QUADRATIC_BEZIER_CURVE else instruction.points[2])
+					var inside_offset = -half_width if outside_is_right else half_width
+					var outside_offset = -inside_offset
+					inside_points = adaptive_offset_curve(curve_points, inside_offset)
+					outside_points = adaptive_offset_curve(curve_points.duplicate(), outside_offset)
+
+			var inside_intersection_point = inside_points[0]
+			if previous_inside_points != null and i >= 0:
+				var inside_intersection = intersect_inside_path_corner(previous_inside_points, inside_points)
+				
+				if inside_path.size() > 0:
+					inside_path[inside_path.size() - 1].points[inside_path[inside_path.size() - 1].points.size() - 1] = inside_intersection.previous.back()
+				inside_points = inside_intersection.current
+				inside_intersection_point = inside_intersection.previous[inside_intersection.previous.size() - 1]
+			
+			if previous_outside_points != null and i >= 0:
+				var use_joint_mode = joint_mode
+				if use_joint_mode == SVGValueConstant.ARCS: # TODO - implement arcs
+					use_joint_mode = SVGValueConstant.MITER
+				
+				var miter_outside_intersection = outside_points[0]
+				var calculated_miter_limit = 0
+				if use_joint_mode == SVGValueConstant.MITER or use_joint_mode == SVGValueConstant.MITER_CLIP:
+					miter_outside_intersection = Geometry.line_intersects_line_2d(
+						current_point + previous_direction.rotated(outside_90_rotation) * half_width, previous_direction,
+						current_point + current_direction.rotated(outside_90_rotation) * half_width, -current_direction
+					)
+					if miter_outside_intersection != null:
+						var miter_length = inside_intersection_point.distance_to(miter_outside_intersection)
+						calculated_miter_limit = (miter_length / width)
+						if sharp_limit < calculated_miter_limit and use_joint_mode == SVGValueConstant.MITER:
+							use_joint_mode = SVGValueConstant.BEVEL
+				
+				if previous_direction.is_equal_approx(current_direction):
+					use_joint_mode = null
+				
+				match use_joint_mode:
+					SVGValueConstant.BEVEL:
+						outside_path.push_back({
+							"type": "Bevel End",
+							"command": PathCommand.LINE_TO,
+							"points": [outside_points[0]],
+							"start_point": previous_outside_points[previous_outside_points.size() - 1],
+						})
+					SVGValueConstant.MITER:
+						if miter_outside_intersection != null:
+							outside_path.push_back({
+								"type": "Miter Corner Intersected",
+								"command": PathCommand.LINE_TO,
+								"points": [miter_outside_intersection],
+								"start_point": previous_outside_points[previous_outside_points.size() - 1],
+							})
+						else:
+							outside_path.push_back({
+								"type": "Miter Corner",
+								"command": PathCommand.LINE_TO,
+								"points": [current_point + current_direction.rotated(outside_90_rotation) * half_width],
+								"start_point": previous_outside_points[previous_outside_points.size() - 1],
+							})
+						outside_path.push_back({
+							"type": "Miter End",
+							"command": PathCommand.LINE_TO,
+							"points": [outside_points[0]],
+							"start_point": outside_path[outside_path.size() - 1].points[0],
+						})
+					SVGValueConstant.MITER_CLIP: # TODO - not sure this meets the spec? https://www.w3.org/TR/SVG2/painting.html#LineJoin
+						if sharp_limit < calculated_miter_limit:
+							var clip_length = (sharp_limit / 2) * width
+							var corner_direction = inside_intersection_point.direction_to(miter_outside_intersection)
+							var clip_point = current_point + (corner_direction * clip_length)
+							var clip_direction = corner_direction.rotated(PI / 2)
+							var outside_edge_start = Geometry.line_intersects_line_2d(
+								current_point + previous_direction.rotated(outside_90_rotation) * half_width,
+								previous_direction,
+								clip_point,
+								clip_direction
+							)
+							var outside_edge_end = Geometry.line_intersects_line_2d(
+								current_point + current_direction.rotated(outside_90_rotation) * half_width,
+								-current_direction,
+								clip_point,
+								clip_direction
+							)
+							outside_path.push_back({
+								"type": "Miter Clip Corner 1",
+								"command": PathCommand.LINE_TO,
+								"points": [outside_edge_start],
+								"start_point": previous_outside_points[previous_outside_points.size() - 1],
+							})
+							outside_path.push_back({
+								"type": "Miter Clip Corner 2",
+								"command": PathCommand.LINE_TO,
+								"points": [outside_edge_end],
+								"start_point": outside_edge_start,
+							})
+						else:
+							if miter_outside_intersection != null:
+								outside_path.push_back({
+									"type": "Miter Fallback Corner Intersected",
+									"command": PathCommand.LINE_TO,
+									"points": [miter_outside_intersection],
+									"start_point": previous_outside_points[previous_outside_points.size() - 1],
+								})
+							else:
+								outside_path.push_back({
+									"type": "Miter Fallback Corner",
+									"command": PathCommand.LINE_TO,
+									"points": [current_point + current_direction.rotated(outside_90_rotation) * half_width],
+									"start_point": previous_outside_points[previous_outside_points.size() - 1],
+								})
+						outside_path.push_back({
+							"type": "Miter Fallback End",
+							"command": PathCommand.LINE_TO,
+							"points": [outside_points[0]],
+							"start_point": outside_path[outside_path.size() - 1].points[0],
+						})
+					SVGValueConstant.ROUND:
+						var new_outside_path_segment = circle_segment_to_quadratic_bezier(
+							current_point + previous_direction.rotated(outside_90_rotation) * half_width,
+							current_point + current_direction.rotated(outside_90_rotation) * half_width,
+							previous_direction,
+							current_direction,
+							width,
+							corner_angle
+						)
+						new_outside_path_segment.type = "Round Corner"
+						outside_path.push_back(new_outside_path_segment)
+			
+			if i >= 0:
+				match inside_points.size():
+					2: inside_path.push_back({
+						"command": PathCommand.LINE_TO,
+						"points": SVGHelper.array_slice(inside_points, 1),
+						"start_point": inside_points[0],
+					})
+					3: inside_path.push_back({
+						"command": PathCommand.QUADRATIC_BEZIER_CURVE,
+						"points": SVGHelper.array_slice(inside_points, 1),
+						"start_point": inside_points[0],
+					})
+					4: inside_path.push_back({
+						"command": PathCommand.CUBIC_BEZIER_CURVE,
+						"points": SVGHelper.array_slice(inside_points, 1),
+						"start_point": inside_points[0],
+					})
+					_: # Assume multiple cubic beziers
+						for k in range(0, inside_points.size(), 4):
+							inside_path.push_back({
+								"command": PathCommand.CUBIC_BEZIER_CURVE,
+								"points": SVGHelper.array_slice(inside_points, k + 1, k + 4),
+								"start_point": inside_points[k],
+							})
+				match outside_points.size():
+					2: outside_path.push_back({
+						"command": PathCommand.LINE_TO,
+						"points": SVGHelper.array_slice(outside_points, 1),
+						"start_point": outside_points[0],
+					})
+					3: outside_path.push_back({
+						"command": PathCommand.QUADRATIC_BEZIER_CURVE,
+						"points": SVGHelper.array_slice(outside_points, 1),
+						"start_point": outside_points[0],
+					})
+					4: outside_path.push_back({
+						"command": PathCommand.CUBIC_BEZIER_CURVE,
+						"points": SVGHelper.array_slice(outside_points, 1),
+						"start_point": outside_points[0],
+					})
+					_: # Assume multiple cubic beziers
+						for k in range(0, outside_points.size(), 4):
+							outside_path.push_back({
+								"command": PathCommand.CUBIC_BEZIER_CURVE,
+								"points": SVGHelper.array_slice(outside_points, k + 1, k + 4),
+								"start_point": outside_points[k],
+							})
+			
+			previous_inside_points = inside_points
+			previous_outside_points = outside_points
+		
+		# Reset current point to end of current line
+		match instruction.command:
+			PathCommand.MOVE_TO, PathCommand.LINE_TO:
+				current_point = instruction.points[0]
+			PathCommand.QUADRATIC_BEZIER_CURVE:
+				current_point = instruction.points[1]
+			PathCommand.CUBIC_BEZIER_CURVE:
+				current_point = instruction.points[2]
+		
+		# Create end line caps
+		if not closed and i == path_size - 1:
+			match cap_mode:
+				SVGValueConstant.SQUARE:
+					left_path.push_back({
+						"command": PathCommand.LINE_TO,
+						"points": [current_point + (current_direction.rotated(-PI / 2) * half_width) + (current_direction * half_width)],
+						"start_point": current_point + (current_direction.rotated(-PI / 2) * half_width),
+					})
+					left_path.push_back({
+						"command": PathCommand.LINE_TO,
+						"points": [current_point + (current_direction * half_width)],
+						"start_point": current_point + (current_direction.rotated(-PI / 2) * half_width) + (current_direction * half_width),
+					})
+					right_path.push_back({
+						"command": PathCommand.LINE_TO,
+						"points": [current_point + (current_direction.rotated(PI / 2) * half_width) + (current_direction * half_width)],
+						"start_point": current_point + (current_direction.rotated(PI / 2) * half_width),
+					})
+					right_path.push_back({
+						"command": PathCommand.LINE_TO,
+						"points": [current_point + (current_direction * half_width)],
+						"start_point": current_point + (current_direction.rotated(PI / 2) * half_width) + (current_direction * half_width),
+					})
+				SVGValueConstant.ROUND:
+					var start_point = current_point + current_direction.rotated(PI / 2) * half_width
+					var end_point = current_point + current_direction.rotated(-PI / 2) * half_width
+					right_path.push_back(
+						circle_segment_to_quadratic_bezier(
+							start_point,
+							end_point,
+							current_direction,
+							-current_direction,
+							width,
+							PI
+						)
+					)
+				_:
+					left_path.push_back({
+						"command": PathCommand.LINE_TO,
+						"points": [right_path[right_path.size() - 1].points[right_path[right_path.size() - 1].points.size() - 1]],
+						"start_point": current_point,
+					})
+	
+	var all_paths = [
+		{
+			"command": PathCommand.MOVE_TO,
+			"points": [left_path[0].start_point if left_path[0].has("start_point") else full_path_start_point]
+		}
+	]
+	all_paths.append_array(left_path)
+	var reversed_right_path = []
+	for path_index in range(right_path.size() - 1, -1, -1):
+		match right_path[path_index].command:
+			PathCommand.LINE_TO:
+				right_path[path_index].points = [right_path[path_index].start_point]
+			PathCommand.QUADRATIC_BEZIER_CURVE:
+				right_path[path_index].points = [
+					right_path[path_index].points[0],
+					right_path[path_index].start_point,
+				]
+			PathCommand.CUBIC_BEZIER_CURVE:
+				right_path[path_index].points = [
+					right_path[path_index].points[1],
+					right_path[path_index].points[0],
+					right_path[path_index].start_point,
+				]
+		reversed_right_path.push_back(right_path[path_index])
+	if closed:
+		reversed_right_path.push_front({
+			"command": PathCommand.LINE_TO,
+			"points": [reversed_right_path[reversed_right_path.size() - 1].points[reversed_right_path[reversed_right_path.size() - 1].points.size() - 1]],
+		})
+	all_paths.append_array(reversed_right_path)
+	all_paths.push_back({
+		"command": PathCommand.CLOSE_PATH,
+	})
+#	print_debug(SVGAttributeParser.serialize_d(all_paths))
+	return triangulate_fill_path(all_paths)
+	
 

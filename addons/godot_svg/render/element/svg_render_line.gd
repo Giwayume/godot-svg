@@ -12,20 +12,26 @@ func _init():
 	node_name = "line"
 
 func _process_polygon():
-	var stroke_points = PoolVector2Array([
-		Vector2(
-			attr_x1.get_length(inherited_view_box.size.x),
-			attr_y1.get_length(inherited_view_box.size.y)
-		),
-		Vector2(
-			attr_x2.get_length(inherited_view_box.size.x),
-			attr_y2.get_length(inherited_view_box.size.y)
-		)
-	])
+	var stroke = [
+		{
+			"command": PathCommand.MOVE_TO,
+			"points": [Vector2(
+				attr_x1.get_length(inherited_view_box.size.x),
+				attr_y1.get_length(inherited_view_box.size.y)
+			)]
+		},
+		{
+			"command": PathCommand.LINE_TO,
+			"points": [Vector2(
+				attr_x2.get_length(inherited_view_box.size.x),
+				attr_y2.get_length(inherited_view_box.size.y)
+			)]
+		}
+	]
 	return {
 		"is_simple_shape": true,
 		"fill": [],
-		"stroke": stroke_points,
+		"stroke": stroke,
 	}
 
 func _props_applied():

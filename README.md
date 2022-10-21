@@ -6,6 +6,12 @@ This is the most spec-compliant SVG renderer for Godot. Every other SVG-related 
 
 > It is **HIGHLY RECOMMENDED** to use this plugin with the GLES3 renderer, as GLES2 does not support many of the functions used to render SVG on the GPU (dFdx/dFdy/fwidth is used for anti-aliasing).
 
+## Installation
+
+Copy the `addons/godot-svg` folder in this repository into your Godot project. Make sure the folder sits exactly at the path `res://addons/godot-svg`. If you put it somewhere else, some things like icons may break.
+
+In Godot, go to `Project -> Project Settings -> Plugins` and check the `Enable` checkbox.
+
 ## Usage
 
 1. When importing a SVG into Godot, it defaults to "Import As: Texture". Change this dropdown to "Import As: SVG", then re-import.
@@ -39,19 +45,19 @@ These nodes share a similar API.
 | Property Name | Value Type | Notes |
 |:-----|:--------------|:------|
 | svg | SVG Resource | When importing a SVG file, choose "Import As: SVG". If you try to add a SVG imported as "Texture" here, it will not work. Use Sprite instead for that. |
-| fixed_scaling_ratio | float | If the value is 0, the SVG will be redrawn every time the scale changes so jagged edges are not visible. Setting the value above 0 bakes the resolution of the paths so they are not redrawn due to scaling at runtime. A value of 1 means it is drawn to look perfect at 100% view box scale (1:1), and if you zoom in further than that you will see jagged edges. |
-| antialiased | bool | Whether or not to use the Polygon2D's "antialiased" property. It has known issues with translucent shapes, so you may want to turn it off in that scenario. |
+| fixed_scaling_ratio | float | Setting the value above 0 bakes the resolution of masks so they are not redrawn due to scaling at runtime. A value of 1 means it is drawn to look perfect at 100% view box scale (1:1), and if you zoom in further than that you will see pixellated edges. Setting the value to 0 redraws the mask every frame. |
+| antialiased | bool | Whether or not to use the antialiasing to smooth the shape edges. |
 
 
 ## Performance Considerations
 
 ***SVGs vs Sprites***
 
-Godot is generally much faster at drawing raster textures in 2D. Whenever you can get away with it, you should prefer using Sprites instead of SVGs.
+Godot is generally much faster at drawing raster textures in 2D. Whenever you can get away with it, you should prefer using Sprites with images imported as "Texture" instead of SVGs.
 
 ***Scaling***
 
-By default, when the scale of your SVG changes, or the scale of your Camera's viewport changes, the SVG's polygon vertices are recalculated on the CPU so you do not see jaggy edges. There is a performance cost associated with this, **especially** if you zoom in close to large curves. If your game uses a lot of scaling operations, look there first for optimization (set fixed_scaling_ratio to a value above 0).
+If your game uses a lot of scaling operations, and you use special features such as masks and patterns that need to be recalculated during re-scale, consider setting fixed_scaling_ratio to a value above 0.
 
 ***Masks and Clip Paths***
 

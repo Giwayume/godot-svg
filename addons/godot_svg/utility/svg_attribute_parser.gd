@@ -1,5 +1,7 @@
 class_name SVGAttributeParser
 
+const PathCommand = SVGValueConstant.PathCommand
+
 static func to_snake_case(attribute_name):
 	var camel_case_regex = RegEx.new()
 	camel_case_regex.compile("([A-Z])")
@@ -28,6 +30,8 @@ static func parse_css_style(style):
 				current_value = current_value.strip_edges()
 				is_parsing_name = true
 				style_dictionary[current_name] = current_value
+				current_name = ""
+				current_value = ""
 			else:
 				current_value += c
 	if current_name.length() > 0:
@@ -129,3 +133,25 @@ static func parse_transform_list(transform_attr):
 						))
 			transform = Transform2D(transform_matrix)
 	return transform
+
+static func serialize_d_points(points):
+	var ps = ""
+	for point in points:
+		ps += str(point.x) + "," + str(point.y) + " "
+	return ps.strip_edges()
+
+static func serialize_d(path):
+	var d = ""
+	for instruction in path:
+		match instruction.command:
+			PathCommand.MOVE_TO:
+				d += " M " + serialize_d_points(instruction.points)
+			PathCommand.LINE_TO:
+				d += " L " + serialize_d_points(instruction.points)
+			PathCommand.QUADRATIC_BEZIER_CURVE:
+				d += " Q " + serialize_d_points(instruction.points)
+			PathCommand.CUBIC_BEZIER_CURVE:
+				d += " C " + serialize_d_points(instruction.points)
+			PathCommand.CLOSE_PATH:
+				d += " Z "
+	return d.strip_edges()
