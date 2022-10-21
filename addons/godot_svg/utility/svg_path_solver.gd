@@ -683,3 +683,158 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 	
 	return instruction_groups
 
+static func dash_array(path_reference: Array, dash_array: Array, dash_offset: float):
+	# Figure out starting offset for dash
+	var current_dash_size_index = 0
+	var current_dash_size = 0.0
+	var current_distance_traversed = 0.0
+	var is_dash_render = true
+	if dash_offset != 0:
+		var repeat_size = 0
+		for size in dash_array:
+			repeat_size += size
+		var repeat_count = floor(abs(dash_offset / repeat_size))
+		var cumulative_offset = repeat_count * dash_offset
+		if int(repeat_count) % 2 == 1:
+			is_dash_render = false
+		if dash_offset > 0:
+			for current_index in range(0, dash_array.size()):
+				var size = float(dash_array[current_index])
+				cumulative_offset += size
+				if cumulative_offset > dash_offset:
+					current_dash_size_index = current_index
+					current_distance_traversed = cumulative_offset - dash_offset
+					break
+		else:
+			cumulative_offset *= -1
+			for current_index in range(dash_array.size() - 1, -1, -1):
+				var size = float(dash_array[current_index])
+				cumulative_offset -= size
+				if cumulative_offset < dash_offset:
+					current_dash_size_index = current_index
+					current_distance_traversed = cumulative_offset - dash_offset
+					break
+	current_dash_size = float(dash_array[current_dash_size_index])
+	
+	# Loop through path shapes and create new paths based on size
+	var current_reference_index = 0
+	var current_reference_size_total = 0
+	var previous_reference_size_used = 0
+	var current_reference_size_used = 0
+	var loop_count = 0
+	var current_point = Vector2.ZERO
+	var dashed_path = []
+	var was_dash_render = false
+	while current_reference_index < path_reference.size():
+		if loop_count > 65536: # Prevent infinite loop
+			break
+		loop_count += 1
+		
+		var reference_instruction = path_reference[current_reference_index]
+		if reference_instruction.command == PathCommand.MOVE_TO:
+			current_point = reference_instruction.points[0]
+			current_reference_index += 1
+			continue
+		if reference_instruction.command == PathCommand.CLOSE_PATH:
+			current_reference_index += 1
+			continue
+		
+		# Calculate length of the referenced segment of the path
+		if current_reference_size_total == 0:
+			match reference_instruction.command:
+				PathCommand.LINE_TO:
+					current_reference_size_total = current_point.distance_to(reference_instruction.points[0])
+				PathCommand.QUADRATIC_BEZIER_CURVE:
+					current_reference_size_total = SVGMath.quadratic_bezier_length(current_point, reference_instruction.points[0], reference_instruction.points[1])
+				PathCommand.CUBIC_BEZIER_CURVE:
+					current_reference_size_total = SVGMath.cubic_bezier_length(current_point, reference_instruction.points[0], reference_instruction.points[1], reference_instruction.points[2])
+		
+		previous_reference_size_used = current_reference_size_used
+		current_reference_size_used += current_dash_size - current_distance_traversed
+		current_reference_size_used = min(current_reference_size_used, current_reference_size_total)
+		current_distance_traversed += current_reference_size_used
+		
+		# Add a segment of the current shape as necessary
+		match reference_instruction.command:
+			PathCommand.LINE_TO:
+				var end_point = current_point + (current_point.direction_to(reference_instruction.points[0]) * current_reference_size_used)
+				if is_dash_render:
+					if not was_dash_render:
+						was_dash_render = true
+						dashed_path.push_back({
+							"command": PathCommand.MOVE_TO,
+							"points": [current_point + (current_point.direction_to(reference_instruction.points[0]) * previous_reference_size_used)]
+						})
+					dashed_path.push_back({
+						"command": PathCommand.LINE_TO,
+						"points": [end_point]
+					})
+			PathCommand.QUADRATIC_BEZIER_CURVE:
+				var sliced_quadratic = SVGMath.slice_quadratic_bezier(
+					current_point,
+					reference_instruction.points[0],
+					reference_instruction.points[1],
+					previous_reference_size_used / current_reference_size_total,
+					current_reference_size_used / current_reference_size_total
+				)
+				if is_dash_render:
+					if not was_dash_render:
+						was_dash_render = true
+						dashed_path.push_back({
+							"command": PathCommand.MOVE_TO,
+							"points": [sliced_quadratic[0]]
+						})
+					dashed_path.push_back({
+						"command": PathCommand.QUADRATIC_BEZIER_CURVE,
+						"points": SVGHelper.array_slice(sliced_quadratic, 1)
+					})
+			PathCommand.CUBIC_BEZIER_CURVE:
+				var sliced_cubic = SVGMath.slice_cubic_bezier(
+					current_point,
+					reference_instruction.points[0],
+					reference_instruction.points[1],
+					reference_instruction.points[2],
+					previous_reference_size_used / current_reference_size_total,
+					current_reference_size_used / current_reference_size_total
+				)
+				if is_dash_render:
+					if not was_dash_render:
+						was_dash_render = true
+						dashed_path.push_back({
+							"command": PathCommand.MOVE_TO,
+							"points": [sliced_cubic[0]]
+						})
+					dashed_path.push_back({
+						"command": PathCommand.CUBIC_BEZIER_CURVE,
+						"points": SVGHelper.array_slice(sliced_cubic, 1)
+					})
+		
+		# Jump to next size in dash array when current size is exhausted
+		if current_distance_traversed >= current_dash_size:
+			if current_dash_size_index < dash_array.size() - 1:
+				current_dash_size_index += 1
+			else:
+				current_dash_size_index = 0
+			current_distance_traversed = 0.0
+			current_dash_size = float(dash_array[current_dash_size_index])
+			was_dash_render = is_dash_render
+			is_dash_render = not is_dash_render
+		
+		# Jump to next reference shape when reached end of current one
+		if current_reference_size_used >= current_reference_size_total:
+			previous_reference_size_used = 0.0
+			current_reference_size_used = 0.0
+			current_reference_size_total = 0.0
+			match reference_instruction.command:
+				PathCommand.LINE_TO:
+					current_point = reference_instruction.points[0]
+				PathCommand.QUADRATIC_BEZIER_CURVE:
+					current_point = reference_instruction.points[1]
+				PathCommand.CUBIC_BEZIER_CURVE:
+					current_point = reference_instruction.points[2]
+			current_reference_index += 1
+		
+	if dashed_path.size() > 0:
+		return dashed_path
+	else:
+		return path_reference

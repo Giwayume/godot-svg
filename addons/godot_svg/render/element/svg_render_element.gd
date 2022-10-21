@@ -247,6 +247,13 @@ func _process_simplified_polygon():
 	if polygons.has("stroke"):
 		var stroke_width = get_visible_stroke_width()
 		if polygons.stroke.size() > 0 and stroke_width > 0.0:
+			var dash_array = []
+			var dash_offset = 0
+			if attr_stroke_dasharray.size() > 0:
+				var full_percentage_size = sqrt((pow(inherited_view_box.size.x, 2) + pow(inherited_view_box.size.y, 2)) / 2)
+				for size in attr_stroke_dasharray:
+					dash_array.push_back(size.get_length(full_percentage_size))
+				dash_offset = attr_stroke_dashoffset.get_length(full_percentage_size)
 			var current_stroke = []
 			var stroke_instruction_index = 0
 			var stroke_instruction_size = polygons.stroke.size()
@@ -254,13 +261,23 @@ func _process_simplified_polygon():
 				var instruction = polygons.stroke[min(i, stroke_instruction_size - 1)]
 				if instruction.command == PathCommand.MOVE_TO or stroke_instruction_index > stroke_instruction_size - 1:
 					if current_stroke.size() > 0:
-						triangulated_strokes.push_back(
-							SVGTriangulation.triangulate_stroke_path(
-								current_stroke, stroke_width, attr_stroke_linecap,
-								attr_stroke_linejoin, attr_stroke_miterlimit,
-								current_stroke[current_stroke.size() -1].command == PathCommand.CLOSE_PATH
+						if dash_array.size() > 0:
+							var dasharray_path = SVGPathSolver.dash_array(current_stroke, dash_array, dash_offset)
+							triangulated_strokes.push_back(
+								SVGTriangulation.triangulate_stroke_path(
+									dasharray_path, stroke_width, attr_stroke_linecap,
+									attr_stroke_linejoin, attr_stroke_miterlimit,
+									current_stroke[current_stroke.size() -1].command == PathCommand.CLOSE_PATH
+								)
 							)
-						)
+						else:
+							triangulated_strokes.push_back(
+								SVGTriangulation.triangulate_stroke_subpath(
+									current_stroke, stroke_width, attr_stroke_linecap,
+									attr_stroke_linejoin, attr_stroke_miterlimit,
+									current_stroke[current_stroke.size() -1].command == PathCommand.CLOSE_PATH
+								)
+							)
 					current_stroke = []
 				current_stroke.push_back(instruction)
 				stroke_instruction_index += 1
@@ -521,11 +538,8 @@ func draw_shape(updates):
 				_shape_fill.mesh = _create_mesh_from_triangulation(polygon_lists[fill_index])
 				_shape_fill.material = ShaderMaterial.new()
 				_shape_fill.material.shader = SVGRenderFillShader
-#				_shape_fill.polygon = polygon_lists[fill_index]
 			_shape_fill.material.set_shader_param("fill_color", updates.fill_color)
 			_shape_fill.self_modulate = Color(1, 1, 1, max(0, min(1, attr_fill_opacity.get_length(1))))
-#			if updates.has("stroke_color"):
-#				_shape_fill.antialiased = svg_node.antialiased and updates.stroke_color.a == 0
 			if (
 				updates.has("fill_texture") and updates.fill_texture != null and
 				updates.has("fill_texture_units") and updates.fill_texture_units != null
@@ -582,14 +596,6 @@ func draw_shape(updates):
 				updates.has("stroke_texture_units") and updates.stroke_texture_units != null
 			):
 				_shape_stroke.material.set_shader_param("fill_texture", updates.stroke_texture)
-			
-#			if attr_stroke_dasharray.size() > 0:
-#				var full_percentage_size = sqrt((pow(inherited_view_box.size.x, 2) + pow(inherited_view_box.size.y, 2)) / 2)
-#				var dash_array = []
-#				for size in attr_stroke_dasharray:
-#					dash_array.push_back(size.get_length(full_percentage_size))
-#				_shape_stroke.dash_offset = attr_stroke_dashoffset.get_length(full_percentage_size)
-#				_shape_stroke.dash_array = dash_array
 			
 			if updates.has("stroke_width"):
 				var applied_stroke_width = updates.stroke_width * scale_factor.x

@@ -70,6 +70,26 @@ static func split_quadratic_bezier(p0: Vector2, p1: Vector2, p2: Vector2, t: flo
 		Vector2(x3, y3),
 	]
 
+static func slice_quadratic_bezier(p0: Vector2, p1: Vector2, p2: Vector2, start_t: float, end_t: float):
+	var is_reversed = false
+	if start_t > end_t:
+		is_reversed = true
+		var tmp = end_t
+		end_t = start_t
+		start_t = tmp
+	if start_t == 0.0 and end_t == 1.0:
+		if is_reversed:
+			return [p2, p1, p0]
+		else:
+			return [p0, p1, p2]
+	else:
+		var left_split = split_quadratic_bezier(p0, p1, p2, start_t)
+		var right_split = split_quadratic_bezier(left_split[2], left_split[3], left_split[4], (end_t - start_t) / (1.0 - start_t))
+		if is_reversed:
+			return [right_split[2], right_split[1], right_split[0]]
+		else:
+			return [right_split[0], right_split[1], right_split[2]]
+
 # Gives a position vector for 4 points and timestamp that form a cubic bezier curve
 # p0 - start, p1 - start control, p2 - end control, p3 - end, t - timestamp from 0 to 1
 # https://en.wikipedia.org/wiki/B%C3%A9zier_curve
@@ -141,6 +161,26 @@ static func split_cubic_bezier(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector
 		Vector2(x34, y34),
 		Vector2(x4, y4),
 	]
+
+static func slice_cubic_bezier(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2, start_t: float, end_t: float):
+	var is_reversed = false
+	if start_t > end_t:
+		is_reversed = true
+		var tmp = end_t
+		end_t = start_t
+		start_t = tmp
+	if start_t == 0.0 and end_t == 1.0:
+		if is_reversed:
+			return [p3, p2, p1, p0]
+		else:
+			return [p0, p1, p2, p3]
+	else:
+		var left_split = split_cubic_bezier(p0, p1, p2, p3, start_t)
+		var right_split = split_cubic_bezier(left_split[3], left_split[4], left_split[5], left_split[6], (end_t - start_t) / (1.0 - start_t))
+		if is_reversed:
+			return [right_split[3], right_split[2], right_split[1], right_split[0]]
+		else:
+			return [right_split[0], right_split[1], right_split[2], right_split[3]]
 
 # Find which side of a segment a point is on, left or right. Assuming straight is the direction from start to end.
 static func is_point_right_of_segment(segment_start: Vector2, segment_end: Vector2, point: Vector2):

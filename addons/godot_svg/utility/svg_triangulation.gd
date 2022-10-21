@@ -599,6 +599,51 @@ static func triangulate_fill_path(path: Array, holes: Array = []):
 		"antialias_edge_implicit_coordinates": antialias_edge_implicit_coordinates,
 	}
 
+static func combine_triangulation(triangulation1, triangulation2):
+	var interior_vertices = []
+	var interior_implicit_coordinates = []
+	var quadratic_vertices = []
+	var quadratic_implicit_coordinates = []
+	var quadratic_signs = []
+	var cubic_vertices = []
+	var cubic_implicit_coordinates = []
+	var cubic_signs = []
+	var antialias_edge_vertices = []
+	var antialias_edge_implicit_coordinates = []
+	if triangulation2 != null:
+		interior_vertices.append_array(triangulation1.interior_vertices)
+		interior_vertices.append_array(triangulation2.interior_vertices)
+		interior_implicit_coordinates.append_array(triangulation1.interior_implicit_coordinates)
+		interior_implicit_coordinates.append_array(triangulation2.interior_implicit_coordinates)
+		quadratic_vertices.append_array(triangulation1.quadratic_vertices)
+		quadratic_vertices.append_array(triangulation2.quadratic_vertices)
+		quadratic_implicit_coordinates.append_array(triangulation1.quadratic_implicit_coordinates)
+		quadratic_implicit_coordinates.append_array(triangulation2.quadratic_implicit_coordinates)
+		quadratic_signs.append_array(triangulation1.quadratic_signs)
+		quadratic_signs.append_array(triangulation2.quadratic_signs)
+		cubic_vertices.append_array(triangulation1.cubic_vertices)
+		cubic_vertices.append_array(triangulation2.cubic_vertices)
+		cubic_implicit_coordinates.append_array(triangulation1.cubic_implicit_coordinates)
+		cubic_implicit_coordinates.append_array(triangulation2.cubic_implicit_coordinates)
+		cubic_signs.append_array(triangulation1.cubic_signs)
+		cubic_signs.append_array(triangulation2.cubic_signs)
+		antialias_edge_vertices.append_array(triangulation1.antialias_edge_vertices)
+		antialias_edge_vertices.append_array(triangulation2.antialias_edge_vertices)
+		antialias_edge_implicit_coordinates.append_array(triangulation1.antialias_edge_implicit_coordinates)
+		antialias_edge_implicit_coordinates.append_array(triangulation2.antialias_edge_implicit_coordinates)
+	return {
+		"interior_vertices": interior_vertices,
+		"interior_implicit_coordinates": interior_implicit_coordinates,
+		"quadratic_vertices": quadratic_vertices,
+		"quadratic_implicit_coordinates": quadratic_implicit_coordinates,
+		"quadratic_signs": quadratic_signs,
+		"cubic_vertices": cubic_vertices,
+		"cubic_implicit_coordinates": cubic_implicit_coordinates,
+		"cubic_signs": cubic_signs,
+		"antialias_edge_vertices": antialias_edge_vertices,
+		"antialias_edge_implicit_coordinates": antialias_edge_implicit_coordinates,
+	}
+
 static func offset_segment(segment_points, curve, handle_normal, offset):
 	var is_first = segment_points[1] == curve.p0
 	var offset_vector = curve.find_direction_at(0 if is_first else 1).rotated(PI / 2) * offset
@@ -633,6 +678,71 @@ static func adaptive_offset_curve(curve_points, offset, recursion_count = 0):
 # { "command": PathCommand, "points": [Vector()] }
 # It only supports a subset of PathCommand. Points are absolute coordinates.
 static func triangulate_stroke_path(path: Array, width, cap_mode, joint_mode, sharp_limit, closed: bool):
+	var is_path_start = true
+	var working_path = []
+	var triangulation_result = null
+	var current_instruction_index = 0
+	var end_instruction_index = path.size() - 1
+	for instruction in path:
+		var path_to_triangulate = null
+		var is_check_from_end = false
+		match instruction.command:
+			PathCommand.MOVE_TO:
+				if working_path.size() > 0:
+					path_to_triangulate = working_path
+					working_path = []
+					if is_path_start:
+						is_check_from_end = current_instruction_index < end_instruction_index
+				working_path.push_back(instruction)
+			PathCommand.CLOSE_PATH:
+				working_path.push_back(instruction)
+				if working_path.size() > 0:
+					path_to_triangulate = working_path
+					working_path = []
+					if is_path_start:
+						is_check_from_end = current_instruction_index < end_instruction_index
+			_:
+				working_path.push_back(instruction)
+		if current_instruction_index == end_instruction_index and path_to_triangulate == null:
+			path_to_triangulate = working_path
+		if is_check_from_end:
+			var is_encountered_close = false
+			for i in range(end_instruction_index, -1, -1):
+				var end_instruction = path[i]
+				var break_at_index = null
+				match end_instruction.command:
+					PathCommand.MOVE_TO:
+						path_to_triangulate.push_front(end_instruction)
+						break_at_index = i - 1
+					PathCommand.CLOSE_PATH:
+						if is_encountered_close:
+							break_at_index = i
+						else:
+							if path_to_triangulate[0].command == PathCommand.MOVE_TO:
+								path_to_triangulate.push_front({
+									"command": PathCommand.LINE_TO,
+									"points": [path_to_triangulate[0].points[0]]
+								})
+					_:
+						path_to_triangulate.push_front(end_instruction)
+				if break_at_index != null:
+					end_instruction_index = break_at_index
+					break
+				is_encountered_close = true
+		if path_to_triangulate != null:
+			var subpath_triangulation = triangulate_stroke_subpath(path_to_triangulate, width, cap_mode, joint_mode, sharp_limit, closed and is_path_start)
+			if triangulation_result == null:
+				triangulation_result = subpath_triangulation
+			else:
+				triangulation_result = combine_triangulation(subpath_triangulation, triangulation_result)
+			is_path_start = false
+		if current_instruction_index >= end_instruction_index:
+			break
+		current_instruction_index += 1
+	return triangulation_result
+
+# Does the work to outline a single subpath (no internal move or close commands)
+static func triangulate_stroke_subpath(path: Array, width, cap_mode, joint_mode, sharp_limit, closed: bool):
 	var half_width = width / 2.0
 	
 	if path.size() < 2 or not path[0].has("points"):
