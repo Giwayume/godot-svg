@@ -833,7 +833,7 @@ static func dash_array(path_reference: Array, dash_array: Array, dash_offset: fl
 				PathCommand.CUBIC_BEZIER_CURVE:
 					current_point = reference_instruction.points[2]
 			current_reference_index += 1
-		
+	
 	if dashed_path.size() > 0:
 		return dashed_path
 	else:

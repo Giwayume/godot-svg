@@ -24,6 +24,12 @@ static func array_add(array, number):
 		array[i] += number
 	return array
 
+static func array_sum(array):
+	var sum = 0.0
+	for i in range(0, array.size()):
+		sum += float(array[i])
+	return sum
+
 static func get_point_list_bounds(points):
 	var left = INF
 	var right = -INF

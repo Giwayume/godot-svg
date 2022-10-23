@@ -2,6 +2,32 @@ class_name SVGTriangulation
 
 const PathCommand = SVGValueConstant.PathCommand
 
+static func evaluate_point_bounding_box(bounding_box: Dictionary, point: Vector2):
+	if point.x < bounding_box.left:
+		bounding_box.left = point.x
+	if point.x > bounding_box.right:
+		bounding_box.right = point.x
+	if point.y < bounding_box.top:
+		bounding_box.top = point.y
+	if point.y > bounding_box.bottom:
+		bounding_box.bottom = point.y
+
+static func evaluate_rect_bounding_box(bounding_box: Dictionary, rect: Rect2):
+	if rect.position.x < bounding_box.left:
+		bounding_box.left = rect.position.x
+	if rect.position.x + rect.size.x > bounding_box.right:
+		bounding_box.right = rect.position.x + rect.size.x
+	if rect.position.y < bounding_box.top:
+		bounding_box.top = rect.position.y
+	if rect.position.y + rect.size.y > bounding_box.bottom:
+		bounding_box.bottom = rect.position.y + rect.size.y
+
+static func generate_uv_at_point(bounding_box: Dictionary, point: Vector2) -> Vector2:
+	return Vector2(
+		(point.x - bounding_box.left) / (bounding_box.right - bounding_box.left),
+		(point.y - bounding_box.top) / (bounding_box.bottom - bounding_box.top)
+	)
+
 static func get_outer_edge_implicit_coordinate(is_outer_edge_array):
 	var a = is_outer_edge_array[2]
 	var b = is_outer_edge_array[0]
@@ -261,12 +287,19 @@ static func triangulate_fill_path(path: Array, holes: Array = []):
 		all_paths = path
 	var all_path_size = all_paths.size()
 	
-	# Check if the polygon is clockwise or counter-clockwise. Used to determine the inside of the path.
-	# Also build a list of triangle intersection checks.
+	# - Check if the polygon is clockwise or counter-clockwise. Used to determine the inside of the path.
+	# - Build a list of triangle intersection checks.
+	# - Evaluate the bounding box of the overall shape for texture mapping.
 	var clockwise_check_polygons = []
 	var clockwise_check_polygon = []
 	var path_intersection_checks = []
 	var clockwise_check_encountered_path_index = 0
+	var bounding_box = {
+		"left": INF,
+		"right": -INF,
+		"top": INF,
+		"bottom": -INF,
+	}
 	for i in range(0, all_path_size):
 		var instruction = all_paths[i]
 		var next_instruction = all_paths[i + 1] if i < all_path_size - 1 else instruction
@@ -284,16 +317,20 @@ static func triangulate_fill_path(path: Array, holes: Array = []):
 				triangles_to_check.push_back([current_point, current_point, instruction.points[0]])
 				current_point = instruction.points[0]
 				clockwise_check_polygon.push_back(current_point)
+				evaluate_point_bounding_box(bounding_box, current_point)
+				evaluate_point_bounding_box(bounding_box, instruction.points[0])
 			PathCommand.QUADRATIC_BEZIER_CURVE:
 				control_points = [current_point, instruction.points[0], instruction.points[1]]
 				triangles_to_check = subdivide_quadratic_bezier_triangles(current_point, instruction.points[0], instruction.points[1], 1)
 				current_point = instruction.points[1]
 				clockwise_check_polygon.push_back(current_point)
+				evaluate_rect_bounding_box(bounding_box, SVGMath.quadratic_bezier_bounds(control_points[0], control_points[1], control_points[2]))
 			PathCommand.CUBIC_BEZIER_CURVE:
 				control_points = [current_point, instruction.points[0], instruction.points[1], instruction.points[2]]
 				triangles_to_check = subdivide_cubic_bezier_triangles(current_point, instruction.points[0], instruction.points[1], instruction.points[2], 1)
 				current_point = instruction.points[2]
 				clockwise_check_polygon.push_back(current_point)
+				evaluate_rect_bounding_box(bounding_box, SVGMath.cubic_bezier_bounds(control_points[0], control_points[1], control_points[2], control_points[3]))
 			PathCommand.CLOSE_PATH:
 				if not current_path_start_point.is_equal_approx(current_point):
 					clockwise_check_polygon.push_back(current_path_start_point)
@@ -383,14 +420,18 @@ static func triangulate_fill_path(path: Array, holes: Array = []):
 	
 	# Build an "interior" polygon with straight edges, and other triangles to draw the bezier curves.
 	var interior_polygon = []
+	var interior_uv = PoolVector2Array()
 	var quadratic_vertices = PoolVector2Array()
 	var quadratic_implicit_coordinates = PoolVector2Array()
 	var quadratic_signs = PoolIntArray()
+	var quadratic_uv = PoolVector2Array()
 	var cubic_vertices = PoolVector2Array()
 	var cubic_implicit_coordinates = PoolVector3Array()
 	var cubic_signs = PoolIntArray()
+	var cubic_uv = PoolVector2Array()
 	var antialias_edge_vertices = PoolVector2Array()
 	var antialias_edge_implicit_coordinates = PoolVector2Array()
+	var antialias_edge_uv = PoolVector2Array()
 	var polygon_break_indices = []
 	var duplicate_edges = {}
 	var current_path_index = 0
@@ -426,10 +467,13 @@ static func triangulate_fill_path(path: Array, holes: Array = []):
 				
 				quadratic_vertices.push_back(current_point)
 				quadratic_implicit_coordinates.push_back(Vector2(0.0, 0.0))
+				quadratic_uv.push_back(generate_uv_at_point(bounding_box, current_point))
 				quadratic_vertices.push_back(control_point)
 				quadratic_implicit_coordinates.push_back(Vector2(0.5, 0.0))
+				quadratic_uv.push_back(generate_uv_at_point(bounding_box, control_point))
 				quadratic_vertices.push_back(end_point)
 				quadratic_implicit_coordinates.push_back(Vector2(1.0, 1.0))
+				quadratic_uv.push_back(generate_uv_at_point(bounding_box, end_point))
 				for ti in range(0, 3):
 					quadratic_signs.push_back(1 if is_concave else 0)
 				
@@ -479,6 +523,8 @@ static func triangulate_fill_path(path: Array, holes: Array = []):
 					SVGCubics.evaluate_control_points([start_point, control_point_1, control_point_2, end_point])
 				)
 				cubic_vertices.append_array(cubic_evaluation.vertices)
+				for vertex in cubic_evaluation.vertices:
+					cubic_uv.push_back(generate_uv_at_point(bounding_box, vertex))
 				cubic_implicit_coordinates.append_array(cubic_evaluation.implicit_coordinates)
 				for ti in range(0, cubic_evaluation.implicit_coordinates.size()):
 					# 0 flips the sign (clockwise curves look correct by default), 1 keeps the sign.
@@ -557,6 +603,7 @@ static func triangulate_fill_path(path: Array, holes: Array = []):
 		for j in range(0, 3):
 			var vertex_index = interior_triangulation[i + j]
 			interior_vertices.push_back(interior_polygon[vertex_index])
+			interior_uv.push_back(generate_uv_at_point(bounding_box, interior_polygon[vertex_index]))
 			var index_mod = j % 3
 			match index_mod:
 				0:
@@ -573,75 +620,116 @@ static func triangulate_fill_path(path: Array, holes: Array = []):
 			var p1 = duplicate_edges[edge_key][0][2]
 			var direction = p0.direction_to(p1)
 			var edge_size = 1.0
-			antialias_edge_vertices.push_back(p0 + (direction.rotated(-PI / 2.0) * edge_size))
-			antialias_edge_vertices.push_back(p1 + (direction.rotated(-PI / 2.0) * edge_size))
-			antialias_edge_vertices.push_back(p1 + (direction.rotated(PI / 2.0) * edge_size))
-			antialias_edge_vertices.push_back(p0 + (direction.rotated(-PI / 2.0) * edge_size))
-			antialias_edge_vertices.push_back(p1 + (direction.rotated(PI / 2.0) * edge_size))
-			antialias_edge_vertices.push_back(p0 + (direction.rotated(PI / 2.0) * edge_size))
+			var ae0 = p0 + (direction.rotated(-PI / 2.0) * edge_size)
+			var ae1 = p1 + (direction.rotated(-PI / 2.0) * edge_size)
+			var ae2 = p1 + (direction.rotated(PI / 2.0) * edge_size)
+			var ae3 = p0 + (direction.rotated(PI / 2.0) * edge_size)
+			antialias_edge_vertices.push_back(ae0)
+			antialias_edge_vertices.push_back(ae1)
+			antialias_edge_vertices.push_back(ae2)
+			antialias_edge_vertices.push_back(ae0)
+			antialias_edge_vertices.push_back(ae2)
+			antialias_edge_vertices.push_back(ae3)
 			antialias_edge_implicit_coordinates.push_back(Vector2(0.0, 0.0))
 			antialias_edge_implicit_coordinates.push_back(Vector2(1.0, 0.0))
 			antialias_edge_implicit_coordinates.push_back(Vector2(1.0, 1.0))
 			antialias_edge_implicit_coordinates.push_back(Vector2(0.0, 0.0))
 			antialias_edge_implicit_coordinates.push_back(Vector2(1.0, 1.0))
 			antialias_edge_implicit_coordinates.push_back(Vector2(0.0, 1.0))
+			antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae0))
+			antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae1))
+			antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae2))
+			antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae0))
+			antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae2))
+			antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae3))
+			
 	
 	return {
+		"bounding_box": Rect2(bounding_box.left, bounding_box.top, bounding_box.right - bounding_box.left, bounding_box.bottom - bounding_box.top),
 		"interior_vertices": interior_vertices,
 		"interior_implicit_coordinates": interior_implicit_coordinates,
+		"interior_uv": interior_uv,
 		"quadratic_vertices": quadratic_vertices,
 		"quadratic_implicit_coordinates": quadratic_implicit_coordinates,
 		"quadratic_signs": quadratic_signs,
+		"quadratic_uv": quadratic_uv,
 		"cubic_vertices": cubic_vertices,
 		"cubic_implicit_coordinates": cubic_implicit_coordinates,
 		"cubic_signs": cubic_signs,
+		"cubic_uv": cubic_uv,
 		"antialias_edge_vertices": antialias_edge_vertices,
 		"antialias_edge_implicit_coordinates": antialias_edge_implicit_coordinates,
+		"antialias_edge_uv": antialias_edge_uv,
 	}
 
 static func combine_triangulation(triangulation1, triangulation2):
+	var bounding_box = triangulation1.bounding_box
 	var interior_vertices = []
 	var interior_implicit_coordinates = []
+	var interior_uv
 	var quadratic_vertices = []
 	var quadratic_implicit_coordinates = []
 	var quadratic_signs = []
+	var quadratic_uv = []
 	var cubic_vertices = []
 	var cubic_implicit_coordinates = []
 	var cubic_signs = []
+	var cubic_uv = []
 	var antialias_edge_vertices = []
 	var antialias_edge_implicit_coordinates = []
+	var antialias_edge_uv = []
 	if triangulation2 != null:
+		if triangulation2.bounding_box.position.x < bounding_box.position.x:
+			bounding_box.position.x = triangulation2.bounding_box.position.x
+		if triangulation2.bounding_box.position.x + triangulation2.bounding_box.size.x > bounding_box.position.x + bounding_box.size.x:
+			bounding_box.size.x = (triangulation2.bounding_box.position.x + triangulation2.bounding_box.size.x) - bounding_box.position.x
+		if triangulation2.bounding_box.position.y < bounding_box.position.y:
+			bounding_box.position.y = triangulation2.bounding_box.position.y
+		if triangulation2.bounding_box.position.y + triangulation2.bounding_box.size.y > bounding_box.position.y + bounding_box.size.y:
+			bounding_box.size.y = (triangulation2.bounding_box.position.y + triangulation2.bounding_box.size.y) - bounding_box.position.y
 		interior_vertices.append_array(triangulation1.interior_vertices)
 		interior_vertices.append_array(triangulation2.interior_vertices)
 		interior_implicit_coordinates.append_array(triangulation1.interior_implicit_coordinates)
 		interior_implicit_coordinates.append_array(triangulation2.interior_implicit_coordinates)
+		interior_uv.append_array(triangulation1.interior_uv)
+		interior_uv.append_array(triangulation2.interior_uv)
 		quadratic_vertices.append_array(triangulation1.quadratic_vertices)
 		quadratic_vertices.append_array(triangulation2.quadratic_vertices)
 		quadratic_implicit_coordinates.append_array(triangulation1.quadratic_implicit_coordinates)
 		quadratic_implicit_coordinates.append_array(triangulation2.quadratic_implicit_coordinates)
 		quadratic_signs.append_array(triangulation1.quadratic_signs)
 		quadratic_signs.append_array(triangulation2.quadratic_signs)
+		quadratic_uv.append_array(triangulation1.quadratic_uv)
+		quadratic_uv.append_array(triangulation2.quadratic_uv)
 		cubic_vertices.append_array(triangulation1.cubic_vertices)
 		cubic_vertices.append_array(triangulation2.cubic_vertices)
 		cubic_implicit_coordinates.append_array(triangulation1.cubic_implicit_coordinates)
 		cubic_implicit_coordinates.append_array(triangulation2.cubic_implicit_coordinates)
 		cubic_signs.append_array(triangulation1.cubic_signs)
 		cubic_signs.append_array(triangulation2.cubic_signs)
+		cubic_uv.append_array(triangulation1.cubic_uv)
+		cubic_uv.append_array(triangulation2.cubic_uv)
 		antialias_edge_vertices.append_array(triangulation1.antialias_edge_vertices)
 		antialias_edge_vertices.append_array(triangulation2.antialias_edge_vertices)
 		antialias_edge_implicit_coordinates.append_array(triangulation1.antialias_edge_implicit_coordinates)
 		antialias_edge_implicit_coordinates.append_array(triangulation2.antialias_edge_implicit_coordinates)
+		antialias_edge_uv.append_array(triangulation1.antialias_edge_uv)
+		antialias_edge_uv.append_array(triangulation2.antialias_edge_uv)
 	return {
 		"interior_vertices": interior_vertices,
 		"interior_implicit_coordinates": interior_implicit_coordinates,
+		"interior_uv": interior_uv,
 		"quadratic_vertices": quadratic_vertices,
 		"quadratic_implicit_coordinates": quadratic_implicit_coordinates,
 		"quadratic_signs": quadratic_signs,
+		"quadratic_uv": quadratic_uv,
 		"cubic_vertices": cubic_vertices,
 		"cubic_implicit_coordinates": cubic_implicit_coordinates,
 		"cubic_signs": cubic_signs,
+		"cubic_uv": cubic_uv,
 		"antialias_edge_vertices": antialias_edge_vertices,
 		"antialias_edge_implicit_coordinates": antialias_edge_implicit_coordinates,
+		"antialias_edge_uv": antialias_edge_uv,
 	}
 
 static func offset_segment(segment_points, curve, handle_normal, offset):
@@ -691,7 +779,7 @@ static func triangulate_stroke_path(path: Array, width, cap_mode, joint_mode, sh
 				if working_path.size() > 0:
 					path_to_triangulate = working_path
 					working_path = []
-					if is_path_start:
+					if is_path_start and closed:
 						is_check_from_end = current_instruction_index < end_instruction_index
 				working_path.push_back(instruction)
 			PathCommand.CLOSE_PATH:
@@ -699,7 +787,7 @@ static func triangulate_stroke_path(path: Array, width, cap_mode, joint_mode, sh
 				if working_path.size() > 0:
 					path_to_triangulate = working_path
 					working_path = []
-					if is_path_start:
+					if is_path_start and closed:
 						is_check_from_end = current_instruction_index < end_instruction_index
 			_:
 				working_path.push_back(instruction)

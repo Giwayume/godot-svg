@@ -44,6 +44,9 @@ static func quadratic_bezier_length(p0: Vector2, p1: Vector2, p2: Vector2):
 		(4.0 * a1)
 	)
 
+static func quadratic_bezier_bounds(p0: Vector2, p1: Vector2, p2: Vector2):
+	return cubic_bezier_bounds(p0, p1, p1, p2)
+
 # Splits quadratic bezier curve into 2, returning the new positions and control points
 static func split_quadratic_bezier(p0: Vector2, p1: Vector2, p2: Vector2, t: float):
 	var x1 = p0.x
@@ -100,6 +103,9 @@ static func cubic_bezier_at(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2, 
 	var q3 = pow(t, 3) * p3
 	return q0 + q1 + q2 + q3
 
+static func cubic_bezier_at_one_axis(x0: float, x1: float, x2: float, x3: float, t: float):
+	return x0 * (1 - t) * (1 - t) * (1 - t) + 3 * x1 * t * (1 - t) * (1 - t) + 3 * x2 * t * t * (1 - t) + x3 * t * t * t
+
 # Estimates the length of a cubic bezier curve
 static func cubic_bezier_length(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2):
 	return cubic_bezier_length_recurse(p0, p1, p2, p3)
@@ -121,6 +127,49 @@ static func cubic_bezier_length_recurse(p0: Vector2, p1: Vector2, p2: Vector2, p
 		var chord_length = (p3 - p0).length()
 		length += (chord_length + control_net_length) / 2.0
 	return length
+
+# Finds bounding box of a cubic bezier curve
+static func cubic_bezier_bounds(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2):
+	var a = 3 * p3.x - 9 * p2.x + 9 * p1.x - 3 * p0.x
+	var b = 6 * p0.x - 12 * p1.x + 6 * p2.x
+	var c = 3 * p1.x - 3 * p0.x
+	var disc = b * b - 4 * a * c
+	var xl = p0.x
+	var xh = p0.x;
+	if p3.x < xl: xl = p3.x
+	if p3.x > xh: xh = p3.x
+	if disc >= 0:
+		var t1 = (-b + sqrt(disc)) / (2 * a)
+		if t1 > 0 and t1 < 1:
+			var x1 = cubic_bezier_at_one_axis(p0.x, p1.x, p2.x, p3.x, t1)
+			if x1 < xl: xl = x1
+			if x1 > xh: xh = x1
+		var t2 = (-b - sqrt(disc)) / (2 * a)
+		if t2 > 0 and t2 < 1:
+			var x2 = cubic_bezier_at_one_axis(p0.x, p1.x, p2.x, p3.x, t2);
+			if x2 < xl: xl = x2
+			if x2 > xh: xh = x2
+	a = 3 * p3.y - 9 * p2.y + 9 * p1.y - 3 * p0.y
+	b = 6 * p0.y - 12 * p1.y + 6 * p2.y
+	c = 3 * p1.y - 3 * p0.y
+	disc = b * b - 4 * a * c
+	var yl = p0.y
+	var yh = p0.y
+	if p3.y < yl: yl = p3.y
+	if p3.y > yh: yh = p3.y
+	if disc >= 0:
+		var t1 = (-b + sqrt(disc)) / (2 * a)
+		if t1 > 0 and t1 < 1:
+			var y1 = cubic_bezier_at_one_axis(p0.y, p1.y, p2.y, p3.y, t1)
+			if y1 < yl: yl = y1
+			if y1 > yh: yh = y1
+		var t2 = (-b - sqrt(disc)) / (2 * a)
+		if t2 > 0 and t2 < 1:
+			var y2 = cubic_bezier_at_one_axis(p0.y, p1.y, p2.y, p3.y, t2)
+			if y2 < yl: yl = y2
+			if y2 > yh: yh = y2
+	return Rect2(xl, yl, xh - xl, yh - yl)
+
 
 # Splits cubic bezier curve into 2, returning the new positions and control points
 # https://stackoverflow.com/questions/8369488/splitting-a-bezier-curve

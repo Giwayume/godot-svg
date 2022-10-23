@@ -254,6 +254,8 @@ func _process_simplified_polygon():
 				for size in attr_stroke_dasharray:
 					dash_array.push_back(size.get_length(full_percentage_size))
 				dash_offset = attr_stroke_dashoffset.get_length(full_percentage_size)
+				if SVGHelper.array_sum(dash_array) == 0.0:
+					dash_array = []
 			var current_stroke = []
 			var stroke_instruction_index = 0
 			var stroke_instruction_size = polygons.stroke.size()
@@ -498,7 +500,7 @@ func draw_shape(updates):
 	
 	var processed_polygon = null
 	var scale_factor = Vector2(1.0, 1.0)
-	if (will_fill or will_stroke):
+	if will_fill or will_stroke:
 		if updates.has("scale_factor"):
 			scale_factor = updates.scale_factor
 		if _current_arc_resolution == null:
@@ -545,20 +547,13 @@ func draw_shape(updates):
 				updates.has("fill_texture_units") and updates.fill_texture_units != null
 			):
 				_shape_fill.material.set_shader_param("fill_texture", updates.fill_texture)
-#				_shape_fill.uv = SVGDrawing.generate_texture_uv(
-#					_shape_fill.polygon, inherited_view_box, bounding_box,
-#					updates.fill_texture.get_size(), updates.fill_texture_units
-#				)
-#				_shape_fill.texture = updates.fill_texture
-#			else:
-#				var gradient_texture = GradientTexture2D.new()
-#				gradient_texture.width = 1
-#				gradient_texture.height = 1
-#				var gradient = Gradient.new()
-#				gradient.set_color(0, updates.fill_color)
-#				gradient.set_color(1, updates.fill_color)
-#				gradient_texture.gradient = gradient
-#				_shape_fill.texture = gradient_texture
+				var uv_transform_scale = Vector2(1.0, 1.0)
+				var uv_transform_origin = Vector2(0.0, 0.0)
+				if updates.fill_texture_units == SVGValueConstant.USER_SPACE_ON_USE:
+					uv_transform_scale = polygon_lists[fill_index].bounding_box.size / inherited_view_box.size
+					uv_transform_origin = (polygon_lists[fill_index].bounding_box.position - inherited_view_box.position) / inherited_view_box.size
+				_shape_fill.material.set_shader_param("uv_transform_origin", uv_transform_origin)
+				_shape_fill.material.set_shader_param("uv_transform_scale", uv_transform_scale)
 			_shape_fill.show()
 			fill_index += 1
 	else:
@@ -766,11 +761,13 @@ func _create_mesh_from_triangulation(fill_definition):
 	surface.resize(ArrayMesh.ARRAY_MAX)
 	var vertices = PoolVector2Array()
 	var colors = PoolColorArray()
+	var uv = PoolVector2Array()
 	var coordinate_index = 0
 	# Interior faces
 	vertices.append_array(fill_definition.interior_vertices)
 	for implicit_coordinate in fill_definition.interior_implicit_coordinates:
 		colors.push_back(Color(implicit_coordinate.x, implicit_coordinate.y, implicit_coordinate.z, 0.7))
+	uv.append_array(fill_definition.interior_uv)
 	# Quadratic edges
 	vertices.append_array(fill_definition.quadratic_vertices)
 	coordinate_index = 0
@@ -780,6 +777,7 @@ func _create_mesh_from_triangulation(fill_definition):
 			0.1 + 0.15 * float(fill_definition.quadratic_signs[coordinate_index])
 		))
 		coordinate_index += 1
+	uv.append_array(fill_definition.quadratic_uv)
 	# Cubic edges
 	vertices.append_array(fill_definition.cubic_vertices)
 	coordinate_index = 0
@@ -789,15 +787,18 @@ func _create_mesh_from_triangulation(fill_definition):
 			0.31 + 0.15 * float(fill_definition.cubic_signs[coordinate_index])
 		))
 		coordinate_index += 1
+	uv.append_array(fill_definition.cubic_uv)
 	# Antialiased line edges
 	vertices.append_array(fill_definition.antialias_edge_vertices)
 	for implicit_coordinate in fill_definition.antialias_edge_implicit_coordinates:
 		colors.push_back(Color(
 			implicit_coordinate.x, implicit_coordinate.y, 0.0, 0.9
 		))
+	uv.append_array(fill_definition.antialias_edge_uv)
 	# Create the mesh
 	surface[ArrayMesh.ARRAY_VERTEX] = vertices
 	surface[ArrayMesh.ARRAY_COLOR] = colors
+	surface[ArrayMesh.ARRAY_TEX_UV] = uv
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, surface, [], 0)
 	return mesh
 
