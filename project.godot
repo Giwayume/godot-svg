@@ -97,7 +97,7 @@ _global_script_classes=[ {
 "base": "Reference",
 "class": "SVGValueConstant",
 "language": "GDScript",
-"path": "res://addons/godot_svg/resource/svg_value_constant.gd"
+"path": "res://addons/godot_svg/utility/svg_value_constant.gd"
 } ]
 _global_script_class_icons={
 "SVGArcs": "",
@@ -125,10 +125,6 @@ _global_script_class_icons={
 config/name="SVG"
 run/main_scene="res://tests/w3c_1.1_test_suite/test_scene.tscn"
 config/icon="res://icon.png"
-
-[autoload]
-
-SVGLine2DTexture="*res://addons/godot_svg/render/polygon/svg_line_texture.gd"
 
 [editor_plugins]
 

@@ -8,10 +8,6 @@ const SVGRenderBakedShader = preload("../shader/svg_render_baked_shader.tres")
 const SVGRenderFillShaderGles2 = preload("../shader/svg_render_fill_shader_gles2.tres")
 const SVGRenderFillShaderGles3 = preload("../shader/svg_render_fill_shader_gles3.tres")
 
-const SVGLine2D = preload("../polygon/svg_line_2d.gd")
-const SVGPolygonLine2D = preload("../polygon/svg_polygon_line_2d.gd")
-const SVGPolygonLines2D = preload("../polygon/svg_polygon_lines_2d.gd")
-
 export(Resource) var element_resource = null setget _set_element_resource
 export(Rect2) var inherited_view_box = Rect2()
 

@@ -29,7 +29,6 @@ func _enter_tree():
 	if ResourceLoader.exists("res://addons/godot_svg/node/svg_rect.png"):
 		svg_rect_icon = load("res://addons/godot_svg/node/svg_rect.png")
 	add_custom_type("SVGRect", "Control", preload("./node/svg_rect.gd"), svg_rect_icon)
-	add_autoload_singleton("SVGLine2DTexture", "res://addons/godot_svg/render/polygon/svg_line_texture.gd")
 
 	var editor_interface = get_editor_interface()
 	editor_interface.get_resource_filesystem().connect("resources_reimported", self, "_on_resources_reimported")

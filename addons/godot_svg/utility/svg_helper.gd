@@ -1,6 +1,6 @@
 class_name SVGHelper
 
-# SANE slicing where end is non-inclusive, like every other SANE language out there
+# SANE array slicing where end is non-inclusive, like every other SANE language out there
 static func array_slice(array, start = null, end = null, step = null):
 	var stop = array.size()
 	var sliced = []

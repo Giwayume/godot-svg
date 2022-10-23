@@ -11,6 +11,7 @@ const SVGRenderDefs = preload("../render/element/svg_render_defs.gd")
 const SVGRenderElement = preload("../render/element/svg_render_element.gd")
 const SVGRenderEllipse = preload("../render/element/svg_render_ellipse.gd")
 const SVGRenderG = preload("../render/element/svg_render_g.gd")
+const SVGRenderImage = preload("../render/element/svg_render_image.gd")
 const SVGRenderLine = preload("../render/element/svg_render_line.gd")
 const SVGRenderLinearGradient = preload("../render/element/svg_render_linear_gradient.gd")
 const SVGRenderMask = preload("../render/element/svg_render_mask.gd")
@@ -84,6 +85,7 @@ func _get_svg_element_renderer(node_name):
 		"defs": return SVGRenderDefs
 		"ellipse": return SVGRenderEllipse
 		"g": return SVGRenderG
+		"image": return SVGRenderImage
 		"line": return SVGRenderLine
 		"linearGradient": return SVGRenderLinearGradient
 		"mask": return SVGRenderMask

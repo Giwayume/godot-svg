@@ -131,8 +131,37 @@ static func parse_transform_list(transform_attr):
 							values[1],
 							values[2] if values.size() == 3 else 1.0
 						))
+				elif transform_command.begins_with("skewX("):
+					var values = parse_number_list(transform_command.replace("skewX(", "").rstrip(")"))
+					# TODO
+					# https://github.com/godotengine/godot-docs/issues/2726
+					# https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/transform
+					# https://developer.mozilla.org/en-US/docs/Web/API/DOMMatrix
+				elif transform_command.begins_with("skewY("):
+					var values = parse_number_list(transform_command.replace("skewY(", "").rstrip(")"))
+					
 			transform = Transform2D(transform_matrix)
 	return transform
+
+static func relative_to_absolute_resource_url(relative_url, current_file_path):
+	if relative_url.begins_with("/"):
+		return "res:/" + relative_url
+	elif relative_url.begins_with("res://") or relative_url.begins_with("user://"):
+		return relative_url
+	var current_path_split = current_file_path.split("/", true)
+	var end_index = current_path_split.size() - 1
+	var relative_path_split = relative_url.split("/", true)
+	var start_index = 0
+	for path_part in relative_path_split:
+		if path_part == "..":
+			start_index += 1
+			end_index -= 1
+		else:
+			break
+	var combined_path = []
+	combined_path.append_array(SVGHelper.array_slice(current_path_split, 0, end_index))
+	combined_path.append_array(SVGHelper.array_slice(relative_path_split, start_index))
+	return "/".join(combined_path)
 
 static func serialize_d_points(points):
 	var ps = ""

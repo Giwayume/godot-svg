@@ -20,8 +20,8 @@ func _init():
 	node_name = "viewport"
 	_is_view_box_clip = true
 
-func _draw():
-	._draw()
+func _props_applied():
+	._props_applied()
 	var view_box = inherited_view_box
 	if attr_view_box is Rect2:
 		view_box = attr_view_box
