@@ -605,149 +605,18 @@ func resolve_fill_paint():
 	if _rerender_prop_cache.has("fill"):
 		return _rerender_prop_cache.fill
 	else:
-		_rerender_prop_cache.fill = resolve_paint(attr_fill, "fill")
+		_rerender_prop_cache.fill = SVGPaintServer.resolve_paint(self, attr_fill, "fill")
 		return _rerender_prop_cache.fill
 
 func resolve_stroke_paint():
 	if _rerender_prop_cache.has("stroke"):
 		return _rerender_prop_cache.stroke
 	else:
-		_rerender_prop_cache.stroke = resolve_paint(attr_stroke, "stroke")
+		_rerender_prop_cache.stroke = SVGPaintServer.resolve_paint(self, attr_stroke, "stroke")
 		return _rerender_prop_cache.stroke
-
-func resolve_paint(attr_paint, server_name: String):
-	var paint = {
-		"color": Color(1, 1, 1, 1),
-		"texture": null,
-		"texture_units": null,
-	}
-	if attr_paint is SVGPaint:
-		if attr_paint.url != null:
-			var result = svg_node._resolve_resource_locator(attr_fill.url)
-			var renderer = result.renderer
-			if renderer == null:
-				paint.color = attr_paint.color
-			elif renderer.node_name == "linearGradient" or renderer.node_name == "radialGradient":
-				renderer = renderer.resolve_href()
-				var stops = svg_node._find_elements_by_name("stop", renderer.element_resource)
-				var gradient = Gradient.new()
-				gradient.colors = []
-				gradient.offsets = []
-				for stop in stops:
-					var offset = stop.renderer.attr_offset.get_length(1)
-					var color = stop.renderer.attr_stop_color
-					var opacity = stop.renderer.attr_stop_opacity
-					if opacity < 1.0:
-						color.a = opacity
-					gradient.add_point(offset, color)
-				var gradient_texture = null
-				var gradient_transform = renderer.attr_gradient_transform
-				var texture_repeat_mode = {
-					SVGValueConstant.PAD: GradientTexture2D.REPEAT_NONE,
-					SVGValueConstant.REPEAT: GradientTexture2D.REPEAT,
-					SVGValueConstant.REFLECT: GradientTexture2D.REPEAT_MIRROR,
-				}[renderer.attr_spread_method]
-				paint.texture_units = renderer.attr_gradient_units
-				if renderer.node_name == "linearGradient":
-					free_paint_server_texture(server_name)
-					gradient_texture = GradientTexture2D.new()
-					gradient_texture.gradient = gradient
-					gradient_texture.fill = GradientTexture2D.FILL_LINEAR
-					gradient_texture.repeat = texture_repeat_mode
-					if renderer.attr_gradient_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
-						gradient_texture.fill_from = gradient_transform.xform(Vector2(
-							renderer.attr_x1.get_length(1),
-							renderer.attr_y1.get_length(1)
-						))
-						gradient_texture.fill_to = gradient_transform.xform(Vector2(
-							renderer.attr_x2.get_length(1),
-							renderer.attr_y2.get_length(1)
-						))
-					else: # USER_SPACE_ON_USE
-						gradient_texture.fill_from = gradient_transform.xform(Vector2(
-							renderer.attr_x1.get_normalized_length(inherited_view_box.size.x, inherited_view_box.position.x),
-							renderer.attr_y1.get_normalized_length(inherited_view_box.size.y, inherited_view_box.position.y)
-						))
-						gradient_texture.fill_to = gradient_transform.xform(Vector2(
-							renderer.attr_x2.get_normalized_length(inherited_view_box.size.x, inherited_view_box.position.x),
-							renderer.attr_y2.get_normalized_length(inherited_view_box.size.y, inherited_view_box.position.y)
-						))
-				else: # "radialGradient"
-					var start_center
-					var end_center
-					var start_radius = renderer.attr_fr.get_normalized_length(inherited_view_box.size.x)
-					var end_radius = renderer.attr_r.get_normalized_length(inherited_view_box.size.x)
-					var texture_size = Vector2(64.0, 64.0)
-					if renderer.attr_gradient_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
-						var bounding_box = get_bounding_box()
-						texture_size = SVGPaintServer.pow_2_texture_size(Vector2(1.0, 1.0) * min(4096, max(bounding_box.size.x, bounding_box.size.y)))
-						start_center = gradient_transform.xform(Vector2(
-							renderer.attr_cx.get_length(1),
-							renderer.attr_cy.get_length(1)
-						))
-						end_center = gradient_transform.xform(Vector2(
-							renderer.attr_fx.get_length(1),
-							renderer.attr_fy.get_length(1)
-						))
-						start_radius = renderer.attr_fr.get_length(1)
-						end_radius = renderer.attr_r.get_length(1)
-					else: # USER_SPACE_ON_USE
-						start_center = gradient_transform.xform(Vector2(
-							renderer.attr_cx.get_normalized_length(inherited_view_box.size.x, inherited_view_box.position.x),
-							renderer.attr_cy.get_normalized_length(inherited_view_box.size.y, inherited_view_box.position.y)
-						))
-						end_center = gradient_transform.xform(Vector2(
-							renderer.attr_fx.get_normalized_length(inherited_view_box.size.x, inherited_view_box.position.x),
-							renderer.attr_fy.get_normalized_length(inherited_view_box.size.y, inherited_view_box.position.y)
-						))
-						start_radius = renderer.attr_fr.get_normalized_length(inherited_view_box.size.x)
-						end_radius = renderer.attr_r.get_normalized_length(inherited_view_box.size.x)
-						texture_size = inherited_view_box.size
-					gradient_texture = store_paint_server_texture(server_name,
-						SVGPaintServer.generate_radial_gradient_server(
-							gradient,
-							start_center,
-							start_radius,
-							end_center,
-							end_radius,
-							texture_size,
-							texture_repeat_mode
-						)
-					)
-				paint.texture = gradient_texture
-				if renderer._is_href_duplicate:
-					renderer.queue_free()
-#				paint.texture = preload("res://icon.png")
-		else:
-			free_paint_server_texture(server_name)
-			paint.color = attr_paint.color
-	elif typeof(attr_paint) == TYPE_STRING:
-		if attr_paint == SVGValueConstant.CURRENT_COLOR:
-			paint = resolve_paint(attr_color, server_name)
-	return paint
 
 func resolve_href():
 	return null # override
-
-func store_paint_server_texture(store_name: String, server_response: Dictionary):
-	free_paint_server_texture(store_name)
-	_paint_server_textures[store_name] = server_response
-	if server_response.has("viewport"):
-		if _paint_server_container_node == null:
-			_paint_server_container_node = Node2D.new()
-			_paint_server_container_node.set_name("PaintServerAssets")
-			.add_child(_paint_server_container_node)
-		_paint_server_container_node.add_child(server_response.viewport)
-	return server_response.texture
-
-func free_paint_server_texture(store_name: String):
-	if _paint_server_textures.has(store_name):
-		var old_store = _paint_server_textures[store_name]
-		if old_store.has("viewport"):
-			old_store.viewport.queue_free()
-		if old_store.has("texture_rect"):
-			old_store.texture_rect.queue_free()
-	_paint_server_textures.erase(store_name)
 
 # Internal Methods
 

@@ -9,6 +9,7 @@ static func quadratic_bezier_at(p0: Vector2, p1: Vector2, p2: Vector2, t: float)
 	var r = q0.linear_interpolate(q1, t)
 	return r
 
+# Gets the length of the quadratic bezier curve
 static func quadratic_bezier_length(p0: Vector2, p1: Vector2, p2: Vector2):
 	var a = 0.0
 	var b = 0.0
@@ -44,7 +45,9 @@ static func quadratic_bezier_length(p0: Vector2, p1: Vector2, p2: Vector2):
 		(4.0 * a1)
 	)
 
+# Generates a square bounding box touching the edges of the quadratic bezer curve
 static func quadratic_bezier_bounds(p0: Vector2, p1: Vector2, p2: Vector2):
+	# TODO - actual quadratic formula
 	return cubic_bezier_bounds(p0, p1, p1, p2)
 
 # Splits quadratic bezier curve into 2, returning the new positions and control points
@@ -73,6 +76,7 @@ static func split_quadratic_bezier(p0: Vector2, p1: Vector2, p2: Vector2, t: flo
 		Vector2(x3, y3),
 	]
 
+# Returns a new quadratic curve that is the segment between two timestamps [0-1] range
 static func slice_quadratic_bezier(p0: Vector2, p1: Vector2, p2: Vector2, start_t: float, end_t: float):
 	var is_reversed = false
 	if start_t > end_t:
@@ -103,6 +107,7 @@ static func cubic_bezier_at(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2, 
 	var q3 = pow(t, 3) * p3
 	return q0 + q1 + q2 + q3
 
+# Works like cubic_bezier_at except for only x or y axis, for performance sake
 static func cubic_bezier_at_one_axis(x0: float, x1: float, x2: float, x3: float, t: float):
 	return x0 * (1 - t) * (1 - t) * (1 - t) + 3 * x1 * t * (1 - t) * (1 - t) + 3 * x2 * t * t * (1 - t) + x3 * t * t * t
 
@@ -110,6 +115,7 @@ static func cubic_bezier_at_one_axis(x0: float, x1: float, x2: float, x3: float,
 static func cubic_bezier_length(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2):
 	return cubic_bezier_length_recurse(p0, p1, p2, p3)
 
+# Recursive callback for cubic_bezier_length function
 static func cubic_bezier_length_recurse(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2, subdiv: float = 5.0):
 	var length = 0
 	if subdiv > 0:
@@ -128,7 +134,7 @@ static func cubic_bezier_length_recurse(p0: Vector2, p1: Vector2, p2: Vector2, p
 		length += (chord_length + control_net_length) / 2.0
 	return length
 
-# Finds bounding box of a cubic bezier curve
+# Generates a square bounding box touching the edges of the cubic bezer curve
 static func cubic_bezier_bounds(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2):
 	var a = 3 * p3.x - 9 * p2.x + 9 * p1.x - 3 * p0.x
 	var b = 6 * p0.x - 12 * p1.x + 6 * p2.x
@@ -211,6 +217,7 @@ static func split_cubic_bezier(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector
 		Vector2(x4, y4),
 	]
 
+# Returns a new cubic curve that is the segment between two timestamps [0-1] range
 static func slice_cubic_bezier(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2, start_t: float, end_t: float):
 	var is_reversed = false
 	if start_t > end_t:

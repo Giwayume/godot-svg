@@ -1,5 +1,8 @@
 extends "svg_render_element.gd"
 
+var attr_x = SVGLengthPercentage.new("0") setget _set_attr_x
+var attr_y = SVGLengthPercentage.new("0") setget _set_attr_y
+var attr_width = SVGValueConstant.AUTO setget _set_attr_width
 var attr_height = SVGValueConstant.AUTO setget _set_attr_height
 var attr_preserve_aspect_ratio = {
 	"align": {
@@ -9,10 +12,7 @@ var attr_preserve_aspect_ratio = {
 	"meet_or_slice": SVGValueConstant.MEET,
 } setget _set_attr_preserve_aspect_ratio
 var attr_view_box = SVGValueConstant.NONE setget _set_attr_view_box
-var attr_width = SVGValueConstant.AUTO setget _set_attr_width
-var attr_x = SVGLengthPercentage.new("0") setget _set_attr_x
 var attr_xmlns = "http://www.w3.org/2000/svg"
-var attr_y = SVGLengthPercentage.new("0") setget _set_attr_y
 
 # Lifecycle
 

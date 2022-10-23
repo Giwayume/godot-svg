@@ -2,9 +2,7 @@
 
 This Godot plugin **renders SVG files at runtime**. It achieves the effect of infinite scaling and smooth curves by calculating the curves in shaders drawn on polygons.
 
-This is the most spec-compliant SVG renderer for Godot. Every other SVG-related project I see only attempts to make simple things like shapes and solid lines work.
-
-> It is **HIGHLY RECOMMENDED** to use this plugin with the GLES3 renderer, as GLES2 does not support many of the functions used to render SVG on the GPU (dFdx/dFdy/fwidth is used for anti-aliasing).
+It is **HIGHLY RECOMMENDED** to use this plugin with the GLES3 renderer, as GLES2 does not support many of the functions used to render SVG on the GPU (dFdx/dFdy/fwidth is used for anti-aliasing).
 
 ## Installation
 
@@ -90,13 +88,13 @@ There is a performance benefit to using basic shapes (`circle`, `ellipse`, `rect
 | animate | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | animateMotion | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | animateTransform | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
-| circle | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported |  |
+| circle | ![Status](./docs/supported_checkmark.png) Supported |  |
 | clipPath | ![Status](./docs/supported_checkmark.png) Supported | |
 | color-profile | ![Status](./docs/not_supported_x.png) Will Not Support | Deprecated |
 | cursor | ![Status](./docs/not_supported_x.png) Will Not Support | Deprecated |
 | defs | ![Status](./docs/supported_checkmark.png) Supported | |
 | desc | ![Status](./docs/supported_checkmark.png) Supported | Not rendered |
-| ellipse | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
+| ellipse | ![Status](./docs/supported_checkmark.png) Supported | |
 | feBlend | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | feColorMatrix | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | feComponentTransfer | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
@@ -134,24 +132,24 @@ There is a performance benefit to using basic shapes (`circle`, `ellipse`, `rect
 | glyphRef | ![Status](./docs/not_supported_x.png) Will Not Support | Deprecated |
 | hkern | ![Status](./docs/not_supported_x.png) Will Not Support | Deprecated |
 | image | ![Status](./docs/supported_checkmark.png) Supported | Image href must be a relative URL pointing to an image you placed in the project under res://. |
-| line | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
+| line | ![Status](./docs/supported_checkmark.png) Supported | |
 | linearGradient | ![Status](./docs/supported_checkmark.png) Supported | |
 | marker | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | mask | ![Status](./docs/supported_checkmark.png) Supported | |
 | metadata | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | missing-glyph | ![Status](./docs/not_supported_x.png) Will Not Support | Deprecated |
 | mpath | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
-| path | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
+| path | ![Status](./docs/supported_checkmark.png) Supported | |
 | pattern | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
-| polygon | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
-| polyline | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
+| polygon | ![Status](./docs/supported_checkmark.png) Supported | |
+| polyline | ![Status](./docs/supported_checkmark.png) Supported | |
 | radialGradient | ![Status](./docs/supported_checkmark.png) Supported | |
-| rect | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
+| rect | ![Status](./docs/supported_checkmark.png) Supported | |
 | script | ![Status](./docs/not_supported_x.png) Will Not Support | No use case |
 | set | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | stop | ![Status](./docs/supported_checkmark.png) Supported | |
 | style | ![Status](./docs/partial_support_exclamation.png) Partial Support | Currently element, id, class, descendant selectors are recognized |
-| svg | ![Status](./docs/partial_support_exclamation.png) Partial Support | Need to implement: preserveAspectRatio |
+| svg | ![Status](./docs/supported_checkmark.png) Supported | |
 | switch | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | symbol | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | text | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
@@ -191,18 +189,18 @@ There is a performance benefit to using basic shapes (`circle`, `ellipse`, `rect
 | Name | Support Level | Notes |
 |:-----|:--------------|:------|
 | clip-path | ![Status](./docs/supported_checkmark.png) Supported | Currently supported at the SVG1.1 spec |
-| clip-rule | ![Status](./docs/supported_checkmark.png) Supported | |
-| color | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
+| clip-rule | ![Status](./docs/supported_checkmark.png) Supported | Currently supported at the SVG1.1 spec |
+| color | ![Status](./docs/partial_support_exclamation.png) Partial Support | Not fully tested |
 | color-interpolation | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | color-rendering | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | cursor | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | display | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | fill | ![Status](./docs/supported_checkmark.png) Supported | |
-| fill-opacity | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
-| fill-rule | ![Status](./docs/partial_support_exclamation.png) Partial Support | Shape holes currently not working |
+| fill-opacity | ![Status](./docs/supported_checkmark.png) Supported | |
+| fill-rule | ![Status](./docs/supported_checkmark.png) Supported | |
 | filter | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | mask | ![Status](./docs/supported_checkmark.png) Supported | Currently supported at the SVG1.1 spec |
-| opacity | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
+| opacity | ![Status](./docs/supported_checkmark.png) Supported | |
 | pointer-events | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | shape-rendering | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | stroke | ![Status](./docs/supported_checkmark.png) Supported | |
@@ -213,6 +211,6 @@ There is a performance benefit to using basic shapes (`circle`, `ellipse`, `rect
 | stroke-miterlimit | ![Status](./docs/supported_checkmark.png) Supported | |
 | stroke-opacity | ![Status](./docs/supported_checkmark.png) Supported | |
 | stroke-width | ![Status](./docs/supported_checkmark.png) Supported | |
-| transform | ![Status](./docs/partial_support_exclamation.png) Partial Support | 3D transforms are not supported |
+| transform | ![Status](./docs/supported_checkmark.png) Supported | 3D transforms are converted to 2D transforms |
 | vector-effect | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
-| visibility | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
+| visibility | ![Status](./docs/supported_checkmark.png) Supported | |
