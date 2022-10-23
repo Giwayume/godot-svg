@@ -133,13 +133,11 @@ static func parse_transform_list(transform_attr):
 						))
 				elif transform_command.begins_with("skewX("):
 					var values = parse_number_list(transform_command.replace("skewX(", "").rstrip(")"))
-					# TODO
-					# https://github.com/godotengine/godot-docs/issues/2726
-					# https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/transform
-					# https://developer.mozilla.org/en-US/docs/Web/API/DOMMatrix
+					transform_matrix.basis[1] += transform_matrix.basis[0] * tan(deg2rad(values[0]))
 				elif transform_command.begins_with("skewY("):
 					var values = parse_number_list(transform_command.replace("skewY(", "").rstrip(")"))
-					
+					transform_matrix.basis[3] += transform_matrix.basis[4] * tan(deg2rad(values[0]))
+			
 			transform = Transform2D(transform_matrix)
 	return transform
 

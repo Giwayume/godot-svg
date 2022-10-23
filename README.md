@@ -133,7 +133,7 @@ There is a performance benefit to using basic shapes (`circle`, `ellipse`, `rect
 | glyph | ![Status](./docs/not_supported_x.png) Will Not Support | Deprecated |
 | glyphRef | ![Status](./docs/not_supported_x.png) Will Not Support | Deprecated |
 | hkern | ![Status](./docs/not_supported_x.png) Will Not Support | Deprecated |
-| image | ![Status](./docs/supported_checkmark.png) Supported | Image href must be a relative URL to local imported image. |
+| image | ![Status](./docs/supported_checkmark.png) Supported | Image href must be a relative URL pointing to an image you placed in the project under res://. |
 | line | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | linearGradient | ![Status](./docs/supported_checkmark.png) Supported | |
 | marker | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |

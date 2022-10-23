@@ -28,16 +28,18 @@ func _init():
 func _notification(what):
 	if what == NOTIFICATION_PREDELETE:
 		if _control_frame != null:
-			_control_frame.queue_free()
+			if is_instance_valid(_control_frame):
+				_control_frame.queue_free()
 			_control_frame = null
 		if _image_sprite != null:
-			_image_sprite.queue_free()
+			if is_instance_valid(_image_sprite):
+				_image_sprite.queue_free()
 			_image_sprite = null
 
 func _props_applied():
 	._props_applied()
 	
-	if attr_visibility == SVGValueConstant.VISIBLE:
+	if attr_visibility == SVGValueConstant.VISIBLE and attr_href != SVGValueConstant.NONE:
 		show()
 	else:
 		hide()
@@ -70,6 +72,8 @@ func _props_applied():
 	
 	var x = attr_x.get_length(inherited_view_box.size.x, inherited_view_box.position.x)
 	var y = attr_y.get_length(inherited_view_box.size.y, inherited_view_box.position.y)
+
+	transform.origin = Vector2(x, y)
 	
 	var texture_width = image_texture.get_width()
 	var texture_height = image_texture.get_height()
