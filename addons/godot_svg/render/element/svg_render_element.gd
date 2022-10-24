@@ -386,6 +386,9 @@ func _add_baking_viewport_as_child(bounding_box):
 		_baking_viewport.canvas_transform = global_transform.inverse()
 		_baking_viewport.canvas_transform.origin += bounding_box.position
 
+func _add_child_direct(new_child, legible_unique_name = false):
+	.add_child(new_child, legible_unique_name)
+
 # Public Methods
 
 func apply_props():
@@ -455,7 +458,11 @@ func get_root_scale_factor():
 
 func get_scale_factor():
 	if (svg_node == null or svg_node._fixed_scaling_ratio == 0) and not is_in_root_viewport:
-		return get_viewport().canvas_transform.get_scale()
+		var viewport = get_viewport()
+		if viewport != null:
+			return viewport.canvas_transform.get_scale()
+		else:
+			return Vector2(1, 1)
 	else:
 		return get_root_scale_factor()
 
@@ -543,13 +550,8 @@ func draw_shape(updates):
 				updates.has("fill_texture_units") and updates.fill_texture_units != null
 			):
 				_shape_fill.material.set_shader_param("fill_texture", updates.fill_texture)
-				var uv_transform_scale = Vector2(1.0, 1.0)
-				var uv_transform_origin = Vector2(0.0, 0.0)
-				if updates.fill_texture_units == SVGValueConstant.USER_SPACE_ON_USE:
-					uv_transform_scale = polygon_lists[fill_index].bounding_box.size / inherited_view_box.size
-					uv_transform_origin = (polygon_lists[fill_index].bounding_box.position - inherited_view_box.position) / inherited_view_box.size
-				_shape_fill.material.set_shader_param("uv_transform_origin", uv_transform_origin)
-				_shape_fill.material.set_shader_param("uv_transform_scale", uv_transform_scale)
+				_update_shape_material_uv_params(_shape_fill, updates.fill_texture_units, updates.fill_texture_uv_transform, polygon_lists[fill_index])
+			
 			_shape_fill.show()
 			fill_index += 1
 	else:
@@ -587,7 +589,8 @@ func draw_shape(updates):
 				updates.has("stroke_texture_units") and updates.stroke_texture_units != null
 			):
 				_shape_stroke.material.set_shader_param("fill_texture", updates.stroke_texture)
-			
+				_update_shape_material_uv_params(_shape_stroke, updates.stroke_texture_units, updates.stroke_texture_uv_transform, polygon_lists[stroke_index])
+				
 			if updates.has("stroke_width"):
 				var applied_stroke_width = updates.stroke_width * scale_factor.x
 				if applied_stroke_width < 1:
@@ -667,6 +670,21 @@ func _create_mesh_from_triangulation(fill_definition):
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, surface, [], 0)
 	return mesh
 
+func _update_shape_material_uv_params(shape_node, texture_units, texture_uv_transform, processed_polygon):
+	var uv_transform_scale = Vector2(1.0, 1.0)
+	var uv_transform_origin = Vector2(0.0, 0.0)
+	var transform = Transform2D()
+	if texture_units is Rect2:
+		transform.origin = texture_units.position * (Vector2(1.0, 1.0) / processed_polygon.bounding_box.size) * uv_transform_scale
+		transform = transform.scaled(processed_polygon.bounding_box.size / texture_units.size)
+		texture_uv_transform.origin *= (Vector2(1.0, 1.0) / processed_polygon.bounding_box.size) * uv_transform_scale
+	elif texture_units == SVGValueConstant.USER_SPACE_ON_USE:
+		transform.origin = (processed_polygon.bounding_box.position - inherited_view_box.position) / inherited_view_box.size
+		transform = transform.scaled(processed_polygon.bounding_box.size / inherited_view_box.size)
+	transform *= texture_uv_transform
+	shape_node.material.set_shader_param("uv_transform_column_1", Vector3(transform.x.x, transform.y.x, transform.origin.x))
+	shape_node.material.set_shader_param("uv_transform_column_2", Vector3(transform.x.y, transform.y.y, transform.origin.y))
+
 # Getters / Setters
 
 func _set_element_resource(new_element_resource):
@@ -736,7 +754,7 @@ func _set_attr_fill_rule(fill_rule):
 func _set_attr_id(id):
 	if typeof(id) == TYPE_STRING:
 		if svg_node != null and svg_node._resource_locator_cache.has("#" + id):
-			svg_node._resource_locator_cache.remove("#" + id)
+			svg_node._resource_locator_cache.erase("#" + id)
 	attr_id = id
 	apply_props()
 

@@ -16,15 +16,15 @@ func _process_polygon():
 		{
 			"command": PathCommand.MOVE_TO,
 			"points": [Vector2(
-				attr_x1.get_length(inherited_view_box.size.x),
-				attr_y1.get_length(inherited_view_box.size.y)
+				attr_x1.get_length(inherited_view_box.size.x, inherited_view_box.position.x),
+				attr_y1.get_length(inherited_view_box.size.y, inherited_view_box.position.y)
 			)]
 		},
 		{
 			"command": PathCommand.LINE_TO,
 			"points": [Vector2(
-				attr_x2.get_length(inherited_view_box.size.x),
-				attr_y2.get_length(inherited_view_box.size.y)
+				attr_x2.get_length(inherited_view_box.size.x, inherited_view_box.position.x),
+				attr_y2.get_length(inherited_view_box.size.y, inherited_view_box.position.y)
 			)]
 		}
 	]
@@ -42,11 +42,13 @@ func _props_applied():
 	var fill_color = fill_paint.color
 	var fill_texture = fill_paint.texture
 	var fill_texture_units = fill_paint.texture_units
+	var fill_texture_uv_transform = fill_paint.texture_uv_transform
 	
 	var stroke_paint = resolve_stroke_paint()
 	var stroke_color = stroke_paint.color
 	var stroke_texture = stroke_paint.texture
 	var stroke_texture_units = stroke_paint.texture_units
+	var stroke_texture_uv_transform = stroke_paint.texture_uv_transform
 	
 	var stroke_width = attr_stroke_width.get_length(inherited_view_box.size.x)
 	
@@ -56,10 +58,12 @@ func _props_applied():
 		"fill_color": fill_color,
 		"fill_texture": fill_texture,
 		"fill_texture_units": fill_texture_units,
+		"fill_texture_uv_transform": fill_texture_uv_transform,
 		"fill_uv": [], # TODO
 		"stroke_color": stroke_color,
 		"stroke_texture": stroke_texture,
 		"stroke_texture_units": stroke_texture_units,
+		"stroke_texture_uv_transform": stroke_texture_uv_transform,
 		"stroke_width": stroke_width,
 		"stroke_closed": false,
 	})
@@ -68,10 +72,10 @@ func _props_applied():
 # Public Methods
 
 func _calculate_bounding_box():
-	var x1 = attr_x1.get_length(inherited_view_box.size.x)
-	var y1 = attr_y1.get_length(inherited_view_box.size.y)
-	var x2 = attr_x2.get_length(inherited_view_box.size.x)
-	var y2 = attr_y2.get_length(inherited_view_box.size.y)
+	var x1 = attr_x1.get_length(inherited_view_box.size.x, inherited_view_box.position.x)
+	var y1 = attr_y1.get_length(inherited_view_box.size.y, inherited_view_box.position.y)
+	var x2 = attr_x2.get_length(inherited_view_box.size.x, inherited_view_box.position.x)
+	var y2 = attr_y2.get_length(inherited_view_box.size.y, inherited_view_box.position.y)
 	var xl = min(x1, x2)
 	var xr = max(x1, x2)
 	var yt = min(y1, y2)

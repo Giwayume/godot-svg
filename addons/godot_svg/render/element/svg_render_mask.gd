@@ -105,8 +105,8 @@ func get_mask_unit_bounding_box(mask_target):
 		mask_unit_bounding_box = mask_target.get_stroked_bounding_box()
 	else: # USER_SPACE_ON_USE
 		mask_unit_bounding_box = mask_target.inherited_view_box
-	mask_unit_bounding_box.position.x += attr_x.get_length(mask_unit_bounding_box.size.x)
-	mask_unit_bounding_box.position.y += attr_y.get_length(mask_unit_bounding_box.size.y)
+	mask_unit_bounding_box.position.x += attr_x.get_length(mask_unit_bounding_box.size.x, inherited_view_box.position.x)
+	mask_unit_bounding_box.position.y += attr_y.get_length(mask_unit_bounding_box.size.y, inherited_view_box.position.y)
 	mask_unit_bounding_box.size.x = attr_width.get_length(mask_unit_bounding_box.size.x)
 	mask_unit_bounding_box.size.y = attr_height.get_length(mask_unit_bounding_box.size.y)
 	return mask_unit_bounding_box

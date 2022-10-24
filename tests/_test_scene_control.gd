@@ -49,6 +49,8 @@ func _input(event):
 				is_panning = event.is_pressed()
 	if event is InputEventKey:
 		if event.is_pressed() and not event.is_echo():
+			if event.physical_scancode == KEY_ESCAPE:
+				get_tree().quit()
 			if event.physical_scancode == KEY_0:
 				zoom_timer = 0.3
 				is_zooming_in = false

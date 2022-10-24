@@ -51,11 +51,11 @@ func _props_applied():
 	
 	var x = 0
 	if attr_x is SVGLengthPercentage:
-		x = attr_x.get_length(inherited_view_box.size.x)
+		x = attr_x.get_length(inherited_view_box.size.x, inherited_view_box.position.x)
 	
 	var y = 0
 	if attr_y is SVGLengthPercentage:
-		y = attr_y.get_length(inherited_view_box.size.y)
+		y = attr_y.get_length(inherited_view_box.size.y, inherited_view_box.position.y)
 	
 	position = Vector2(x, y)
 	scale = Vector2(

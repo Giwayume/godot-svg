@@ -16,8 +16,8 @@ func _init():
 
 func _process_polygon():
 	var position = Vector2(
-		attr_x.get_length(inherited_view_box.size.x),
-		attr_y.get_length(inherited_view_box.size.y)
+		attr_x.get_length(inherited_view_box.size.x, inherited_view_box.position.x),
+		attr_y.get_length(inherited_view_box.size.y, inherited_view_box.position.y)
 	)
 	
 	var width = 0
@@ -86,11 +86,13 @@ func _props_applied():
 	var fill_color = fill_paint.color
 	var fill_texture = fill_paint.texture
 	var fill_texture_units = fill_paint.texture_units
+	var fill_texture_uv_transform = fill_paint.texture_uv_transform
 	
 	var stroke_paint = resolve_stroke_paint()
 	var stroke_color = stroke_paint.color
 	var stroke_texture = stroke_paint.texture
 	var stroke_texture_units = stroke_paint.texture_units
+	var stroke_texture_uv_transform = stroke_paint.texture_uv_transform
 	
 	var stroke_width = attr_stroke_width.get_length(inherited_view_box.size.x)
 
@@ -100,9 +102,11 @@ func _props_applied():
 		"fill_color": fill_color,
 		"fill_texture": fill_texture,
 		"fill_texture_units": fill_texture_units,
+		"fill_texture_uv_transform": fill_texture_uv_transform,
 		"stroke_color": stroke_color,
 		"stroke_texture": stroke_texture,
 		"stroke_texture_units": stroke_texture_units,
+		"stroke_texture_uv_transform": stroke_texture_uv_transform,
 		"stroke_width": stroke_width,
 	})
 
@@ -114,8 +118,8 @@ func _calculate_arc_resolution(_scale_factor): # Override to disable.
 
 func _calculate_bounding_box():
 	var position = Vector2(
-		attr_x.get_length(inherited_view_box.size.x),
-		attr_y.get_length(inherited_view_box.size.y)
+		attr_x.get_length(inherited_view_box.size.x, inherited_view_box.position.x),
+		attr_y.get_length(inherited_view_box.size.y, inherited_view_box.position.y)
 	)
 	
 	var width = 0

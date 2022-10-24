@@ -4,6 +4,7 @@ const radial_gradient_shader = preload("../render/shader/svg_paint_radial_gradie
 const ELLIPSE_RATIO = 1.0
 const TILING = 1.0
 
+# Generates a radial gradient texture immediately on the CPU (blocks the main thread, slow)
 # First four arguments are defined in a range of 0-1 relative to texture_size
 static func generate_radial_gradient(
 	gradient: Gradient,
@@ -81,6 +82,8 @@ static func generate_radial_gradient(
 	
 	return texture
 
+# Generates a radial gradient on the GPU by using a viewport with a viewport texture.
+# Since this does not happen immediately, the shape may be invisible for a bit at first.
 static func generate_radial_gradient_server(
 	gradient: Gradient,
 	start_center: Vector2,
@@ -118,7 +121,26 @@ static func generate_radial_gradient_server(
 	return {
 		"texture_rect": gradient_rect,
 		"viewport": viewport,
-		"texture": viewport_texture
+		"texture": viewport_texture,
+	}
+
+static func generate_pattern_server(
+	pattern_renderer,
+	inherited_view_box: Rect2
+) -> Dictionary:
+	var viewport = pattern_renderer._baking_viewport
+	viewport.size = Vector2(2.0, 2.0)
+	viewport.render_target_v_flip = true
+	viewport.usage = Viewport.USAGE_2D_NO_SAMPLING
+	viewport.transparent_bg = true
+	# TODO - wait for delayed resources such as mask/other paint servers to draw?
+	var viewport_texture = viewport.get_texture()
+	viewport_texture.flags = Texture.FLAGS_DEFAULT
+	return {
+		"view_box": inherited_view_box,
+		"renderer": pattern_renderer,
+		"viewport": viewport,
+		"texture": viewport_texture,
 	}
 
 static func pow_2_texture_size(size: Vector2):
@@ -134,6 +156,7 @@ static func resolve_paint(reference_renderer, attr_paint, server_name: String):
 		"color": Color(1, 1, 1, 1),
 		"texture": null,
 		"texture_units": null,
+		"texture_uv_transform": Transform2D(),
 	}
 	if attr_paint is SVGPaint:
 		if attr_paint.url != null:
@@ -231,6 +254,25 @@ static func resolve_paint(reference_renderer, attr_paint, server_name: String):
 				paint.texture = gradient_texture
 				if renderer._is_href_duplicate:
 					renderer.queue_free()
+			elif renderer.node_name == "pattern":
+				renderer = renderer.resolve_href()
+				var pattern_texture = store_paint_server_texture(reference_renderer, server_name,
+					generate_pattern_server(
+						renderer,
+						inherited_view_box
+					)
+				)
+				if renderer.attr_pattern_units == SVGValueConstant.USER_SPACE_ON_USE:
+					paint.texture_units = Rect2(
+						0.0,
+						0.0,
+						renderer._baking_viewport.size.x,
+						renderer._baking_viewport.size.y
+					)
+				else:
+					paint.texture_units = renderer.attr_pattern_units
+				paint.texture_uv_transform = renderer.attr_pattern_transform
+				paint.texture = pattern_texture
 		else:
 			free_paint_server_texture(reference_renderer, server_name)
 			paint.color = attr_paint.color
@@ -242,19 +284,26 @@ static func resolve_paint(reference_renderer, attr_paint, server_name: String):
 static func store_paint_server_texture(reference_renderer, store_name: String, server_response: Dictionary):
 	free_paint_server_texture(reference_renderer, store_name)
 	reference_renderer._paint_server_textures[store_name] = server_response
-	if server_response.has("viewport"):
+	if server_response.has("viewport") or server_response.has("renderer"):
 		if reference_renderer._paint_server_container_node == null:
 			reference_renderer._paint_server_container_node = Node2D.new()
 			reference_renderer._paint_server_container_node.set_name("PaintServerAssets")
-			.add_child(reference_renderer._paint_server_container_node)
-		reference_renderer._paint_server_container_node.add_child(server_response.viewport)
+			reference_renderer._add_child_direct(reference_renderer._paint_server_container_node)
+		if server_response.has("renderer"):
+			reference_renderer._paint_server_container_node.add_child(server_response.renderer)
+			if server_response.has("view_box") and server_response.renderer.has_method("update_as_user"):
+				server_response.renderer.update_as_user(server_response.view_box)
+		else:
+			reference_renderer._paint_server_container_node.add_child(server_response.viewport)
 	return server_response.texture
 
 static func free_paint_server_texture(reference_renderer, store_name: String):
 	if reference_renderer._paint_server_textures.has(store_name):
 		var old_store = reference_renderer._paint_server_textures[store_name]
-		if old_store.has("viewport"):
+		if old_store.has("renderer") and is_instance_valid(old_store.renderer):
+			old_store.renderer.queue_free()
+		if old_store.has("viewport") and is_instance_valid(old_store.viewport):
 			old_store.viewport.queue_free()
-		if old_store.has("texture_rect"):
+		if old_store.has("texture_rect") and is_instance_valid(old_store.texture_rect):
 			old_store.texture_rect.queue_free()
 	reference_renderer._paint_server_textures.erase(store_name)
