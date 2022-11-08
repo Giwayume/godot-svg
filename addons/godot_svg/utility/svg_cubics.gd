@@ -209,6 +209,9 @@ static func H(d: Array, t: float, s: float):
 	)
 
 static func evaluate_control_points(control_points: Array):
+	var vertices = PoolVector2Array()
+	var implicit_coordinates = PoolVector3Array()
+	
 	var B = Matrix.new([
 		[0.0, 0.0, 1.0],
 		[0.0, 0.0, 1.0],
@@ -255,6 +258,17 @@ static func evaluate_control_points(control_points: Array):
 			min_y = control_points[i].y
 		if control_points[i].y > max_y:
 			max_y = control_points[i].y
+	
+	if max_x - min_x == 0.0 or max_y - min_y == 0.0:
+		for i in range(0, 4):
+			vertices.push_back(Vector2.ZERO)
+			implicit_coordinates.push_back(Vector3.ZERO)
+		return {
+			"vertices": vertices,
+			"implicit_coordinates": implicit_coordinates,
+			"needs_subdivision_at": [],
+		}
+	
 	for i in range(0, 4):
 		B.rows[i] = [
 			(control_points[i].x - min_x) / (max_x - min_x),
@@ -441,10 +455,7 @@ static func evaluate_control_points(control_points: Array):
 		
 			else:
 				classification = CurveClass.LINE_OR_POINT
-
-	var vertices = PoolVector2Array()
-	var implicit_coordinates = PoolVector3Array()
-
+	
 	var order = [1, 0, 2, 3]
 	if (
 		classification == CurveClass.SERPENTINE or

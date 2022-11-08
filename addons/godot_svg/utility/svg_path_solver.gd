@@ -2,6 +2,7 @@ class_name SVGPathSolver
 
 const PATH_SEGMENTATION_MIN = 5
 const PATH_SEGMENTATION_MAX = 1024
+const PATH_SEGMENTATION_SEGMENT_SIZE = 5.0
 const PathCommand = SVGValueConstant.PathCommand
 
 enum FillRule {
@@ -14,12 +15,14 @@ enum FillRule {
 class PathShape:
 	var length
 	var segments = []
+	var intersection_check_length
 	var bounding_box
 	var intersections = []
 	var exit_direction = Vector2.ZERO
 	var pend
+	var path_end_is_close = false # This shape closes the path, special handling needed here to prevent intersection artifacts
 	
-	func intersect_with(other_shape):
+	func intersect_with(other_shape, is_include_self_start_point = false, is_include_other_start_point = false):
 		var new_intersections = []
 		if (
 			bounding_box.position.x + bounding_box.size.x < other_shape.bounding_box.position.x or
@@ -30,19 +33,27 @@ class PathShape:
 			return new_intersections
 		
 		var self_segment_range = segments.size() - 1
+		var a_length = 0.0
 		for i in range(0, self_segment_range):
 			var a0 = segments[i]
 			var a1 = segments[i + 1]
 			var other_segment_range = other_shape.segments.size() - 1
+			var b_length = 0.0
 			for j in range(0, other_segment_range):
 				var b0 = other_shape.segments[j]
 				var b1 = other_shape.segments[j + 1]
 				var intersection = Geometry.segment_intersects_segment_2d(a0, a1, b0, b1)
-				if intersection != null and not intersection.is_equal_approx(a0) and not intersection.is_equal_approx(b0):
+				if (
+					intersection != null and
+					((is_include_self_start_point and i == 0) or not intersection.is_equal_approx(a0)) and
+					((is_include_other_start_point and j == 0) or not intersection.is_equal_approx(b0)) and
+					not (path_end_is_close and intersection.is_equal_approx(a1))
+				):
+					print_debug(intersection_check_length, " ", a_length, " ", b_length)
 					var new_intersection = {
 						"point": intersection,
-						"self_t": (i / (self_segment_range + 1)) + SVGMath.point_distance_along_segment(a0, a1, intersection) / length,
-						"other_t": (j / (other_segment_range + 1)) + SVGMath.point_distance_along_segment(b0, b1, intersection) / other_shape.length,
+						"self_t": (a_length / intersection_check_length) + SVGMath.point_distance_along_segment(a0, a1, intersection) / intersection_check_length,
+						"other_t": (b_length / other_shape.intersection_check_length) + SVGMath.point_distance_along_segment(b0, b1, intersection) / other_shape.intersection_check_length,
 					}
 					new_intersections.push_back(new_intersection)
 					intersections.push_back(new_intersection)
@@ -51,6 +62,8 @@ class PathShape:
 						"self_t": new_intersection.other_t,
 						"other_t": new_intersection.self_t,
 					})
+				b_length += b0.distance_to(b1)
+			a_length += a0.distance_to(a1)
 		return new_intersections
 	
 	func find_self_intersections():
@@ -66,8 +79,8 @@ class PathShape:
 				if intersection != null and not intersection.is_equal_approx(a0) and not intersection.is_equal_approx(b0):
 					var new_intersection = {
 						"point": intersection,
-						"t1": (i / (self_segment_range + 1)) + SVGMath.point_distance_along_segment(a0, a1, intersection) / length,
-						"t2": (j / (self_segment_range + 1)) + SVGMath.point_distance_along_segment(b0, b1, intersection) / length,
+						"t1": (i / (self_segment_range + 1)) + SVGMath.point_distance_along_segment(a0, a1, intersection) / intersection_check_length,
+						"t2": (j / (self_segment_range + 1)) + SVGMath.point_distance_along_segment(b0, b1, intersection) / intersection_check_length,
 					}
 		return self_intersections
 	
@@ -87,11 +100,13 @@ class PathSegment extends PathShape:
 	var p0
 	var p1
 	
-	func _init(new_p0, new_p1):
+	func _init(new_p0, new_p1, is_closing_line = false):
 		p0 = new_p0
 		p1 = new_p1
 		pend = new_p1
+		path_end_is_close = is_closing_line
 		length = p0.distance_to(p1)
+		intersection_check_length = length
 		segments = [p0, p1]
 		_compute_bounding_box()
 		exit_direction = find_direction_at(1.0)
@@ -126,6 +141,16 @@ class PathSegment extends PathShape:
 	func to_array():
 		return [p0, p1]
 	
+	func to_string():
+		return "segment(" + JSON.print(to_array()) + ")"
+	
+	func get_inside_check_point(rotation_direction):
+		return (
+			p0 +
+			(find_direction_at(0.0).rotated(rotation_direction * PI / 128) *
+			(pend - p0).length() / 128)
+		)
+	
 class PathQuadraticBezier extends PathShape:
 	var p0
 	var p1
@@ -142,9 +167,14 @@ class PathQuadraticBezier extends PathShape:
 		exit_direction = find_direction_at(1.0)
 	
 	func _compute_segments():
-		var resolution = min(PATH_SEGMENTATION_MAX, max(PATH_SEGMENTATION_MIN, floor(length / 5.0)))
+		intersection_check_length = 0.0
+		var resolution = min(PATH_SEGMENTATION_MAX, max(PATH_SEGMENTATION_MIN, floor(length / PATH_SEGMENTATION_SEGMENT_SIZE)))
+		var previous_segment = p0
 		for i in range(0, resolution + 1):
-			segments.push_back(SVGMath.quadratic_bezier_at(p0, p1, p2, i / resolution))
+			var new_segment = SVGMath.quadratic_bezier_at(p0, p1, p2, i / resolution)
+			intersection_check_length += previous_segment.distance_to(new_segment)
+			segments.push_back(new_segment)
+			previous_segment = new_segment
 	
 	func _compute_bounding_box():
 		var control_points = [p0, p1, p2]
@@ -152,9 +182,15 @@ class PathQuadraticBezier extends PathShape:
 	
 	func find_direction_at(t):
 		var epsilon = 0.00001
+		if t == 0.0:
+			var control_point = p1 if p1 != p0 else p2
+			return p0.direction_to(control_point)
 		if t == 1.0:
-			t -= epsilon
-		return SVGMath.quadratic_bezier_at(p0, p1, p2, t - epsilon).direction_to(SVGMath.quadratic_bezier_at(p0, p1, p2, t + epsilon))
+			var control_point = p1 if p1 != p2 else p0
+			return control_point.direction_to(p2)
+		var start_t = min(1, max(0, t - epsilon))
+		var end_t = min(1, max(0, t + epsilon))
+		return SVGMath.quadratic_bezier_at(p0, p1, p2, start_t).direction_to(SVGMath.quadratic_bezier_at(p0, p1, p2, end_t))
 	
 	func slice(start_t, end_t):
 		var is_reversed = false
@@ -178,6 +214,16 @@ class PathQuadraticBezier extends PathShape:
 	
 	func to_array():
 		return [p0, p1, p2]
+	
+	func to_string():
+		return "quadratic(" + JSON.print(to_array()) + ")"
+	
+	func get_inside_check_point(rotation_direction):
+		return (
+			segments[0] +
+			((segments[0].direction_to(segments[1])).rotated(rotation_direction * PI / 128) *
+			(segments[1] - segments[0]).length() / 64)
+		)
 
 class PathCubicBezier extends PathShape:
 	var p0
@@ -197,9 +243,14 @@ class PathCubicBezier extends PathShape:
 		exit_direction = find_direction_at(1.0)
 	
 	func _compute_segments():
-		var resolution = min(PATH_SEGMENTATION_MAX, max(PATH_SEGMENTATION_MIN, floor(length / 5.0)))
+		intersection_check_length = 0.0
+		var resolution = min(PATH_SEGMENTATION_MAX, max(PATH_SEGMENTATION_MIN, floor(length / PATH_SEGMENTATION_SEGMENT_SIZE)))
+		var previous_segment = p0
 		for i in range(0, resolution + 1):
-			segments.push_back(SVGMath.cubic_bezier_at(p0, p1, p2, p3, i / resolution))
+			var new_segment = SVGMath.cubic_bezier_at(p0, p1, p2, p3, i / resolution)
+			intersection_check_length += previous_segment.distance_to(new_segment)
+			segments.push_back(new_segment)
+			previous_segment = new_segment
 	
 	func _compute_bounding_box():
 		var control_points = [p0, p1, p2, p3]
@@ -207,9 +258,15 @@ class PathCubicBezier extends PathShape:
 	
 	func find_direction_at(t):
 		var epsilon = 0.00001
+		if t == 0.0:
+			var control_point = p1 if p1 != p0 else p2
+			return p0.direction_to(control_point)
 		if t == 1.0:
-			t -= epsilon
-		return SVGMath.cubic_bezier_at(p0, p1, p2, p3, t - epsilon).direction_to(SVGMath.cubic_bezier_at(p0, p1, p2, p3, t + epsilon))
+			var control_point = p2 if p2 != p3 else p1
+			return control_point.direction_to(p3)
+		var start_t = min(1, max(0, t - epsilon))
+		var end_t = min(1, max(0, t + epsilon))
+		return SVGMath.cubic_bezier_at(p0, p1, p2, p3, start_t).direction_to(SVGMath.cubic_bezier_at(p0, p1, p2, p3, end_t))
 	
 	func slice(start_t, end_t):
 		var is_reversed = false
@@ -225,7 +282,11 @@ class PathCubicBezier extends PathShape:
 				return PathCubicBezier.new(p0, p1, p2, p3)
 		else:
 			var left_split = SVGMath.split_cubic_bezier(p0, p1, p2, p3, start_t)
-			var right_split = SVGMath.split_cubic_bezier(left_split[3], left_split[4], left_split[5], left_split[6], (end_t - start_t) / (1.0 - start_t))
+			var right_split = (
+				SVGMath.split_cubic_bezier(left_split[3], left_split[4], left_split[5], left_split[6], (end_t - start_t) / (1.0 - start_t))
+				if start_t < 1.0 else
+				[p3, p3, p3, p3, p3, p3, p3]
+			)
 			if is_reversed:
 				return PathCubicBezier.new(right_split[3], right_split[2], right_split[1], right_split[0])
 			else:
@@ -233,6 +294,16 @@ class PathCubicBezier extends PathShape:
 	
 	func to_array():
 		return [p0, p1, p2, p3]
+	
+	func to_string():
+		return "cubic(" + JSON.print(to_array()) + ")"
+	
+	func get_inside_check_point(rotation_direction):
+		return (
+			segments[0] +
+			((segments[0].direction_to(segments[1])).rotated(rotation_direction * PI / 128) *
+			(segments[1] - segments[0]).length() / 64)
+		)
 
 static func get_path_loop_range(loop_ranges, current_index):
 	for loop_range in loop_ranges:
@@ -352,11 +423,19 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 	var shape_loop_ranges = []
 	var current_loop_start = 0
 	var current_point = Vector2()
+	var current_loop_start_point = Vector2()
+	
 	for i in range(0, paths.size()):
+		var previous_instruction = paths[i - 1] if i > 0 else null
 		var command = paths[i].command
 		var points = paths[i].points if paths[i].has("points") else []
+		var is_implicit_path_close = previous_instruction != null and paths[i].command == PathCommand.MOVE_TO and previous_instruction.command != PathCommand.CLOSE_PATH
+		
 		match command:
 			PathCommand.MOVE_TO:
+				if is_implicit_path_close and not current_point.is_equal_approx(points[0]):
+					path_shapes.push_back(PathSegment.new(current_point, points[0], true))
+				current_loop_start_point = points[0]
 				current_point = points[0]
 			PathCommand.LINE_TO:
 				path_shapes.push_back(PathSegment.new(current_point, points[0]))
@@ -368,10 +447,14 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 				path_shapes.push_back(PathCubicBezier.new(current_point, points[0], points[1], points[2]))
 				current_point = points[2]
 		
+		var is_end_of_paths = (i == paths.size() - 1 and current_loop_start < i)
 		if (
 			paths[i].command == PathCommand.CLOSE_PATH or
-			(i == paths.size() - 1 and current_loop_start < i)
+			is_implicit_path_close or
+			is_end_of_paths
 		):
+			if is_end_of_paths and not current_point.is_equal_approx(current_loop_start_point):
+				path_shapes.push_back(PathSegment.new(current_point, current_loop_start_point))
 			shape_loop_ranges.push_back({
 				"start": current_loop_start,
 				"end": path_shapes.size() - 1,
@@ -390,10 +473,10 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 		var next_path_shape = path_shapes[i + 1 if i < path_shapes_size - 1 else 0]
 		var current_loop_range = shape_loop_ranges[current_loop_range_index]
 		current_path_bounding_box = apply_shape_to_bounding_box(current_path_bounding_box, path_shape)
-		if i > 1:
-			for j in range(0, i - 1):
+		if i >= 1:
+			for j in range(0, i):
 				var other_path_shape = path_shapes[j]
-				var new_intersections = path_shape.intersect_with(other_path_shape)
+				var new_intersections = path_shape.intersect_with(other_path_shape, j != i - 1, true)
 				if new_intersections.size() > 0:
 					current_loop_range_has_any_intersection = true
 					for new_intersection in new_intersections:
@@ -436,6 +519,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 			current_loop_range_rotation = 0.0
 			current_path_bounding_box = create_new_bounding_box()
 	
+	
 	# For each intersection point, follow the intersection lines forward, then take right turns until it comes back to the initial point
 	if intersections.size() > 0:
 		current_path_bounding_box = create_new_bounding_box()
@@ -455,7 +539,9 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 				var final_rotation = 0.0
 				var infinite_loop_iterator = 0
 				var existing_solutions = []
-				while infinite_loop_iterator < 100000:
+				var encountered_intersections = [intersection]
+				var did_path_return_to_start = false
+				while infinite_loop_iterator < 1000: # If you need paths with 1000+ instructions open an issue. Performance is bad.
 					infinite_loop_iterator += 1
 					var next_intersection = null
 					var next_intersection_t = 0.0
@@ -474,9 +560,12 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 									break
 					
 					# If next intersection is our starting intersection, we're done
-					if next_intersection == intersection:
-						new_path_current_range[1] = current_shape_index
-						new_path_ranges.push_back(new_path_current_range)
+					if encountered_intersections.has(next_intersection):
+						if next_intersection == intersection:
+							# TODO - add rest of shape to path?
+							did_path_return_to_start = true
+							new_path_current_range[1] = current_shape_index
+							new_path_ranges.push_back(new_path_current_range)
 						break
 					
 					# Find which path at the intersection is the closest right turn, and take it
@@ -487,8 +576,9 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 								next_intersection_t
 							)
 						)
+						encountered_intersections.push_back(next_intersection)
 						
-						var entry_direction = current_shape.find_direction_at(next_intersection_t)
+						var entry_direction = traverse_direction * current_shape.find_direction_at(next_intersection_t)
 						var closest_angle = INF
 						var winning_index = -1
 						var winning_t = 0.0
@@ -496,14 +586,21 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 							var check_shape_index = next_intersection.intersected_shape_indices[check_shape_array_index]
 							var current_check_t = next_intersection.intersected_shape_t[check_shape_array_index]
 							var check_direction = path_shapes[check_shape_index].find_direction_at(current_check_t)
+							var check_loop_range = get_path_loop_range(shape_loop_ranges, check_shape_index)
+							var is_check_positive_angle = not (current_check_t < 1.0 and check_shape_index == check_loop_range.end)
+							var is_check_negative_angle = not (current_check_t > 0.0 and check_shape_index == check_loop_range.start)
 							var positive_angle = check_direction.angle_to(-entry_direction)
 							var negative_angle = -check_direction.angle_to(-entry_direction)
-							if positive_angle > 0 and positive_angle < closest_angle:
+							if positive_angle < 0.0:
+								positive_angle = PI + abs(positive_angle)
+							if negative_angle < 0.0:
+								negative_angle = PI + abs(negative_angle)
+							if is_check_positive_angle and positive_angle > 0 and positive_angle < closest_angle:
 								closest_angle = positive_angle
 								winning_index = check_shape_index
 								winning_t = current_check_t
 								traverse_direction = 1
-							elif negative_angle > 0 and negative_angle < closest_angle:
+							elif is_check_negative_angle and negative_angle > 0 and negative_angle < closest_angle:
 								closest_angle = negative_angle
 								winning_index = check_shape_index
 								winning_t = current_check_t
@@ -535,12 +632,14 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 					
 					# No intersection found, keep looping through current path segments
 					else:
-						new_path.push_back(
-							current_shape.slice(
-								check_t,
-								(1.0 if traverse_direction > 0.0 else 0.0)
-							)
+						if check_t > 0.014967 and check_t < 0.014969:
+							check_t = 0.14968
+						var new_sliced_shape = current_shape.slice(
+							check_t,
+							(1.0 if traverse_direction > 0.0 else 0.0)
 						)
+						print_debug(check_t, " ", current_shape.to_string(), " ", new_sliced_shape.to_string())
+						new_path.push_back(new_sliced_shape)
 						
 						current_path_bounding_box = apply_shape_to_bounding_box(current_path_bounding_box, current_shape)
 						
@@ -554,32 +653,39 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 							has_looped_from_beginning = true
 						
 						var next_shape = path_shapes[current_shape_index]
+						var check_t_half_to_end = ((1.0 if traverse_direction > 0.0 else 0.0) + check_t) / 2.0
 						final_rotation += current_shape.find_direction_at(check_t).angle_to(
-							traverse_direction * next_shape.find_direction_at(1.0 if traverse_direction > 0.0 else 0.0)
+							current_shape.find_direction_at(check_t_half_to_end)
 						)
-						
+						final_rotation += current_shape.find_direction_at(1.0 if traverse_direction > 0.0 else 0.0).angle_to(
+							traverse_direction * next_shape.find_direction_at(0.0 if traverse_direction > 0.0 else 1.0)
+						)
+						final_rotation += current_shape.find_direction_at(1.0 if traverse_direction > 0.0 else 0.0).angle_to(
+							traverse_direction * next_shape.find_direction_at(0.0 if traverse_direction > 0.0 else 1.0)
+						)
 						check_t = 0.0 if traverse_direction > 0.0 else 1.0
 				
-				var trumps_all_existing_solutions = true
-				if existing_solutions.size() > 0:
-					for existing_solution in existing_solutions:
-						if not is_path_subset_of_path(
-							existing_solution.intersection.solved[str(existing_solution.shape_index) + "_" + str(existing_solution.shape_t)].path,
-							new_path
-						):
-							trumps_all_existing_solutions = false
-							break
-					if trumps_all_existing_solutions:
+				if did_path_return_to_start:
+					var trumps_all_existing_solutions = true
+					if existing_solutions.size() > 0:
 						for existing_solution in existing_solutions:
-							existing_solution.intersection.solved.erase(str(existing_solution.shape_index) + "_" + str(existing_solution.shape_t))
-				if trumps_all_existing_solutions:
-					intersection.solved[str(shape_start_index) + "_" + str(shape_start_t)] = {
-						"path": new_path,
-						"path_ranges": new_path_ranges,
-						"bounding_box": current_path_bounding_box,
-						"is_clockwise": final_rotation > 0.0,
-					}
-					current_path_bounding_box = create_new_bounding_box()
+							if not is_path_subset_of_path(
+								existing_solution.intersection.solved[str(existing_solution.shape_index) + "_" + str(existing_solution.shape_t)].path,
+								new_path
+							):
+								trumps_all_existing_solutions = false
+								break
+						if trumps_all_existing_solutions:
+							for existing_solution in existing_solutions:
+								existing_solution.intersection.solved.erase(str(existing_solution.shape_index) + "_" + str(existing_solution.shape_t))
+					if trumps_all_existing_solutions:
+						intersection.solved[str(shape_start_index) + "_" + str(shape_start_t)] = {
+							"path": new_path,
+							"path_ranges": new_path_ranges,
+							"bounding_box": current_path_bounding_box,
+							"is_clockwise": final_rotation > 0.0,
+						}
+						current_path_bounding_box = create_new_bounding_box()
 		
 		for intersection in intersections:
 			for solved_key in intersection.solved:
@@ -587,6 +693,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 	
 	# Apply fill rule
 	var filled_paths = []
+	var filled_paths_clockwise_checks = []
 	var filled_paths_solved_path_indices = []
 	var hole_paths = []
 	var hole_candidates = []
@@ -594,11 +701,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 	for solved_path_info in solved_paths:
 		var solved_path = solved_path_info.path
 		var is_clockwise = solved_path_info.is_clockwise
-		var check_point = (
-			solved_path[0].p0 +
-			(solved_path[0].p0.direction_to(solved_path[0].pend).rotated(PI / 128 if is_clockwise else -PI / 128)) *
-			(solved_path[0].pend - solved_path[0].p0).length() / 128
-		)
+		var check_point = solved_path[0].get_inside_check_point(1.0 if is_clockwise else -1.0)
 		var insideness = 0
 		var is_hole_candidate = false
 		var closest_hit_shape_index = -1
@@ -640,8 +743,10 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 				if insideness != 0:
 					is_filled = true
 		
+		is_filled = true # TODO - remove
 		if is_filled:
 			filled_paths.push_back(solved_path)
+			filled_paths_clockwise_checks.push_back(is_clockwise)
 			filled_paths_solved_path_indices.push_back(current_solved_path_index)
 			hole_paths.push_back([])
 		elif is_hole_candidate:
@@ -678,9 +783,9 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 			)
 		instruction_groups.push_back({
 			"fill_instructions": fill_instructions,
+			"is_clockwise": filled_paths_clockwise_checks[path_index],
 			"hole_instructions": hole_instructions,
 		})
-	
 	return instruction_groups
 
 static func dash_array(path_reference: Array, dash_array: Array, dash_offset: float):

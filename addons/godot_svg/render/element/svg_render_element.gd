@@ -198,6 +198,7 @@ func _process_simplified_polygon():
 	var time_start = OS.get_system_time_msecs()
 	var polygons = _process_polygon()
 	var simplified_fills = []
+	var simplified_fill_clockwise_checks = []
 	var simplified_holes = []
 	
 	if polygons.has("fill"):
@@ -207,6 +208,7 @@ func _process_simplified_polygon():
 		
 		if polygons.has("is_simple_shape") and polygons.is_simple_shape:
 			simplified_fills = polygons.fill
+			simplified_fill_clockwise_checks.push_back(null)
 			simplified_holes = [[]]
 		else:
 			var fill_rule = attr_fill_rule
@@ -223,18 +225,25 @@ func _process_simplified_polygon():
 					var simplified_hole = path_simplification.hole_instructions
 					if simplified_fill.size() > 0:
 						simplified_fills.push_back(simplified_fill)
+						simplified_fill_clockwise_checks.push_back(path_simplification.is_clockwise)
 					else:
 						print("\nError occurred when simplifying fill path ", fill_path)
 						simplified_fills.push_back(fill_path)
+						simplified_fill_clockwise_checks.push_back(null)
 					simplified_holes.push_back(simplified_hole)
-			
 	
 	var triangulated_fills = []
 	var simplified_fill_index = 0
 	for simplified_fill in simplified_fills:
 		if simplified_fill[0] is Dictionary:
-			var fill_triangulation = SVGTriangulation.triangulate_fill_path(simplified_fill, simplified_holes[simplified_fill_index])
-			triangulated_fills.push_back(fill_triangulation)
+			print_debug(SVGAttributeParser.serialize_d(simplified_fill))
+			var fill_triangulation = SVGTriangulation.triangulate_fill_path(simplified_fill, simplified_holes[simplified_fill_index], simplified_fill_clockwise_checks[simplified_fill_index])
+			if (
+				fill_triangulation.interior_vertices.size() > 0 or
+				fill_triangulation.quadratic_vertices.size() > 0 or
+				fill_triangulation.cubic_vertices.size() > 0
+			):
+				triangulated_fills.push_back(fill_triangulation)
 		else:
 			pass
 		simplified_fill_index += 1

@@ -1,5 +1,27 @@
 class_name SVGMath
 
+# De Casteljau's algorithm splitting n-th degree Bezier curve
+# https://gist.github.com/balint42/8c9310605df9305c42b3
+static func split_bezier(points: Array, t0: float):
+	var n = points.size() - 1
+	var b = []
+	var res1 = []
+	var res2 = []
+	var t1 = 1.0 - t0
+	for i in range(0, n + 1):
+		points[i] = points[i] if points[i] is Vector2 else [points[i]]
+		b.push_back([ points[i] ])
+	for j in range(1, n + 1):
+		for i in range(0, (n - j) + 1):
+			b[i].push_back(
+				(b[i][j-1] * t1) +
+				(b[i+1][j-1] * t0)
+			)
+	for j in range(0, n + 1):
+		res1.push_back(b[0][j])
+		res2.push_back(b[j][n-j])
+	return [res1, res2]
+
 # Gives a position vector for 3 points and timestamp that form a quadratic beizer curve
 # p0 - start, p1 - control, p2 - end, t - timestamp from 0 to 1
 # Excellent explanation here https://gamedev.stackexchange.com/questions/157642/moving-a-2d-object-along-circular-arc-between-two-points
@@ -145,12 +167,14 @@ static func cubic_bezier_bounds(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vecto
 	if p3.x < xl: xl = p3.x
 	if p3.x > xh: xh = p3.x
 	if disc >= 0:
-		var t1 = (-b + sqrt(disc)) / (2 * a)
+		var divisor = (2 * a)
+		if divisor == 0.0: divisor = 0.000001
+		var t1 = (-b + sqrt(disc)) / divisor
 		if t1 > 0 and t1 < 1:
 			var x1 = cubic_bezier_at_one_axis(p0.x, p1.x, p2.x, p3.x, t1)
 			if x1 < xl: xl = x1
 			if x1 > xh: xh = x1
-		var t2 = (-b - sqrt(disc)) / (2 * a)
+		var t2 = (-b - sqrt(disc)) / divisor
 		if t2 > 0 and t2 < 1:
 			var x2 = cubic_bezier_at_one_axis(p0.x, p1.x, p2.x, p3.x, t2);
 			if x2 < xl: xl = x2
@@ -164,12 +188,14 @@ static func cubic_bezier_bounds(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vecto
 	if p3.y < yl: yl = p3.y
 	if p3.y > yh: yh = p3.y
 	if disc >= 0:
-		var t1 = (-b + sqrt(disc)) / (2 * a)
+		var divisor = (2 * a)
+		if divisor == 0.0: divisor = 0.000001
+		var t1 = (-b + sqrt(disc)) / divisor
 		if t1 > 0 and t1 < 1:
 			var y1 = cubic_bezier_at_one_axis(p0.y, p1.y, p2.y, p3.y, t1)
 			if y1 < yl: yl = y1
 			if y1 > yh: yh = y1
-		var t2 = (-b - sqrt(disc)) / (2 * a)
+		var t2 = (-b - sqrt(disc)) / divisor
 		if t2 > 0 and t2 < 1:
 			var y2 = cubic_bezier_at_one_axis(p0.y, p1.y, p2.y, p3.y, t2)
 			if y2 < yl: yl = y2
@@ -188,7 +214,7 @@ static func split_cubic_bezier(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector
 	var y3 = p2.y
 	var x4 = p3.x
 	var y4 = p3.y
-	
+
 	var x12 = (x2 - x1) * t + x1
 	var y12 = (y2 - y1) * t + y1
 
@@ -206,7 +232,7 @@ static func split_cubic_bezier(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector
 
 	var x1234 = (x234 - x123) * t + x123
 	var y1234 = (y234 - y123) * t + y123
-	
+
 	return [
 		Vector2(x1, y1),
 		Vector2(x12, y12),
@@ -252,11 +278,10 @@ static func is_point_right_of_segment(segment_start: Vector2, segment_end: Vecto
 	
 	return false
 
-# If you have the coordinate of a point along a segment, finds the distance from the start of the segment to that point.
+# If you have the coordinate of a point along a segment, finds the intersection at that point.
 # If the point isn't on the segment:
 # Projects a line perpendicular to the specified segment that intersects "point".
-# The distance from the start of the segment to the intersection point of the segment & the perpendicular is returned.
-static func point_distance_along_segment(segment_start: Vector2, segment_end: Vector2, point: Vector2):
+static func point_intersection_along_segment(segment_start: Vector2, segment_end: Vector2, point: Vector2):
 	var x1 = segment_start.x
 	var y1 = segment_start.y
 	var x2 = segment_end.x
@@ -269,7 +294,21 @@ static func point_distance_along_segment(segment_start: Vector2, segment_end: Ve
 	var u = ((x3 - x1) * px + (y3 - y1) * py) / dab
 	var x = x1 + u * px
 	var y = y1 + u * py
-	return segment_start.distance_to(Vector2(x, y))
+	return Vector2(x, y)
+
+static func point_distance_along_segment(segment_start: Vector2, segment_end: Vector2, point: Vector2):
+	var intersection = point_intersection_along_segment(segment_start, segment_end, point)
+	return segment_start.distance_to(intersection)
+
+static func intersect_point_segment(segment_start: Vector2, segment_end: Vector2, point: Vector2):
+	var ab = point - segment_start
+	var ac = segment_end - segment_start
+	if ab.cross(ac) == 0:
+		var dot_ab = ab.dot(ab)
+		var dot_ac = ac.dot(ac)
+		if dot_ac >= 0 or dot_ac <= dot_ab:
+			return point_intersection_along_segment(segment_start, segment_end, point)
+	return null
 
 static func triangle_intersects_triangle_cross(points, triangle):
 	var pa = points[0]

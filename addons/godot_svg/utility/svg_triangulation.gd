@@ -183,13 +183,19 @@ static func find_path_direction_at(path: Array, path_index: int, is_start: bool,
 					PathCommand.MOVE_TO, PathCommand.LINE_TO:
 						if instruction.command == PathCommand.MOVE_TO and is_start:
 							if path_index < path_size - 1:
-								match path[path_index + 1].command:
+								var next_instruction = path[path_index + 1]
+								match next_instruction.command:
 									PathCommand.LINE_TO:
 										return instruction.points[0].direction_to(path[path_index + 1].points[0])
 									PathCommand.QUADRATIC_BEZIER_CURVE:
-										return SVGMath.quadratic_bezier_at(p0, p1, p2, 0.0 - epsilon).direction_to(SVGMath.quadratic_bezier_at(p0, p1, p2, epsilon))
+										return SVGMath.quadratic_bezier_at(instruction.points[0], next_instruction.points[0], next_instruction.points[1], 0.0 - epsilon).direction_to(
+											SVGMath.quadratic_bezier_at(instruction.points[0], next_instruction.points[0], next_instruction.points[1], epsilon)
+										)
 									PathCommand.CUBIC_BEZIER_CURVE:
-										return SVGMath.cubic_bezier_at(p0, p1, p2, p3, 0.0 - epsilon).direction_to(SVGMath.cubic_bezier_at(p0, p1, p2, p3, epsilon))
+										print_debug(next_instruction.points)
+										return SVGMath.cubic_bezier_at(instruction.points[0], next_instruction.points[0], next_instruction.points[1], next_instruction.points[2], 0.0 - epsilon).direction_to(
+											SVGMath.cubic_bezier_at(instruction.points[0], next_instruction.points[0], next_instruction.points[1], next_instruction.points[2], epsilon)
+										)
 							else:
 								return Vector2.ZERO
 						elif passed_point != null: # Line
@@ -271,7 +277,7 @@ static func circle_segment_to_quadratic_bezier(start_point, end_point, start_dir
 # path is an array of dictionaries following the format:
 # { "command": PathCommand, "points": [Vector()] }
 # It only supports a subset of PathCommand. Points are absolute coordinates.
-static func triangulate_fill_path(path: Array, holes: Array = []):
+static func triangulate_fill_path(path: Array, holes: Array = [], override_clockwise_check = null):
 	var current_point = Vector2()
 	var current_path_start_point = current_point
 	var has_holes = holes.size() > 0
@@ -310,29 +316,29 @@ static func triangulate_fill_path(path: Array, holes: Array = []):
 			PathCommand.MOVE_TO:
 				current_point = instruction.points[0]
 				current_path_start_point = current_point
-				if not [PathCommand.MOVE_TO, PathCommand.CLOSE_PATH].has(next_instruction.command):
+				if override_clockwise_check == null and not [PathCommand.MOVE_TO, PathCommand.CLOSE_PATH].has(next_instruction.command):
 					clockwise_check_polygon.push_back(current_point)
 			PathCommand.LINE_TO:
 				control_points = [current_point, current_point, instruction.points[0]]
 				triangles_to_check.push_back([current_point, current_point, instruction.points[0]])
 				current_point = instruction.points[0]
-				clockwise_check_polygon.push_back(current_point)
+				if override_clockwise_check == null: clockwise_check_polygon.push_back(current_point)
 				evaluate_point_bounding_box(bounding_box, current_point)
 				evaluate_point_bounding_box(bounding_box, instruction.points[0])
 			PathCommand.QUADRATIC_BEZIER_CURVE:
 				control_points = [current_point, instruction.points[0], instruction.points[1]]
 				triangles_to_check = subdivide_quadratic_bezier_triangles(current_point, instruction.points[0], instruction.points[1], 1)
 				current_point = instruction.points[1]
-				clockwise_check_polygon.push_back(current_point)
+				if override_clockwise_check == null: clockwise_check_polygon.push_back(current_point)
 				evaluate_rect_bounding_box(bounding_box, SVGMath.quadratic_bezier_bounds(control_points[0], control_points[1], control_points[2]))
 			PathCommand.CUBIC_BEZIER_CURVE:
 				control_points = [current_point, instruction.points[0], instruction.points[1], instruction.points[2]]
 				triangles_to_check = subdivide_cubic_bezier_triangles(current_point, instruction.points[0], instruction.points[1], instruction.points[2], 1)
 				current_point = instruction.points[2]
-				clockwise_check_polygon.push_back(current_point)
+				if override_clockwise_check == null: clockwise_check_polygon.push_back(current_point)
 				evaluate_rect_bounding_box(bounding_box, SVGMath.cubic_bezier_bounds(control_points[0], control_points[1], control_points[2], control_points[3]))
 			PathCommand.CLOSE_PATH:
-				if not current_path_start_point.is_equal_approx(current_point):
+				if override_clockwise_check == null and not current_path_start_point.is_equal_approx(current_point):
 					clockwise_check_polygon.push_back(current_path_start_point)
 				clockwise_check_polygons.push_back(clockwise_check_polygon)
 				clockwise_check_polygon = []
@@ -369,13 +375,17 @@ static func triangulate_fill_path(path: Array, holes: Array = []):
 			"triangles": triangles_to_check,
 		})
 	
-	
-	# This method must work in a different coordinate space than Godot 2D, it gives the OPPOSITE result.
 	var clockwise_checks = []
 	for check_polygon in clockwise_check_polygons:
-		clockwise_checks.push_back(
-			!Geometry.is_polygon_clockwise(PoolVector2Array(check_polygon))
-		)
+		if override_clockwise_check != null:
+			clockwise_checks.push_back(override_clockwise_check)
+		else:
+			# This method must work in a different coordinate space than Godot 2D, it gives the OPPOSITE result.
+			clockwise_checks.push_back(
+				!Geometry.is_polygon_clockwise(PoolVector2Array(check_polygon))
+			)
+	
+#	print_debug(SVGAttributeParser.serialize_d(all_paths))
 	
 	# Rebuild path based on new tessellation from triangle intersections.
 	var cubic_evaluations = {}

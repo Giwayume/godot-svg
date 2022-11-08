@@ -123,7 +123,7 @@ _global_script_class_icons={
 [application]
 
 config/name="SVG"
-run/main_scene="res://tests/w3c_1.1_test_suite/test_scene.tscn"
+run/main_scene="res://tests/w3c_1.1_test_suite/empty_scene.tscn"
 config/icon="res://icon.png"
 
 [editor_plugins]
