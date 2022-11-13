@@ -4,6 +4,16 @@ This Godot plugin **renders SVG files at runtime**. It achieves the effect of in
 
 It is **HIGHLY RECOMMENDED** to use this plugin with the GLES3 renderer, as GLES2 does not support many of the functions used to render SVG on the GPU (dFdx/dFdy/fwidth is used for anti-aliasing).
 
+## Alpha Testing Caveats
+
+This software is in early development.
+
+1. **If your SVG has self-intersecting paths, you may see visual bugs. There is a lot of code written to solve this scenario, but it is still being worked on and there are many W3C test suite examples where it is known to not work.**
+
+2. **You may run into a problem where loading certain SVG files causes Godot to freeze, due to the path solver getting stuck in an infinite loop. To prevent this, don't use SVGs with self-intersecting paths or thin strokes.**
+
+3. **Check the support table at the bottom before reporting bugs.**
+
 ## Installation
 
 Copy the `addons/godot-svg` folder in this repository into your Godot project. Make sure the folder sits exactly at the path `res://addons/godot-svg`. If you put it somewhere else, some things like icons may break.
@@ -43,7 +53,7 @@ These nodes share a similar API.
 | Property Name | Value Type | Notes |
 |:-----|:--------------|:------|
 | svg | SVG Resource | When importing a SVG file, choose "Import As: SVG". If you try to add a SVG imported as "Texture" here, it will not work. Use Sprite instead for that. |
-| fixed_scaling_ratio | float | Setting the value above 0 bakes the resolution of masks so they are not redrawn due to scaling at runtime. A value of 1 means it is drawn to look perfect at 100% view box scale (1:1), and if you zoom in further than that you will see pixellated edges. Setting the value to 0 redraws the mask every frame. |
+| fixed_scaling_ratio | float | [This feature may not yet be working as expected]. Setting the value above 0 bakes the resolution of masks so they are not redrawn due to scaling at runtime. A value of 1 means it is drawn to look perfect at 100% view box scale (1:1), and if you zoom in further than that you will see pixellated edges. Setting the value to 0 redraws the mask every frame. |
 | antialiased | bool | Whether or not to use the antialiasing to smooth the shape edges. |
 
 
@@ -69,7 +79,7 @@ Avoid SVGs that use stylesheets like the plague. (e.g. avoid the `<style>` eleme
 
 ***Animation***
 
-Animating styling attributes that cause the shape of an element to change (such as `stroke-dasharray`, `d`, `r`) will cause the entire shape to be recalculated which can become expensive on a large scale. Animating masked or clip-path shapes regenerates viewport textures on the CPU each frame, which is even more expensive.
+[Note: svg animation not yet implemented] Animating styling attributes that cause the shape of an element to change (such as `stroke-dasharray`, `d`, `r`) will cause the entire shape to be recalculated which can become expensive on a large scale. Animating masked or clip-path shapes regenerates viewport textures on the CPU each frame, which is even more expensive.
 
 ***Basic Shapes***
 
