@@ -49,7 +49,6 @@ class PathShape:
 					((is_include_other_start_point and j == 0) or not intersection.is_equal_approx(b0)) and
 					not (path_end_is_close and intersection.is_equal_approx(a1))
 				):
-					print_debug(intersection_check_length, " ", a_length, " ", b_length)
 					var new_intersection = {
 						"point": intersection,
 						"self_t": (a_length / intersection_check_length) + SVGMath.point_distance_along_segment(a0, a1, intersection) / intersection_check_length,
@@ -433,9 +432,8 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 		
 		match command:
 			PathCommand.MOVE_TO:
-				if is_implicit_path_close and not current_point.is_equal_approx(points[0]):
-					path_shapes.push_back(PathSegment.new(current_point, points[0], true))
-				current_loop_start_point = points[0]
+				if is_implicit_path_close and not current_point.is_equal_approx(current_loop_start_point):
+					path_shapes.push_back(PathSegment.new(current_point, current_loop_start_point, true))
 				current_point = points[0]
 			PathCommand.LINE_TO:
 				path_shapes.push_back(PathSegment.new(current_point, points[0]))
@@ -460,6 +458,9 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 				"end": path_shapes.size() - 1,
 			})
 			current_loop_start = path_shapes.size()
+		
+		if command == PathCommand.MOVE_TO:
+			current_loop_start_point = points[0]
 	
 	# Loop through the path commands and build a list of intersection points,
 	# As well as a list of paths that don't intersect with anything else
@@ -473,14 +474,15 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 		var next_path_shape = path_shapes[i + 1 if i < path_shapes_size - 1 else 0]
 		var current_loop_range = shape_loop_ranges[current_loop_range_index]
 		current_path_bounding_box = apply_shape_to_bounding_box(current_path_bounding_box, path_shape)
-		if i >= 1:
-			for j in range(0, i):
+		if i >= current_loop_range.start + 1:
+			for j in range(current_loop_range.start, i):
 				var other_path_shape = path_shapes[j]
 				var new_intersections = path_shape.intersect_with(other_path_shape, j != i - 1, true)
 				if new_intersections.size() > 0:
 					current_loop_range_has_any_intersection = true
 					for new_intersection in new_intersections:
 						var is_existing_intersection = false
+						# Check if intersection point already exists, and modify it with new paths
 						for existing_intersection in intersections:
 							if existing_intersection.point.is_equal_approx(new_intersection.point):
 								existing_intersection.intersected_shape_indices.push_back(j)
@@ -489,6 +491,12 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 									intersections_at_positions[j] = []
 								if not intersections_at_positions.has(existing_intersection):
 									intersections_at_positions[j].push_back(existing_intersection)
+						# Don't count path start touching path end as an intersection
+						if i == current_loop_range.end and j == current_loop_range.start and new_intersection.self_t == 1.0 and new_intersection.other_t == 0.0:
+							is_existing_intersection = true
+							if new_intersections.size() == 1:
+								current_loop_range_has_any_intersection = false
+						# Add new intersection definition to intersections array for later use
 						if not is_existing_intersection:
 							var intersection = {
 								"point": new_intersection.point,
@@ -512,13 +520,12 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 					"path": SVGHelper.array_slice(path_shapes, current_loop_range.start, current_loop_range.end + 1),
 					"path_ranges": [[current_loop_range.start, current_loop_range.end]],
 					"bounding_box": current_path_bounding_box,
-					"is_clockwise": current_loop_range_rotation < 0.0,
+					"is_clockwise": current_loop_range_rotation > 0.0,
 				})
 			current_loop_range_index += 1
 			current_loop_range_has_any_intersection = false
 			current_loop_range_rotation = 0.0
 			current_path_bounding_box = create_new_bounding_box()
-	
 	
 	# For each intersection point, follow the intersection lines forward, then take right turns until it comes back to the initial point
 	if intersections.size() > 0:
@@ -638,7 +645,6 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 							check_t,
 							(1.0 if traverse_direction > 0.0 else 0.0)
 						)
-						print_debug(check_t, " ", current_shape.to_string(), " ", new_sliced_shape.to_string())
 						new_path.push_back(new_sliced_shape)
 						
 						current_path_bounding_box = apply_shape_to_bounding_box(current_path_bounding_box, current_shape)
@@ -679,6 +685,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 							for existing_solution in existing_solutions:
 								existing_solution.intersection.solved.erase(str(existing_solution.shape_index) + "_" + str(existing_solution.shape_t))
 					if trumps_all_existing_solutions:
+						print_debug("final clockwise ", final_rotation)
 						intersection.solved[str(shape_start_index) + "_" + str(shape_start_t)] = {
 							"path": new_path,
 							"path_ranges": new_path_ranges,

@@ -23,10 +23,15 @@ static func evaluate_rect_bounding_box(bounding_box: Dictionary, rect: Rect2):
 		bounding_box.bottom = rect.position.y + rect.size.y
 
 static func generate_uv_at_point(bounding_box: Dictionary, point: Vector2) -> Vector2:
-	return Vector2(
-		(point.x - bounding_box.left) / (bounding_box.right - bounding_box.left),
-		(point.y - bounding_box.top) / (bounding_box.bottom - bounding_box.top)
-	)
+	var x_denominator = (bounding_box.right - bounding_box.left)
+	var y_denominator = (bounding_box.bottom - bounding_box.top)
+	if x_denominator != 0.0 and y_denominator != 0.0:
+		return Vector2(
+			(point.x - bounding_box.left) / x_denominator,
+			(point.y - bounding_box.top) / y_denominator
+		)
+	else:
+		return Vector2(0.0, 0.0)
 
 static func get_outer_edge_implicit_coordinate(is_outer_edge_array):
 	var a = is_outer_edge_array[2]
@@ -192,7 +197,6 @@ static func find_path_direction_at(path: Array, path_index: int, is_start: bool,
 											SVGMath.quadratic_bezier_at(instruction.points[0], next_instruction.points[0], next_instruction.points[1], epsilon)
 										)
 									PathCommand.CUBIC_BEZIER_CURVE:
-										print_debug(next_instruction.points)
 										return SVGMath.cubic_bezier_at(instruction.points[0], next_instruction.points[0], next_instruction.points[1], next_instruction.points[2], 0.0 - epsilon).direction_to(
 											SVGMath.cubic_bezier_at(instruction.points[0], next_instruction.points[0], next_instruction.points[1], next_instruction.points[2], epsilon)
 										)
@@ -384,8 +388,6 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 			clockwise_checks.push_back(
 				!Geometry.is_polygon_clockwise(PoolVector2Array(check_polygon))
 			)
-	
-#	print_debug(SVGAttributeParser.serialize_d(all_paths))
 	
 	# Rebuild path based on new tessellation from triangle intersections.
 	var cubic_evaluations = {}
