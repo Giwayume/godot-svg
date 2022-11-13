@@ -150,7 +150,7 @@ There is a performance benefit to using basic shapes (`circle`, `ellipse`, `rect
 | missing-glyph | ![Status](./docs/not_supported_x.png) Will Not Support | Deprecated |
 | mpath | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | path | ![Status](./docs/supported_checkmark.png) Supported | |
-| pattern | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
+| pattern | ![Status](./docs/supported_checkmark.png) Supported | |
 | polygon | ![Status](./docs/supported_checkmark.png) Supported | |
 | polyline | ![Status](./docs/supported_checkmark.png) Supported | |
 | radialGradient | ![Status](./docs/supported_checkmark.png) Supported | |
