@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="100"
+   height="100"
+   viewBox="0 0 512 512"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.2.1 (0f2f062aeb, 2022-09-21, custom)"
+   sodipodi:docname="circle_with_stroke.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="tex" cx="0.5" cy="0.5" r="0.5" >
+			<stop offset="0" stop-color="#fff36e"/>
+			<stop offset=".5" stop-color="#fc4055"/>
+			<stop offset="1" stop-color="#e31587"/>
+		</radialGradient>
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <path d="M439.815,281.532C428.255,95.983,255.422,67.081,203.399,69.393S48.485,144.538,54.821,273.965
+	c0,0,131.814,204.099,216.208,204.677S451.376,467.081,439.815,281.532z M310.335,360.145 c-53.758,24.277-76.878,17.919-117.919-32.948c0,0-19.075-34.104-17.919-40.462c8.258-45.411,19.075-131.792,81.503-132.37
+	s86.127,16.185,116.763,65.896C403.398,269.971,364.093,335.867,310.335,360.145z" fill="url(#tex)"/>
+  </g>
+</svg>

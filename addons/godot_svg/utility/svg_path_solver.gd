@@ -685,7 +685,6 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 							for existing_solution in existing_solutions:
 								existing_solution.intersection.solved.erase(str(existing_solution.shape_index) + "_" + str(existing_solution.shape_t))
 					if trumps_all_existing_solutions:
-						print_debug("final clockwise ", final_rotation)
 						intersection.solved[str(shape_start_index) + "_" + str(shape_start_t)] = {
 							"path": new_path,
 							"path_ranges": new_path_ranges,

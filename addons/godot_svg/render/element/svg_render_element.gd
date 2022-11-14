@@ -200,6 +200,8 @@ func _process_simplified_polygon():
 	var simplified_fills = []
 	var simplified_fill_clockwise_checks = []
 	var simplified_holes = []
+	var needs_refill = false
+	var needs_restroke = false
 	
 	if polygons.has("fill"):
 		if polygons.fill.size() > 0:
@@ -232,11 +234,11 @@ func _process_simplified_polygon():
 						simplified_fill_clockwise_checks.push_back(null)
 					simplified_holes.push_back(simplified_hole)
 	
+	var bounds = { "left": INF, "right": -INF, "top": INF, "bottom": -INF }
 	var triangulated_fills = []
 	var simplified_fill_index = 0
 	for simplified_fill in simplified_fills:
 		if simplified_fill[0] is Dictionary:
-			print_debug(SVGAttributeParser.serialize_d(simplified_fill))
 			var fill_triangulation = SVGTriangulation.triangulate_fill_path(simplified_fill, simplified_holes[simplified_fill_index], simplified_fill_clockwise_checks[simplified_fill_index])
 			if (
 				fill_triangulation.interior_vertices.size() > 0 or
@@ -244,9 +246,20 @@ func _process_simplified_polygon():
 				fill_triangulation.cubic_vertices.size() > 0
 			):
 				triangulated_fills.push_back(fill_triangulation)
+				SVGTriangulation.evaluate_rect_bounding_box(bounds, fill_triangulation.bounding_box)
 		else:
 			pass
 		simplified_fill_index += 1
+	
+	var is_recalculate_paint = false
+	if _bounding_box.size == Vector2.ZERO:
+		_rerender_prop_cache.erase("stroke")
+		_rerender_prop_cache.erase("fill")
+		is_recalculate_paint = true
+	_bounding_box = Rect2(bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top)
+	if is_recalculate_paint:
+		needs_refill = true
+		needs_restroke = true
 	
 	var triangulated_strokes = []
 	if polygons.has("stroke"):
@@ -293,7 +306,9 @@ func _process_simplified_polygon():
 	
 	return {
 		"fill": triangulated_fills,
+		"needs_refill": needs_refill,
 		"stroke": triangulated_strokes,
+		"needs_restroke": needs_restroke,
 	}
 
 func _process_simplified_polygon_complete(polygons):
@@ -529,6 +544,22 @@ func draw_shape(updates):
 		else:
 			processed_polygon = _process_simplified_polygon()
 			_rerender_prop_cache["processed_polygon"] = processed_polygon
+		
+		if processed_polygon.has("needs_refill"):
+			processed_polygon.erase("needs_refill")
+			var fill_paint = resolve_fill_paint()
+			updates.fill_color = fill_paint.color
+			updates.fill_texture = fill_paint.texture
+			updates.fill_texture_units = fill_paint.texture_units
+			updates.fill_texture_uv_transform = fill_paint.texture_uv_transform
+		
+		if processed_polygon.has("needs_restroke"):
+			processed_polygon.erase("needs_restroke")
+			var stroke_paint = resolve_stroke_paint()
+			updates.stroke_color = stroke_paint.color
+			updates.stroke_texture = stroke_paint.texture
+			updates.stroke_texture_units = stroke_paint.texture_units
+			updates.stroke_texture_uv_transform = stroke_paint.texture_uv_transform
 	
 	if will_fill:
 		var bounding_box = get_bounding_box()

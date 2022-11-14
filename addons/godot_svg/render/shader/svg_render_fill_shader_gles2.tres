@@ -16,7 +16,7 @@ vec4 quadratic_ps(vec2 p, vec4 color) {
 	float sd = (u * u - v);
 	
 	if (sd > 0.0) {
-		color.a = 1.0;
+		color.a = color.a;
 	} else {
 		color.a = 0.0;
 	}
@@ -29,7 +29,7 @@ vec4 cubic_ps(vec3 klm, vec4 color) {
 	float sd = klm.x * klm.x * klm.x - klm.y * klm.z;
 	
 	if (sd < 0.0) {
-		color.a = 1.0;
+		color.a = color.a;
 	} else {
 		color.a = 0.0;
 	}

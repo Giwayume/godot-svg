@@ -123,7 +123,7 @@ static func arc_to_cubic_bezier(
 		var control2 = map_to_ellipse(curve[1], r, cosphi, sinphi, center)
 		var end = map_to_ellipse(curve[2], r, cosphi, sinphi, center)
 		commands.push_back({
-			"command": PathCommand.QUADRATIC_BEZIER_CURVE,
+			"command": PathCommand.CUBIC_BEZIER_CURVE,
 			"points": [control1, control2, end],
 		})
 	return commands

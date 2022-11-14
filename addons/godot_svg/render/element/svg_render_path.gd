@@ -219,6 +219,7 @@ func _calculate_bounding_box():
 # Getters / Setters
 
 func _set_attr_d(d):
+	_bounding_box = Rect2()
 	d = get_style("d", d)
 	if typeof(d) != TYPE_STRING:
 		attr_d = d
@@ -243,7 +244,11 @@ func _set_attr_d(d):
 						var negative_multiplier = 1.0
 						for negative_token in negative_split:
 							if negative_token != "":
-								values.push_back(negative_multiplier * negative_token.to_float())
+								var decimal_split = negative_token.split(".")
+								values.push_back(negative_multiplier * ".".join(SVGHelper.array_slice(decimal_split, 0, 2)).to_float())
+								if decimal_split.size() > 2:
+									for decimal_index in range(2, decimal_split.size()):
+										values.push_back(("." + str(decimal_split[decimal_index])).to_float())
 							negative_multiplier = -1.0
 				
 				# Split out implicit commands

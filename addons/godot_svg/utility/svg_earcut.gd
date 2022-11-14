@@ -379,9 +379,9 @@ static func cure_local_intersections(start, triangles):
 		var a = p.prev
 		var b = p.next.next
 		if not equals(a, b) and intersects(a, p, p.next, b) and locally_inside(a, b) and locally_inside(b, a):
-			triangles.push(a.i)
-			triangles.push(p.i)
-			triangles.push(b.i)
+			triangles.push_back(a.i)
+			triangles.push_back(p.i)
+			triangles.push_back(b.i)
 			remove_node(p)
 			remove_node(p.next)
 			p = b

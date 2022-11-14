@@ -106,7 +106,7 @@ static func subdivide_quadratic_bezier_path(p0, p1, p2, subdivision_count = 1):
 static func subdivide_cubic_bezier_triangles(p0, p1, p2, p3, subdivision_count = 1):
 	var triangles = []
 	if subdivision_count > 1:
-		for i in range(subdivision_count + 1, 0, -1):
+		for i in range(subdivision_count, 0, -1):
 			var t = 1.0 / float(i)
 			var subdivide_results = SVGMath.split_cubic_bezier(p0, p1, p2, p3, t)
 			triangles.push_back([
@@ -351,28 +351,30 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 				clockwise_check_encountered_path_index += 1
 		
 		# Split up bezier curves based on triangle bounding box collisions
-		for other_path_check in path_intersection_checks:
-			var tessellation_counter = 0
-			while is_curve_triangles_intersects_other_curve_triangles(triangles_to_check, other_path_check.triangles):
-				if SVGMath.triangle_area(triangles_to_check[0]) > SVGMath.triangle_area(other_path_check.triangles[0]):
-					current_split_count += 1
-					triangles_to_check = (
-						subdivide_quadratic_bezier_triangles(control_points[0], control_points[1], control_points[2], current_split_count)
-						if control_points.size() == 3 else
-						subdivide_cubic_bezier_triangles(control_points[0], control_points[1], control_points[2], control_points[3], current_split_count)
-					)
-				else:
-					other_path_check.split_count += 1
-					other_path_check.triangles = (
-						subdivide_quadratic_bezier_triangles(other_path_check.control_points[0], other_path_check.control_points[1], other_path_check.control_points[2], other_path_check.split_count)
-						if other_path_check.control_points.size() == 3 else
-						subdivide_cubic_bezier_triangles(other_path_check.control_points[0], other_path_check.control_points[1], other_path_check.control_points[2], other_path_check.control_points[3], other_path_check.split_count)
-					)
-				tessellation_counter += 1
-				if tessellation_counter >= 32: # Prevent infinite loop if things go terribly wrong
-					print("Infinite loop encountered during bezier tessellation.")
-					break
-		
+		if control_points.size() > 0:
+			for other_path_check in path_intersection_checks:
+				if other_path_check.control_points.size() > 0:
+					var tessellation_counter = 0
+					while is_curve_triangles_intersects_other_curve_triangles(triangles_to_check, other_path_check.triangles):
+						if SVGMath.triangle_area(triangles_to_check[0]) > SVGMath.triangle_area(other_path_check.triangles[0]):
+							current_split_count += 1
+							triangles_to_check = (
+								subdivide_quadratic_bezier_triangles(control_points[0], control_points[1], control_points[2], current_split_count)
+								if control_points.size() == 3 else
+								subdivide_cubic_bezier_triangles(control_points[0], control_points[1], control_points[2], control_points[3], current_split_count)
+							)
+						else:
+							other_path_check.split_count += 1
+							other_path_check.triangles = (
+								subdivide_quadratic_bezier_triangles(other_path_check.control_points[0], other_path_check.control_points[1], other_path_check.control_points[2], other_path_check.split_count)
+								if other_path_check.control_points.size() == 3 else
+								subdivide_cubic_bezier_triangles(other_path_check.control_points[0], other_path_check.control_points[1], other_path_check.control_points[2], other_path_check.control_points[3], other_path_check.split_count)
+							)
+						tessellation_counter += 1
+						if tessellation_counter >= 32: # Prevent infinite loop if things go terribly wrong
+							print("Infinite loop encountered during bezier tessellation.")
+							break
+				
 		path_intersection_checks.push_back({
 			"control_points": control_points,
 			"split_count": current_split_count,
@@ -467,7 +469,6 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 			PathCommand.QUADRATIC_BEZIER_CURVE:
 				var control_point = instruction.points[0]
 				var end_point = instruction.points[1]
-				var is_concave = false
 				
 				if SVGMath.is_point_right_of_segment(current_point, end_point, control_point) != is_clockwise:
 					interior_polygon.push_back(control_point)
@@ -487,7 +488,8 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 				quadratic_implicit_coordinates.push_back(Vector2(1.0, 1.0))
 				quadratic_uv.push_back(generate_uv_at_point(bounding_box, end_point))
 				for ti in range(0, 3):
-					quadratic_signs.push_back(1 if is_concave else 0)
+					# 0 flips the sign (clockwise curves look correct by default), 1 keeps the sign.
+					quadratic_signs.push_back(1 if is_clockwise else 0)
 				
 				current_point = end_point
 			PathCommand.CUBIC_BEZIER_CURVE:
@@ -495,7 +497,6 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 				var control_point_1 = instruction.points[0]
 				var control_point_2 = instruction.points[1]
 				var end_point = instruction.points[2]
-				var is_concave = false
 				var control_intersection = Geometry.segment_intersects_segment_2d(start_point, end_point, control_point_1, control_point_2)
 				if control_intersection != null and not control_intersection == start_point and not control_intersection == end_point:
 					var control_point_1_distance = SVGMath.point_distance_along_segment(start_point, end_point, control_point_1)
@@ -519,7 +520,6 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 					(start_point != control_point_1 and end_point != control_point_1 and SVGMath.is_point_right_of_segment(start_point, end_point, control_point_1) == is_clockwise) or
 					(start_point != control_point_2 and end_point != control_point_2 and SVGMath.is_point_right_of_segment(start_point, end_point, control_point_2) == is_clockwise)
 				):
-					is_concave = true
 					interior_polygon.push_back(control_point_1)
 					interior_polygon.push_back(control_point_2)
 					add_duplicate_edge(duplicate_edges, start_point, control_point_1)
@@ -573,6 +573,8 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 			triangulation = SVGEarcut.earcut_polygon_2d(sliced_polygon_with_holes, hole_indices)
 		else:
 			triangulation = Geometry.triangulate_polygon(sliced_polygon)
+			if triangulation.size() == 0:
+				triangulation = SVGEarcut.earcut_polygon_2d(sliced_polygon, [])
 		interior_triangulation.append_array(
 			SVGHelper.array_add(
 				triangulation,
@@ -591,6 +593,7 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 			interior_triangulation.remove(i)
 			interior_triangulation.remove(i)
 	
+	# Build edge list and vertex arrays
 	for i in range(0, interior_triangulation.size(), 3):
 		
 		# Build edge list to determine outer edges for current triangle
@@ -654,9 +657,8 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 			antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae0))
 			antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae2))
 			antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae3))
-			
 	
-	return {
+	var triangulation_result = {
 		"bounding_box": Rect2(bounding_box.left, bounding_box.top, bounding_box.right - bounding_box.left, bounding_box.bottom - bounding_box.top),
 		"interior_vertices": interior_vertices,
 		"interior_implicit_coordinates": interior_implicit_coordinates,
@@ -673,6 +675,7 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 		"antialias_edge_implicit_coordinates": antialias_edge_implicit_coordinates,
 		"antialias_edge_uv": antialias_edge_uv,
 	}
+	return triangulation_result
 
 static func combine_triangulation(triangulation1, triangulation2):
 	var bounding_box = triangulation1.bounding_box
@@ -727,7 +730,9 @@ static func combine_triangulation(triangulation1, triangulation2):
 		antialias_edge_implicit_coordinates.append_array(triangulation2.antialias_edge_implicit_coordinates)
 		antialias_edge_uv.append_array(triangulation1.antialias_edge_uv)
 		antialias_edge_uv.append_array(triangulation2.antialias_edge_uv)
+	
 	return {
+		"bounding_box": bounding_box,
 		"interior_vertices": interior_vertices,
 		"interior_implicit_coordinates": interior_implicit_coordinates,
 		"interior_uv": interior_uv,

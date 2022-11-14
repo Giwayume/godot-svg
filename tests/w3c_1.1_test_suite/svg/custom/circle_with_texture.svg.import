@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/circle_with_texture.svg-b7cca843ee356da3c8194111693b39b9.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/custom/circle_with_texture.svg"
+dest_files=[ "res://.import/circle_with_texture.svg-b7cca843ee356da3c8194111693b39b9.gdsvg" ]
+
+[params]
+

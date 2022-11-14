@@ -222,9 +222,11 @@ static func resolve_paint(reference_renderer, attr_paint, server_name: String):
 							renderer.attr_cx.get_length(1),
 							renderer.attr_cy.get_length(1)
 						))
+						var attr_fx = renderer.attr_cx if renderer.attr_fx is String else renderer.attr_fx
+						var attr_fy = renderer.attr_cy if renderer.attr_fy is String else renderer.attr_fy
 						end_center = gradient_transform.xform(Vector2(
-							renderer.attr_fx.get_length(1),
-							renderer.attr_fy.get_length(1)
+							attr_fx.get_length(1),
+							attr_fy.get_length(1)
 						))
 						start_radius = renderer.attr_fr.get_length(1)
 						end_radius = renderer.attr_r.get_length(1)
@@ -233,9 +235,11 @@ static func resolve_paint(reference_renderer, attr_paint, server_name: String):
 							renderer.attr_cx.get_normalized_length(inherited_view_box.size.x, inherited_view_box.position.x),
 							renderer.attr_cy.get_normalized_length(inherited_view_box.size.y, inherited_view_box.position.y)
 						))
+						var attr_fx = renderer.attr_cx if renderer.attr_fx is String else renderer.attr_fx
+						var attr_fy = renderer.attr_cy if renderer.attr_fy is String else renderer.attr_fy
 						end_center = gradient_transform.xform(Vector2(
-							renderer.attr_fx.get_normalized_length(inherited_view_box.size.x, inherited_view_box.position.x),
-							renderer.attr_fy.get_normalized_length(inherited_view_box.size.y, inherited_view_box.position.y)
+							attr_fx.get_normalized_length(inherited_view_box.size.x, inherited_view_box.position.x),
+							attr_fy.get_normalized_length(inherited_view_box.size.y, inherited_view_box.position.y)
 						))
 						start_radius = renderer.attr_fr.get_normalized_length(inherited_view_box.size.x)
 						end_radius = renderer.attr_r.get_normalized_length(inherited_view_box.size.x)

@@ -24,7 +24,7 @@ vec4 quadratic_ps(vec2 p, float inside_sign, vec4 color) {
 	float sd = inside_sign * (u * u - v) / sqrt(fx * fx + fy * fy);
 	
 	float alpha = 0.5 - sd;
-	color.a = clamp(sd, 0.0, 1.0);
+	color.a = clamp(sd, 0.0, 1.0) * color.a;
 
 	return color;
 }
@@ -42,7 +42,7 @@ vec4 cubic_ps(vec3 klm, float inside_sign, vec4 color) {
 	float sd = inside_sign * (klm.x * klm.x * klm.x - klm.y * klm.z) / length(f);
 	
 	sd = 0.5 - sd;
-	color.a = clamp(sd, 0.0, 1.0);
+	color.a = clamp(sd, 0.0, 1.0) * color.a;
 
 	return color;
 }
