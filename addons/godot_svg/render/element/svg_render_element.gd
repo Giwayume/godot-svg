@@ -591,6 +591,7 @@ func draw_shape(updates):
 			):
 				_shape_fill.material.set_shader_param("fill_texture", updates.fill_texture)
 				_update_shape_material_uv_params(_shape_fill, updates.fill_texture_units, updates.fill_texture_uv_transform, polygon_lists[fill_index])
+			SVGPaintServer.apply_shader_params(self, "fill", _shape_fill)
 			
 			_shape_fill.show()
 			fill_index += 1
@@ -630,7 +631,8 @@ func draw_shape(updates):
 			):
 				_shape_stroke.material.set_shader_param("fill_texture", updates.stroke_texture)
 				_update_shape_material_uv_params(_shape_stroke, updates.stroke_texture_units, updates.stroke_texture_uv_transform, polygon_lists[stroke_index])
-				
+			SVGPaintServer.apply_shader_params(self, "stroke", _shape_stroke)
+			
 			if updates.has("stroke_width"):
 				var applied_stroke_width = updates.stroke_width * scale_factor.x
 				if applied_stroke_width < 1:

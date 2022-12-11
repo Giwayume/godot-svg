@@ -258,19 +258,23 @@ static func resolve_paint(reference_renderer, attr_paint, server_name: String):
 						start_radius = renderer.attr_fr.get_normalized_length(inherited_view_box.size.x)
 						end_radius = renderer.attr_r.get_normalized_length(inherited_view_box.size.x)
 
-						texture_size = pow_2_texture_size(Vector2(1.0, 1.0) * min(4096, max(inherited_view_box.size.x, inherited_view_box.size.y)))
+						texture_size = inherited_view_box.size
 					
-					gradient_texture = store_paint_server_texture(reference_renderer, server_name,
-						generate_radial_gradient_server(
-							gradient,
-							start_center,
-							start_radius,
-							end_center,
-							end_radius,
-							texture_size,
-							texture_repeat_mode
-						)
-					)
+					var gradient_texture_param = GradientTexture.new()
+					gradient_texture_param.gradient = gradient
+					
+					gradient_texture = store_paint_server_texture(reference_renderer, server_name, {
+						"texture": null,
+						"shader_params": {
+							"gradient_type": 2,
+							"gradient_start_center": start_center,
+							"gradient_start_radius": start_radius,
+							"gradient_end_center": end_center,
+							"gradient_end_radius": end_radius,
+							"gradient_repeat": texture_repeat_mode,
+							"gradient_texture": gradient_texture_param,
+						}
+					})
 				paint.texture = gradient_texture
 				if renderer._is_href_duplicate:
 					renderer.queue_free()
@@ -327,3 +331,17 @@ static func free_paint_server_texture(reference_renderer, store_name: String):
 		if old_store.has("texture_rect") and is_instance_valid(old_store.texture_rect):
 			old_store.texture_rect.queue_free()
 	reference_renderer._paint_server_textures.erase(store_name)
+
+static func apply_shader_params(reference_renderer, store_name: String, shape_node):
+	var needs_reset_params = false
+	if reference_renderer._paint_server_textures.has(store_name):
+		var server_response = reference_renderer._paint_server_textures[store_name]
+		if server_response.has("shader_params"):
+			for shader_param_name in server_response.shader_params:
+				shape_node.material.set_shader_param(shader_param_name, server_response.shader_params[shader_param_name])
+		else:
+			needs_reset_params = true
+	else:
+		needs_reset_params = true
+	if needs_reset_params:
+		shape_node.material.set_shader_param("gradient_type", 0)
