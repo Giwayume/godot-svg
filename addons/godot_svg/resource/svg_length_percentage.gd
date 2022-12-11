@@ -25,3 +25,6 @@ func get_length(percentage_size: float = 1, offset: float = 0):
 func get_normalized_length(percentage_size: float = 1, offset: float = 0):
 	var length = get_length(percentage_size, offset)
 	return (length - offset) / percentage_size
+
+static func calculate_normalized_length(length: float, percentage_size: float = 1, offset: float = 0):
+	return (length - offset) / percentage_size

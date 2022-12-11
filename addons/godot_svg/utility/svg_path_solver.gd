@@ -94,6 +94,25 @@ class PathShape:
 				closest_t = intersection.self_t
 				closest_intersection = intersection
 		return closest_intersection
+	
+	static func sum_over_edges(shapes):
+		var sum = 0.0
+		if shapes.size() > 0:
+			if not shapes[0].p0.is_equal_approx(shapes[shapes.size() - 1].pend):
+				shapes.push_back(
+					PathSegment.new(
+						shapes[shapes.size() - 1].pend,
+						shapes[0].p0
+					)
+				)
+			var previous_point = shapes[0].p0
+			for shape in shapes:
+				for i in range(1, shape.segments.size()):
+					var segment = shape.segments[i]
+					sum += (segment.x - previous_point.x) * (segment.y + previous_point.y)
+					previous_point = segment
+		return sum
+
 
 class PathSegment extends PathShape:
 	var p0
@@ -371,7 +390,7 @@ static func generate_loop_ranges(paths: Array):
 			current_loop_start = i + 1
 	return loop_ranges
 
-static func convert_path_shapes_to_instructions(path_shapes):
+static func convert_path_shapes_to_instructions(path_shapes, force_close = false):
 	var instructions = []
 	instructions.push_back({
 		"command": PathCommand.MOVE_TO,
@@ -393,6 +412,11 @@ static func convert_path_shapes_to_instructions(path_shapes):
 				"command": PathCommand.CUBIC_BEZIER_CURVE,
 				"points": [shape.p1, shape.p2, shape.p3],
 			})
+	if force_close and not path_shapes[0].p0.is_equal_approx(path_shapes[path_shapes.size() - 1].pend):
+		instructions.push_back({
+			"command": PathCommand.LINE_TO,
+			"points": [path_shapes[0].p0]
+		})
 	instructions.push_back({
 		"command": PathCommand.CLOSE_PATH,
 	})
@@ -424,26 +448,40 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 	var current_point = Vector2()
 	var current_loop_start_point = Vector2()
 	
+	# TODO - this only accounts for the very last shape defined, fix to consider all closed shapes
+	var last_shape_index = paths.size() - 1
+	if paths[last_shape_index].command == PathCommand.CLOSE_PATH:
+		last_shape_index -= 1
+
 	for i in range(0, paths.size()):
 		var previous_instruction = paths[i - 1] if i > 0 else null
 		var command = paths[i].command
 		var points = paths[i].points if paths[i].has("points") else []
 		var is_implicit_path_close = previous_instruction != null and paths[i].command == PathCommand.MOVE_TO and previous_instruction.command != PathCommand.CLOSE_PATH
-		
+
 		match command:
 			PathCommand.MOVE_TO:
 				if is_implicit_path_close and not current_point.is_equal_approx(current_loop_start_point):
 					path_shapes.push_back(PathSegment.new(current_point, current_loop_start_point, true))
 				current_point = points[0]
 			PathCommand.LINE_TO:
-				path_shapes.push_back(PathSegment.new(current_point, points[0]))
-				current_point = points[0]
+				var shape_end_point = points[0]
+				if i == last_shape_index and shape_end_point.is_equal_approx(current_loop_start_point):
+					shape_end_point = current_loop_start_point
+				path_shapes.push_back(PathSegment.new(current_point, shape_end_point))
+				current_point = shape_end_point
 			PathCommand.QUADRATIC_BEZIER_CURVE:
-				path_shapes.push_back(PathQuadraticBezier.new(current_point, points[0], points[1]))
-				current_point = points[1]
+				var shape_end_point = points[1]
+				if i == last_shape_index and shape_end_point.is_equal_approx(current_loop_start_point):
+					shape_end_point = current_loop_start_point
+				path_shapes.push_back(PathQuadraticBezier.new(current_point, points[0], shape_end_point))
+				current_point = shape_end_point
 			PathCommand.CUBIC_BEZIER_CURVE:
-				path_shapes.push_back(PathCubicBezier.new(current_point, points[0], points[1], points[2]))
-				current_point = points[2]
+				var shape_end_point = points[2]
+				if i == last_shape_index and shape_end_point.is_equal_approx(current_loop_start_point):
+					shape_end_point = current_loop_start_point
+				path_shapes.push_back(PathCubicBezier.new(current_point, points[0], points[1], shape_end_point))
+				current_point = shape_end_point
 		
 		var is_end_of_paths = (i == paths.size() - 1 and current_loop_start < i)
 		if (
@@ -466,7 +504,6 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 	# As well as a list of paths that don't intersect with anything else
 	var current_loop_range_index = 0
 	var current_loop_range_has_any_intersection = false
-	var current_loop_range_rotation = 0.0
 	var path_shapes_size = path_shapes.size()
 	var current_path_bounding_box = create_new_bounding_box()
 	for i in range(0, path_shapes_size):
@@ -511,20 +548,17 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 								intersections_at_positions[j] = []
 							intersections_at_positions[i].push_back(intersection)
 							intersections_at_positions[j].push_back(intersection)
-		current_loop_range_rotation += path_shape.find_direction_at(0.0).angle_to(
-			next_path_shape.find_direction_at(0.0)
-		)
 		if i >= current_loop_range.end:
 			if not current_loop_range_has_any_intersection:
+				var path = SVGHelper.array_slice(path_shapes, current_loop_range.start, current_loop_range.end + 1)
 				solved_paths.push_back({
-					"path": SVGHelper.array_slice(path_shapes, current_loop_range.start, current_loop_range.end + 1),
+					"path": path,
 					"path_ranges": [[current_loop_range.start, current_loop_range.end]],
 					"bounding_box": current_path_bounding_box,
-					"is_clockwise": current_loop_range_rotation > 0.0,
+					"is_clockwise": PathShape.sum_over_edges(path) < 0.0,
 				})
 			current_loop_range_index += 1
 			current_loop_range_has_any_intersection = false
-			current_loop_range_rotation = 0.0
 			current_path_bounding_box = create_new_bounding_box()
 	
 	# For each intersection point, follow the intersection lines forward, then take right turns until it comes back to the initial point
@@ -689,7 +723,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 							"path": new_path,
 							"path_ranges": new_path_ranges,
 							"bounding_box": current_path_bounding_box,
-							"is_clockwise": final_rotation > 0.0,
+							"is_clockwise": PathShape.sum_over_edges(new_path) < 0.0,
 						}
 						current_path_bounding_box = create_new_bounding_box()
 		
@@ -781,7 +815,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 	# Translate shape classes back into instruction commands.
 	var instruction_groups = []
 	for path_index in range(0, filled_paths.size()):
-		var fill_instructions = convert_path_shapes_to_instructions(filled_paths[path_index])
+		var fill_instructions = convert_path_shapes_to_instructions(filled_paths[path_index], true)
 		var hole_instructions = []
 		for hole_path in hole_paths[path_index]:
 			hole_instructions.push_back(

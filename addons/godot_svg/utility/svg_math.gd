@@ -353,3 +353,11 @@ static func triangle_area(t):
 	var side3 = t[0].distance_to(t[2])
 	var s = (side1 + side2 + side3) / 2.0
 	return sqrt(s * ((s - side1) * (s - side2) * (s - side3)))
+
+static func segment_intersects_triangle(s0: Vector2, s1: Vector2, t0: Array):
+	# TODO - doesn't account for segment inside of triangle
+	return (
+		Geometry.segment_intersects_segment_2d(s0, s1, t0[0], t0[1]) or
+		Geometry.segment_intersects_segment_2d(s0, s1, t0[1], t0[2]) or
+		Geometry.segment_intersects_segment_2d(s0, s1, t0[0], t0[2])
+	)

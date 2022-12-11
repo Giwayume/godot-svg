@@ -99,6 +99,7 @@ static func generate_radial_gradient_server(
 	var viewport = Viewport.new()
 	viewport.size = texture_size
 	viewport.render_target_v_flip = true
+	viewport.hdr = false
 	viewport.usage = Viewport.USAGE_2D_NO_SAMPLING
 	viewport.transparent_bg = true
 	var gradient_rect = ColorRect.new()
@@ -131,6 +132,7 @@ static func generate_pattern_server(
 	var viewport = pattern_renderer._baking_viewport
 	viewport.size = Vector2(2.0, 2.0)
 	viewport.render_target_v_flip = true
+	viewport.hdr = false
 	viewport.usage = Viewport.USAGE_2D_NO_SAMPLING
 	viewport.transparent_bg = true
 	# TODO - wait for delayed resources such as mask/other paint servers to draw?
@@ -201,14 +203,20 @@ static func resolve_paint(reference_renderer, attr_paint, server_name: String):
 							renderer.attr_y2.get_length(1)
 						))
 					else: # USER_SPACE_ON_USE
-						gradient_texture.fill_from = gradient_transform.xform(Vector2(
-							renderer.attr_x1.get_normalized_length(inherited_view_box.size.x, inherited_view_box.position.x),
-							renderer.attr_y1.get_normalized_length(inherited_view_box.size.y, inherited_view_box.position.y)
-						))
-						gradient_texture.fill_to = gradient_transform.xform(Vector2(
-							renderer.attr_x2.get_normalized_length(inherited_view_box.size.x, inherited_view_box.position.x),
-							renderer.attr_y2.get_normalized_length(inherited_view_box.size.y, inherited_view_box.position.y)
-						))
+						var transformed_fill_from = gradient_transform.xform(
+							Vector2(renderer.attr_x1.get_length(1), renderer.attr_y1.get_length(1))
+						)
+						gradient_texture.fill_from = Vector2(
+							SVGLengthPercentage.calculate_normalized_length(transformed_fill_from.x, inherited_view_box.size.x, inherited_view_box.position.x),
+							SVGLengthPercentage.calculate_normalized_length(transformed_fill_from.y, inherited_view_box.size.y, inherited_view_box.position.y)
+						)
+						var transformed_fill_to = gradient_transform.xform(
+							Vector2(renderer.attr_x2.get_length(1), renderer.attr_y2.get_length(1))
+						)
+						gradient_texture.fill_to = Vector2(
+							SVGLengthPercentage.calculate_normalized_length(transformed_fill_to.x, inherited_view_box.size.x, inherited_view_box.position.x),
+							SVGLengthPercentage.calculate_normalized_length(transformed_fill_to.y, inherited_view_box.size.y, inherited_view_box.position.y)
+						)
 				else: # "radialGradient"
 					var start_center
 					var end_center
@@ -231,19 +239,27 @@ static func resolve_paint(reference_renderer, attr_paint, server_name: String):
 						start_radius = renderer.attr_fr.get_length(1)
 						end_radius = renderer.attr_r.get_length(1)
 					else: # USER_SPACE_ON_USE
-						start_center = gradient_transform.xform(Vector2(
-							renderer.attr_cx.get_normalized_length(inherited_view_box.size.x, inherited_view_box.position.x),
-							renderer.attr_cy.get_normalized_length(inherited_view_box.size.y, inherited_view_box.position.y)
-						))
+						var transformed_start_center = gradient_transform.xform(
+							Vector2(renderer.attr_cx.get_length(1), renderer.attr_cy.get_length(1))
+						)
+						start_center = Vector2(
+							SVGLengthPercentage.calculate_normalized_length(transformed_start_center.x, inherited_view_box.size.x, inherited_view_box.position.x),
+							SVGLengthPercentage.calculate_normalized_length(transformed_start_center.y, inherited_view_box.size.y, inherited_view_box.position.y)
+						)
 						var attr_fx = renderer.attr_cx if renderer.attr_fx is String else renderer.attr_fx
 						var attr_fy = renderer.attr_cy if renderer.attr_fy is String else renderer.attr_fy
-						end_center = gradient_transform.xform(Vector2(
-							attr_fx.get_normalized_length(inherited_view_box.size.x, inherited_view_box.position.x),
-							attr_fy.get_normalized_length(inherited_view_box.size.y, inherited_view_box.position.y)
-						))
+						var transformed_end_center = gradient_transform.xform(
+							Vector2(attr_fx.get_length(1), attr_fy.get_length(1))
+						)
+						end_center = Vector2(
+							SVGLengthPercentage.calculate_normalized_length(transformed_end_center.x, inherited_view_box.size.x, inherited_view_box.position.x),
+							SVGLengthPercentage.calculate_normalized_length(transformed_end_center.y, inherited_view_box.size.y, inherited_view_box.position.y)
+						)
 						start_radius = renderer.attr_fr.get_normalized_length(inherited_view_box.size.x)
 						end_radius = renderer.attr_r.get_normalized_length(inherited_view_box.size.x)
-						texture_size = inherited_view_box.size
+
+						texture_size = pow_2_texture_size(Vector2(1.0, 1.0) * min(4096, max(inherited_view_box.size.x, inherited_view_box.size.y)))
+					
 					gradient_texture = store_paint_server_texture(reference_renderer, server_name,
 						generate_radial_gradient_server(
 							gradient,

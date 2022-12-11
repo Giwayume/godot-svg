@@ -11,6 +11,12 @@ script = ExtResource( 2 )
 position = Vector2( 250, 158 )
 current = true
 
+[node name="ColorRect" type="ColorRect" parent="."]
+margin_left = -279.0
+margin_top = -176.0
+margin_right = 129.0
+margin_bottom = 212.0
+
 [node name="SVG2D2" type="Node2D" parent="."]
 position = Vector2( -259, -142 )
 scale = Vector2( 4, 4 )

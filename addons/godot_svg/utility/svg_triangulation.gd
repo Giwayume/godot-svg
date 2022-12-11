@@ -151,7 +151,21 @@ static func subdivide_cubic_bezier_path(p0, p1, p2, p3, subdivision_count = 1):
 static func is_curve_triangles_intersects_other_curve_triangles(curve_1_triangles, curve_2_triangles):
 	for curve_1_triangle in curve_1_triangles:
 		for curve_2_triangle in curve_2_triangles:
-			if SVGMath.triangle_intersects_triangle(curve_1_triangle, curve_2_triangle):
+			if curve_1_triangle[0] == curve_1_triangle[1]:
+				if (
+					SVGMath.segment_intersects_triangle(curve_1_triangle[0], curve_1_triangle[2], curve_2_triangle) and
+					not curve_1_triangle[0].is_equal_approx(curve_2_triangle[2]) and
+					not curve_1_triangle[2].is_equal_approx(curve_2_triangle[0])
+				):
+					return true
+			elif curve_2_triangle[0] == curve_2_triangle[1]:
+				if (
+					SVGMath.segment_intersects_triangle(curve_2_triangle[0], curve_2_triangle[2], curve_1_triangle) and
+					not curve_1_triangle[0].is_equal_approx(curve_2_triangle[2]) and
+					not curve_1_triangle[2].is_equal_approx(curve_2_triangle[0])
+				):
+					return true
+			elif SVGMath.triangle_intersects_triangle(curve_1_triangle, curve_2_triangle):
 				return true
 	return false
 
@@ -282,10 +296,11 @@ static func circle_segment_to_quadratic_bezier(start_point, end_point, start_dir
 # { "command": PathCommand, "points": [Vector()] }
 # It only supports a subset of PathCommand. Points are absolute coordinates.
 static func triangulate_fill_path(path: Array, holes: Array = [], override_clockwise_check = null):
+
 	var current_point = Vector2()
 	var current_path_start_point = current_point
 	var has_holes = holes.size() > 0
-	
+
 	# Combine base fill path instruction with hole instructions for the following intersection checks.
 	var all_paths = []
 	var path_group_holes_start_index = null
@@ -372,9 +387,9 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 							)
 						tessellation_counter += 1
 						if tessellation_counter >= 32: # Prevent infinite loop if things go terribly wrong
-							print("Infinite loop encountered during bezier tessellation.")
+							print("Infinite loop encountered during bezier tessellation. ", control_points, " ", other_path_check.control_points)
 							break
-				
+		
 		path_intersection_checks.push_back({
 			"control_points": control_points,
 			"split_count": current_split_count,
