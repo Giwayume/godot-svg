@@ -435,7 +435,7 @@ static func find_solved_paths_that_use_shape_index(solved_paths, closest_hit_sha
 # Attempt to resolve self-intersections in a list of multiple path commands by...
 # ...splitting one path into multiple shapes at the intersections.
 # Paths is an array of command dictionaries.
-static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
+static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self_intersections = false):
 	var intersections = []
 	var intersections_at_positions = {}
 	var solved_paths = []
@@ -511,7 +511,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 		var next_path_shape = path_shapes[i + 1 if i < path_shapes_size - 1 else 0]
 		var current_loop_range = shape_loop_ranges[current_loop_range_index]
 		current_path_bounding_box = apply_shape_to_bounding_box(current_path_bounding_box, path_shape)
-		if i >= current_loop_range.start + 1:
+		if not assume_no_self_intersections and i >= current_loop_range.start + 1:
 			for j in range(current_loop_range.start, i):
 				var other_path_shape = path_shapes[j]
 				var new_intersections = path_shape.intersect_with(other_path_shape, j != i - 1, true)
@@ -739,40 +739,43 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 	var hole_candidates = []
 	var current_solved_path_index = 0
 	for solved_path_info in solved_paths:
+		var insideness = 0
 		var solved_path = solved_path_info.path
 		var is_clockwise = solved_path_info.is_clockwise
-		var check_point = solved_path[0].get_inside_check_point(1.0 if is_clockwise else -1.0)
-		var insideness = 0
 		var is_hole_candidate = false
-		var closest_hit_shape_index = -1
-		var closest_hit_shape_distance = INF
 		var second_closest_hit_shape_index = -1
-		var second_closest_hit_shape_distance = INF
-		for shape_index in range(0, path_shapes.size()):
-			var shape = path_shapes[shape_index]
-			# Count collisions for a line that starts at check point and travels infinitely in -y direction
-			if (
-				check_point.x >= shape.bounding_box.position.x and
-				check_point.x <= shape.bounding_box.position.x + shape.bounding_box.size.x and
-				check_point.y >= shape.bounding_box.position.y
-			):
-				var check_collision_segment = PathSegment.new(check_point, Vector2(check_point.x, shape.bounding_box.position.y - 1.0))
-				var line_intersections = check_collision_segment.intersect_with(shape)
-				var line_intersections_size = line_intersections.size()
-				for line_intersection in line_intersections:
-					var line_intersection_distance = check_point.distance_to(line_intersection.point)
-					if line_intersection_distance < closest_hit_shape_distance:
-						second_closest_hit_shape_index = closest_hit_shape_index
-						second_closest_hit_shape_distance = closest_hit_shape_distance
-						closest_hit_shape_distance = line_intersection_distance
-						closest_hit_shape_index = shape_index
-				if line_intersections_size > 0:
-					is_hole_candidate = true
-				if line_intersections_size % 2 == 1:
-					if shape.p0.x <= check_point.x and shape.pend.x >= check_point.x:
-						insideness += 1
-					elif shape.p0.x >= check_point.x and shape.pend.x <= check_point.x:
-						insideness -= 1
+		if assume_no_self_intersections:
+			insideness = 1
+		else:
+			var check_point = solved_path[0].get_inside_check_point(1.0 if is_clockwise else -1.0)
+			var closest_hit_shape_index = -1
+			var closest_hit_shape_distance = INF
+			var second_closest_hit_shape_distance = INF
+			for shape_index in range(0, path_shapes.size()):
+				var shape = path_shapes[shape_index]
+				# Count collisions for a line that starts at check point and travels infinitely in -y direction
+				if (
+					check_point.x >= shape.bounding_box.position.x and
+					check_point.x <= shape.bounding_box.position.x + shape.bounding_box.size.x and
+					check_point.y >= shape.bounding_box.position.y
+				):
+					var check_collision_segment = PathSegment.new(check_point, Vector2(check_point.x, shape.bounding_box.position.y - 1.0))
+					var line_intersections = check_collision_segment.intersect_with(shape)
+					var line_intersections_size = line_intersections.size()
+					for line_intersection in line_intersections:
+						var line_intersection_distance = check_point.distance_to(line_intersection.point)
+						if line_intersection_distance < closest_hit_shape_distance:
+							second_closest_hit_shape_index = closest_hit_shape_index
+							second_closest_hit_shape_distance = closest_hit_shape_distance
+							closest_hit_shape_distance = line_intersection_distance
+							closest_hit_shape_index = shape_index
+					if line_intersections_size > 0:
+						is_hole_candidate = true
+					if line_intersections_size % 2 == 1:
+						if shape.p0.x <= check_point.x and shape.pend.x >= check_point.x:
+							insideness += 1
+						elif shape.p0.x >= check_point.x and shape.pend.x <= check_point.x:
+							insideness -= 1
 		
 		var is_filled = false
 		match fill_rule:
@@ -783,7 +786,6 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD):
 				if insideness != 0:
 					is_filled = true
 		
-		is_filled = true # TODO - remove
 		if is_filled:
 			filled_paths.push_back(solved_path)
 			filled_paths_clockwise_checks.push_back(is_clockwise)

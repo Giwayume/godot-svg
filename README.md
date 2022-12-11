@@ -55,6 +55,7 @@ These nodes share a similar API.
 | svg | SVG Resource | When importing a SVG file, choose "Import As: SVG". If you try to add a SVG imported as "Texture" here, it will not work. Use Sprite instead for that. |
 | fixed_scaling_ratio | float | [This feature may not yet be working as expected]. Setting the value above 0 bakes the resolution of masks so they are not redrawn due to scaling at runtime. A value of 1 means it is drawn to look perfect at 100% view box scale (1:1), and if you zoom in further than that you will see pixellated edges. Setting the value to 0 redraws the mask every frame. |
 | antialiased | bool | Whether or not to use the antialiasing to smooth the shape edges. |
+| assume_no_self_intersections | bool | This is an optimization that can make the initial construction/animation of the shape faster by not even attempting to solve for self-intersecting shapes or holes. If there are actual intersections, the shape may not draw or may have rendering artifacts. |
 
 
 ## Performance Considerations

@@ -29,11 +29,13 @@ const SVGRenderViewport = preload("../render/element/svg_render_viewport.gd")
 export(Resource) var svg = null setget _set_svg, _get_svg
 export(float) var fixed_scaling_ratio = 0 setget _set_fixed_scaling_ratio, _get_fixed_scaling_ratio
 export(bool) var antialiased = true setget _set_antialiased, _get_antialiased
+export(bool) var assume_no_self_intersections = false setget _set_assume_no_self_intersections, _get_assume_no_self_intersections
 
 var is_gles2 = OS.get_current_video_driver() == OS.VIDEO_DRIVER_GLES2
 
 var _root_viewport_renderer = null
 var _antialiased = true
+var _assume_no_self_intersections = false
 var _is_editor_hint = false
 var _is_queued_render_from_scratch = false
 var _editor_plugin = null
@@ -118,6 +120,7 @@ func _create_renderers_recursive(parent, children, render_props = {}):
 		renderer.svg_node = self
 		renderer.element_resource = child
 		renderer.node_text = child.text
+		renderer.assume_no_self_intersections = _assume_no_self_intersections
 		renderer.is_in_root_viewport = is_in_root_viewport
 		renderer.is_in_clip_path = is_in_clip_path
 		if view_box == null:
@@ -363,3 +366,10 @@ func _set_antialiased(antialiased):
 func _get_antialiased():
 	return _antialiased
 
+func _set_assume_no_self_intersections(assume_no_self_intersections):
+	if _assume_no_self_intersections != assume_no_self_intersections:
+		_assume_no_self_intersections = assume_no_self_intersections
+		_queue_render_from_scratch()
+
+func _get_assume_no_self_intersections():
+	return _assume_no_self_intersections

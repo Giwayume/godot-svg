@@ -15,6 +15,7 @@ var SVGRenderFillShader = SVGRenderFillShaderGles2 if OS.get_current_video_drive
 
 # Reference to SVG2D Node
 
+var assume_no_self_intersections = false
 var is_root = false
 var is_in_root_viewport = true
 var is_in_clip_path = false
@@ -221,7 +222,7 @@ func _process_simplified_polygon():
 				var path_simplifications = SVGPathSolver.simplify(fill_path, {
 					SVGValueConstant.EVEN_ODD: SVGPolygonSolver.FillRule.EVEN_ODD,
 					SVGValueConstant.NON_ZERO: SVGPolygonSolver.FillRule.NON_ZERO,
-				}[fill_rule])
+				}[fill_rule], assume_no_self_intersections)
 				for path_simplification in path_simplifications:
 					var simplified_fill = path_simplification.fill_instructions
 					var simplified_hole = path_simplification.hole_instructions
