@@ -28,48 +28,104 @@ func _process_polygon():
 	if attr_height is SVGLengthPercentage:
 		height = attr_height.get_length(inherited_view_box.size.y)
 	
+	var rx = 0
+	if attr_rx is SVGLengthPercentage:
+		rx = attr_rx.get_length(inherited_view_box.size.x)
+	
+	var ry = rx
+	if attr_ry is SVGLengthPercentage:
+		ry = attr_ry.get_length(inherited_view_box.size.y)
+	
+	var half_width = width / 2.0
+	var half_height = height / 2.0
+	
+	rx = min(rx, half_width)
+	ry = min(ry, half_height)
+	
+	if rx == 0 or ry == 0:
+		rx = 0
+		ry = 0
+	
+	var arc_angle = PI / 2
+	var bezier_segments = (2.0 * PI) / arc_angle
+	var handle_offset_unit = (4.0/3.0) * tan(PI / (2 * bezier_segments))
+	var handle_offset_x = handle_offset_unit * rx
+	var handle_offset_y = handle_offset_unit * ry
+	
 	var fill = [
 		{
 			"command": PathCommand.MOVE_TO,
-			"points": [position],
-		},
-		{
-			"command": PathCommand.LINE_TO,
-			"points": [position + Vector2(width, 0.0)],
-		},
-		{
-			"command": PathCommand.LINE_TO,
-			"points": [position + Vector2(width, height)],
-		},
-		{
-			"command": PathCommand.LINE_TO,
-			"points": [position + Vector2(0.0, height)],
-		},
-		{
-			"command": PathCommand.CLOSE_PATH,
+			"points": [position + Vector2(rx, 0.0)],
 		},
 	]
-	var stroke = [
-		{
-			"command": PathCommand.MOVE_TO,
-			"points": [position],
-		},
-		{
+	# Top edge
+	if rx < half_width or ry == 0:
+		fill.push_back({
 			"command": PathCommand.LINE_TO,
-			"points": [position + Vector2(width, 0.0)],
-		},
-		{
+			"points": [position + Vector2(width - rx, 0.0)],
+		})
+	# Top right corner
+	if rx > 0 and ry > 0:
+		fill.push_back({
+			"command": PathCommand.CUBIC_BEZIER_CURVE,
+			"points": [
+				position + Vector2(width - rx + handle_offset_x, 0.0),
+				position + Vector2(width, ry - handle_offset_y),
+				position + Vector2(width, ry),
+			]
+		})
+	# Right edge
+	if ry < half_height or rx == 0:
+		fill.push_back({
 			"command": PathCommand.LINE_TO,
-			"points": [position + Vector2(width, height)],
-		},
-		{
+			"points": [position + Vector2(width, height - ry)],
+		})
+	# Bottom right corner
+	if rx > 0 and ry > 0:
+		fill.push_back({
+			"command": PathCommand.CUBIC_BEZIER_CURVE,
+			"points": [
+				position + Vector2(width, height - ry + handle_offset_y),
+				position + Vector2(width - rx + handle_offset_x, height),
+				position + Vector2(width - rx, height),
+			]
+		})
+	# Bottom edge
+	if rx < half_width or ry == 0:
+		fill.push_back({
 			"command": PathCommand.LINE_TO,
-			"points": [position + Vector2(0.0, height)],
-		},
-		{
-			"command": PathCommand.CLOSE_PATH,
-		},
-	]
+			"points": [position + Vector2(rx, height)],
+		})
+	# Bottom left corner
+	if rx > 0 and ry > 0:
+		fill.push_back({
+			"command": PathCommand.CUBIC_BEZIER_CURVE,
+			"points": [
+				position + Vector2(rx - handle_offset_x, height),
+				position + Vector2(0.0, height - ry + handle_offset_y),
+				position + Vector2(0.0, height - ry),
+			]
+		})
+	# Left edge
+	if ry < half_height or rx == 0:
+		fill.push_back({
+			"command": PathCommand.LINE_TO,
+			"points": [position + Vector2(0.0, ry)],
+		})
+	# Top left corner
+	if rx > 0 and ry > 0:
+		fill.push_back({
+			"command": PathCommand.CUBIC_BEZIER_CURVE,
+			"points": [
+				position + Vector2(0.0, ry - handle_offset_y),
+				position + Vector2(rx - handle_offset_x, 0.0),
+				position + Vector2(rx, 0.0),
+			]
+		})
+	fill.push_back({
+		"command": PathCommand.CLOSE_PATH,
+	})
+	var stroke = fill.duplicate(true)
 	
 	return {
 		"is_simple_shape": true,
