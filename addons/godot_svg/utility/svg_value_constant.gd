@@ -46,6 +46,21 @@ const EVEN_ODD = "evenodd"
 const INHERIT = "inherit"
 const CURRENT_COLOR = "currentColor"
 
+const MEDIA = "media"
+const INDEFINITE = "indefinite"
+
+const ALWAYS = "always"
+const WHEN_NOT_ACTIVE = "whenNotActive"
+const NEVER = "never"
+
+const DISCRETE = "discrete"
+const LINEAR = "linear"
+const PACED = "paced"
+const SPLINE = "spline"
+
+const REPLACE = "replace"
+const SUM = "sum"
+
 enum PathCommand {
 	MOVE_TO,
 	LINE_TO,

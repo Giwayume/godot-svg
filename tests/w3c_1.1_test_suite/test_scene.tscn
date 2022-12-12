@@ -2,7 +2,7 @@
 
 [ext_resource path="res://addons/godot_svg/node/svg_2d.gd" type="Script" id=1]
 [ext_resource path="res://tests/_test_scene_control.gd" type="Script" id=2]
-[ext_resource path="res://tests/w3c_1.1_test_suite/svg/shapes/shapes-rect-05-f.svg" type="Resource" id=3]
+[ext_resource path="res://tests/w3c_1.1_test_suite/svg/custom/simple_animate.svg" type="Resource" id=3]
 
 [node name="SVGTestScene" type="Node2D"]
 script = ExtResource( 2 )
@@ -19,7 +19,7 @@ margin_bottom = 212.0
 
 [node name="SVG2D2" type="Node2D" parent="."]
 position = Vector2( -259, -142 )
-scale = Vector2( 4, 4 )
+scale = Vector2( 50, 50 )
 script = ExtResource( 1 )
 svg = ExtResource( 3 )
 fixed_scaling_ratio = 0
