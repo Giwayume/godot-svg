@@ -237,11 +237,12 @@ class PathQuadraticBezier extends PathShape:
 		return "quadratic(" + JSON.print(to_array()) + ")"
 	
 	func get_inside_check_point(rotation_direction):
-		return (
+		var inside_point = (
 			segments[0] +
 			((segments[0].direction_to(segments[1])).rotated(rotation_direction * PI / 128) *
 			(segments[1] - segments[0]).length() / 64)
 		)
+		return inside_point
 
 class PathCubicBezier extends PathShape:
 	var p0
@@ -452,7 +453,8 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 	var last_shape_index = paths.size() - 1
 	if paths[last_shape_index].command == PathCommand.CLOSE_PATH:
 		last_shape_index -= 1
-
+	
+	# Convert path commands into a list of shapes (PathShape instances)
 	for i in range(0, paths.size()):
 		var previous_instruction = paths[i - 1] if i > 0 else null
 		var command = paths[i].command
@@ -760,7 +762,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 					check_point.y >= shape.bounding_box.position.y
 				):
 					var check_collision_segment = PathSegment.new(check_point, Vector2(check_point.x, shape.bounding_box.position.y - 1.0))
-					var line_intersections = check_collision_segment.intersect_with(shape)
+					var line_intersections = check_collision_segment.intersect_with(shape, true, false)
 					var line_intersections_size = line_intersections.size()
 					for line_intersection in line_intersections:
 						var line_intersection_distance = check_point.distance_to(line_intersection.point)

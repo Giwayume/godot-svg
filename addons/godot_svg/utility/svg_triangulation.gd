@@ -599,10 +599,17 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 		last_break_index = break_index
 	
 	# Remove triangles with zero area (TODO - find out why this happens)
+	var interior_polygon_size = interior_polygon.size()
 	for i in range(interior_triangulation.size() - 3, -1, -3):
+		var ti0 = interior_triangulation[i]
+		var ti1 = interior_triangulation[i + 1]
+		var ti2 = interior_triangulation[i + 2]
 		if (
-			interior_polygon[interior_triangulation[i]].is_equal_approx(interior_polygon[interior_triangulation[i + 1]]) or
-			interior_polygon[interior_triangulation[i + 1]].is_equal_approx(interior_polygon[interior_triangulation[i + 2]])
+			interior_polygon_size > max(max(ti0, ti1), ti2) and
+			(
+				interior_polygon[ti0].is_equal_approx(interior_polygon[ti1]) or
+				interior_polygon[ti1].is_equal_approx(interior_polygon[ti2])
+			)
 		):
 			interior_triangulation.remove(i)
 			interior_triangulation.remove(i)
@@ -615,8 +622,12 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 		var is_outer_edge = [false, false, false]
 		var edges_to_recalculate = []
 		for j in range(0, 3):
-			var p0 = interior_polygon[interior_triangulation[i + j]]
-			var p1 = interior_polygon[interior_triangulation[i + j + 1] if j < 2 else interior_triangulation[i]]
+			var check_polygon_0 = interior_triangulation[i + j]
+			var check_polygon_1 = interior_triangulation[i + j + 1] if j < 2 else interior_triangulation[i]
+			if check_polygon_0 >= interior_polygon_size or check_polygon_1 >= interior_polygon_size:
+				continue
+			var p0 = interior_polygon[check_polygon_0]
+			var p1 = interior_polygon[check_polygon_1]
 			var edge_key = generate_edge_compare_key(p0, p1)
 			if not duplicate_edges.has(edge_key):
 				duplicate_edges[edge_key] = []
@@ -632,6 +643,8 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 		# Build vertex arrays
 		for j in range(0, 3):
 			var vertex_index = interior_triangulation[i + j]
+			if vertex_index >= interior_polygon_size:
+				continue
 			interior_vertices.push_back(interior_polygon[vertex_index])
 			interior_uv.push_back(generate_uv_at_point(bounding_box, interior_polygon[vertex_index]))
 			var index_mod = j % 3
