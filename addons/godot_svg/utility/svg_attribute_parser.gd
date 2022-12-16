@@ -12,6 +12,21 @@ static func to_snake_case(attribute_name):
 #	attribute_name = attribute_name.to_lower().replace("-", "_")
 	return attribute_name
 
+static func parse_number(string_representation) -> float:
+	if string_representation != null:
+		return string_representation.strip_edges().to_float()
+	return 0.0
+
+static func parse_integer_or_percentage(string_representation) -> int:
+	if string_representation != null:
+		string_representation = string_representation.strip_edges()
+		if string_representation.ends_with("%"):
+			var percentage = string_representation.replace("%", "").to_float()
+			return int((percentage / 100.0) * 255.0)
+		else:
+			return string_representation.to_int()
+	return 0
+
 # https://www.w3.org/TR/SVG/styling.html#PresentationAttributes
 static func parse_css_style(style):
 	var style_dictionary = {}
@@ -40,35 +55,94 @@ static func parse_css_style(style):
 
 static func parse_css_color(attribute):
 	var color = null
-	var hex_color_regex = RegEx.new()
-	hex_color_regex.compile("^#[0-9abcdefABCDEF]{3,8}$")
-	if hex_color_regex.search(attribute):
-		if attribute.length() == 4:
-			attribute = "#" + attribute[1] + attribute[1] + attribute[2] + attribute[2] + attribute[3] + attribute[3]
-		elif attribute.length() == 5:
-			attribute = "#" + attribute[4] + attribute[4] + attribute[1] + attribute[1] + attribute[2] + attribute[2] + attribute[3] + attribute[3]
-		elif attribute.length() == 9:
-			attribute = "#" + attribute.substr(7, 2) + attribute.substr(1, 6)
-		color = Color(attribute)
-	elif attribute.begins_with("rgb("):
-		attribute = attribute.replace("rgb(", "").rstrip(")").strip_edges()
-		var rgb_split = attribute.split(",")
-		color = Color8(
-			rgb_split[0].strip_edges().to_int(),
-			rgb_split[1].strip_edges().to_int(),
-			rgb_split[2].strip_edges().to_int()
-		)
-	elif attribute.begins_with("rgba("):
-		attribute = attribute.replace("rgba(", "").rstrip(")").strip_edges()
-		var rgba_split = attribute.split(",")
-		color = Color8(
-			rgba_split[0].strip_edges().to_int(),
-			rgba_split[1].strip_edges().to_int(),
-			rgba_split[2].strip_edges().to_int(),
-			rgba_split[3].strip_edges().to_int()
-		)
-	elif SVGValueConstant.CSS_COLOR_NAMES.has(attribute):
-		color = SVGValueConstant.CSS_COLOR_NAMES[attribute]
+	var color_strings = attribute.split(" ", false)
+	color_strings.invert()
+	for color_string in color_strings:
+		var hex_color_regex = RegEx.new()
+		hex_color_regex.compile("^#[0-9abcdefABCDEF]{3,8}$")
+		if hex_color_regex.search(color_string):
+			if color_string.length() == 4:
+				color_string = "#" + color_string[1] + color_string[1] + color_string[2] + color_string[2] + color_string[3] + color_string[3]
+			elif attribute.length() == 5:
+				color_string = "#" + color_string[4] + color_string[4] + color_string[1] + color_string[1] + color_string[2] + color_string[2] + color_string[3] + color_string[3]
+			elif attribute.length() == 9:
+				color_string = "#" + color_string.substr(7, 2) + color_string.substr(1, 6)
+			color = Color(color_string)
+		elif color_string.begins_with("rgb("):
+			color_string = color_string.replace("rgb(", "").rstrip(")").strip_edges()
+			var rgb_split = color_string.split(",")
+			color = Color8(
+				parse_integer_or_percentage(rgb_split[0]),
+				parse_integer_or_percentage(rgb_split[1]),
+				parse_integer_or_percentage(rgb_split[2])
+			)
+		elif color_string.begins_with("rgba("):
+			color_string = color_string.replace("rgba(", "").rstrip(")").strip_edges()
+			var rgba_split = color_string.split(",")
+			color = Color8(
+				parse_integer_or_percentage(rgba_split[0]),
+				parse_integer_or_percentage(rgba_split[1]),
+				parse_integer_or_percentage(rgba_split[2]),
+				parse_integer_or_percentage(rgba_split[3])
+			)
+		elif color_string.begins_with("icc-color("):
+			color_string = color_string.replace("icc-color(", "").rstrip(")").strip_edges()
+			var color_values_split = color_string.split(",")
+			var color_profile_name = color_values_split[0].strip_edges()
+			var icc_value_1 = parse_number(color_values_split[1])
+			var icc_value_2 = parse_number(color_values_split[2])
+			var icc_value_3 = parse_number(color_values_split[3])
+			var icc_value_4 = parse_number(color_values_split[4])
+			# TODO - convert to sRGB (Godot doesn't currently support anything else)
+		elif color_string.begins_with("cielab("):
+			color_string = color_string.replace("cielab(", "").rstrip(")").strip_edges()
+			var lab_split = color_string.split(",")
+			var l = parse_number(lab_split[0])
+			var a = parse_number(lab_split[1])
+			var b = parse_number(lab_split[2])
+			# TODO - convert to sRGB (Godot doesn't currently support anything else)
+		elif color_string.begins_with("cielchab("):
+			color_string = color_string.replace("cielchab(", "").rstrip(")").strip_edges()
+			var lch_split = color_string.split(",")
+			var l = parse_number(lch_split[0])
+			var c = parse_number(lch_split[1])
+			var h = parse_number(lch_split[2])
+			# TODO - convert to sRGB (Godot doesn't currently support anything else)
+		elif color_string.begins_with("icc-named-color("):
+			color_string = color_string.replace("icc-named-color(", "").rstrip(")").strip_edges()
+			var color_values_split = color_string.split(",")
+			var color_profile_name = color_values_split[0].strip_edges()
+			var color_name = color_values_split[1].strip_edges()
+			# TODO - convert to sRGB (Godot doesn't currently support anything else)
+		elif color_string.begins_with("device-gray("):
+			color_string = color_string.replace("device-gray(", "").rstrip(")").strip_edges()
+			var gray = parse_number(color_string)
+			# TODO - convert to sRGB (Godot doesn't currently support anything else)
+		elif color_string.begins_with("device-rgb("):
+			color_string = color_string.replace("device-rgb(", "").rstrip(")").strip_edges()
+			var rgb_split = color_string.split(",")
+			var r = parse_number(rgb_split[0])
+			var g = parse_number(rgb_split[1])
+			var b = parse_number(rgb_split[2])
+			# TODO - convert to sRGB (Godot doesn't currently support anything else)
+		elif color_string.begins_with("device-cmyk("):
+			color_string = color_string.replace("device-cmyk(", "").rstrip(")").strip_edges()
+			var cmyk_split = color_string.split(",")
+			var c = parse_number(cmyk_split[0])
+			var m = parse_number(cmyk_split[1])
+			var y = parse_number(cmyk_split[2])
+			var k = parse_number(cmyk_split[3])
+			# TODO - convert to sRGB (Godot doesn't currently support anything else)
+		elif color_string.begins_with("device-nchannel("):
+			color_string = color_string.replace("device-nchannel(", "").rstrip(")").strip_edges()
+			var channel_split = color_string.split(",")
+			for number_string in channel_split:
+				pass
+			# TODO - convert to sRGB (Godot doesn't currently support anything else)
+		elif SVGValueConstant.CSS_COLOR_NAMES.has(color_string):
+			color = SVGValueConstant.CSS_COLOR_NAMES[color_string]
+		if color != null:
+			break
 	return color
 
 static func parse_number_list(number_list_string):

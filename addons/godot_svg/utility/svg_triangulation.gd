@@ -296,7 +296,6 @@ static func circle_segment_to_quadratic_bezier(start_point, end_point, start_dir
 # { "command": PathCommand, "points": [Vector()] }
 # It only supports a subset of PathCommand. Points are absolute coordinates.
 static func triangulate_fill_path(path: Array, holes: Array = [], override_clockwise_check = null):
-
 	var current_point = Vector2()
 	var current_path_start_point = current_point
 	var has_holes = holes.size() > 0
@@ -484,8 +483,9 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 			PathCommand.QUADRATIC_BEZIER_CURVE:
 				var control_point = instruction.points[0]
 				var end_point = instruction.points[1]
-				
-				if SVGMath.is_point_right_of_segment(current_point, end_point, control_point) != is_clockwise:
+				var is_interior = false
+				if SVGMath.is_point_right_of_segment(current_point, end_point, control_point) == is_clockwise:
+					is_interior = true
 					interior_polygon.push_back(control_point)
 					add_duplicate_edge(duplicate_edges, current_point, control_point)
 					add_duplicate_edge(duplicate_edges, control_point, end_point)
@@ -504,7 +504,7 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 				quadratic_uv.push_back(generate_uv_at_point(bounding_box, end_point))
 				for ti in range(0, 3):
 					# 0 flips the sign (clockwise curves look correct by default), 1 keeps the sign.
-					quadratic_signs.push_back(1 if is_clockwise else 0)
+					quadratic_signs.push_back(1 if is_interior == is_clockwise else 0)
 				
 				current_point = end_point
 			PathCommand.CUBIC_BEZIER_CURVE:
