@@ -14,14 +14,19 @@ func recognize(resource: Resource) -> bool:
 	return false
 
 func save(path: String, resource: Resource, flags: int) -> int:
-	var error: int
-	var file: File = File.new()
-	error = file.open(path, File.WRITE)
 	
+	# Save the XML string
+	var file: File = File.new()
+	var error = file.open(path, File.WRITE)
 	if error != OK:
 		printerr('Can\'t write file: "%s"! code: %d.' % [path, error])
 		return error
-	
-	file.store_string(resource.xml)
+	file.store_string(
+		JSON.print({
+			"xml": resource.xml,
+			"render_cache": var2str(resource.render_cache)
+		})
+	)
 	file.close()
+	
 	return OK

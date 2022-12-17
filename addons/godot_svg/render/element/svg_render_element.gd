@@ -23,6 +23,7 @@ var is_render_group = false # Child rendering elements can be drawn inside this 
 var svg_node = null
 var node_name = "element"
 var node_text = ""
+var render_cache_id = ""
 
 # Core Attributes
 var attr_id = null setget _set_attr_id
@@ -105,6 +106,14 @@ func _notification(what):
 func _ready():
 	connect("visibility_changed", self, "_on_visibility_changed")
 	if svg_node != null:
+		if (
+			not svg_node.disable_render_cache and
+			svg_node._svg != null and
+			svg_node._svg.render_cache != null and
+			svg_node._svg.render_cache.has("process_polygon") and
+			svg_node._svg.render_cache.process_polygon.has(render_cache_id)
+		):
+			_rerender_prop_cache["processed_polygon"] = svg_node._svg.render_cache.process_polygon[render_cache_id]
 		svg_node.connect("viewport_scale_changed", self, "_on_viewport_scale_changed")
 		call_deferred("_on_viewport_scale_changed", svg_node._last_known_viewport_scale)
 
@@ -314,7 +323,7 @@ func _process_simplified_polygon():
 
 func _process_simplified_polygon_complete(polygons):
 	_rerender_prop_cache["processed_polygon"] = polygons
-	update()
+	_props_applied()
 
 
 func _calculate_bounding_box():
@@ -543,8 +552,14 @@ func draw_shape(updates):
 					"renderer": self,
 				})
 		else:
-			processed_polygon = _process_simplified_polygon()
-			_rerender_prop_cache["processed_polygon"] = processed_polygon
+			if _is_editor_hint:
+				svg_node._queue_process_polygon({
+					"renderer": self,
+				})
+				return
+			else:
+				processed_polygon = _process_simplified_polygon()
+				_rerender_prop_cache["processed_polygon"] = processed_polygon
 		
 		if processed_polygon.has("needs_refill"):
 			processed_polygon.erase("needs_refill")

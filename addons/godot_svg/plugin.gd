@@ -1,12 +1,15 @@
 tool
 extends EditorPlugin
 
+const plugin_config = preload("./plugin_config.gd")
+
 signal svg_resources_reimported(resource_names)
 signal editor_viewport_scale_changed(new_scale)
 
 var svg_import_plugin = null
 var edited_scene_viewport = null
 var previous_editor_viewport_transform_scale = Vector2(1.0, 1.0)
+var plugin_folder_path = plugin_config.resource_path.replace("plugin_config.gd", "")
 
 func _init():
 	name = "GodotSVGEditorPlugin"
@@ -78,3 +81,11 @@ func _find_edit_viewport(node):
 
 func _on_editing_scene_changed(scene_root):
 	edited_scene_viewport = _find_edit_viewport(get_editor_interface().get_editor_viewport())
+
+# Public methods
+
+func overwrite_svg_resource(resource):
+	ResourceSaver.save(resource.resource_path, resource)
+	var error = SVGResourceFormatSaver.new().save(resource.imported_path, resource, 0)
+	return error
+

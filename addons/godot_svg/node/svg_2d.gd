@@ -30,12 +30,15 @@ export(Resource) var svg = null setget _set_svg, _get_svg
 export(float) var fixed_scaling_ratio = 0 setget _set_fixed_scaling_ratio, _get_fixed_scaling_ratio
 export(bool) var antialiased = true setget _set_antialiased, _get_antialiased
 export(bool) var assume_no_self_intersections = false setget _set_assume_no_self_intersections, _get_assume_no_self_intersections
+export(bool) var disable_render_cache = false setget _set_disable_render_cache, _get_disable_render_cache
 
 var is_gles2 = OS.get_current_video_driver() == OS.VIDEO_DRIVER_GLES2
 
 var _root_viewport_renderer = null
 var _antialiased = true
 var _assume_no_self_intersections = false
+var _disable_render_cache = false
+var _is_render_cache_computed = false
 var _is_editor_hint = false
 var _is_queued_render_from_scratch = false
 var _editor_plugin = null
@@ -105,6 +108,8 @@ func _get_svg_element_renderer(node_name):
 
 func _create_renderers_recursive(parent, children, render_props = {}):
 	var view_box = null
+	if not render_props.has("cache_id"):
+		render_props.cache_id = "0"
 	if render_props.has("view_box"):
 		view_box = render_props.view_box
 	var is_in_root_viewport = false
@@ -113,6 +118,7 @@ func _create_renderers_recursive(parent, children, render_props = {}):
 	var is_in_clip_path = false
 	if render_props.has("is_in_clip_path"):
 		is_in_clip_path = render_props.is_in_clip_path
+	var child_index = 0
 	for child in children:
 		var renderer = _get_svg_element_renderer(child.node_name).new()
 		if parent == self:
@@ -123,6 +129,7 @@ func _create_renderers_recursive(parent, children, render_props = {}):
 		renderer.assume_no_self_intersections = _assume_no_self_intersections
 		renderer.is_in_root_viewport = is_in_root_viewport
 		renderer.is_in_clip_path = is_in_clip_path
+		renderer.render_cache_id = render_props.cache_id + "." + str(child_index)
 		if view_box == null:
 			renderer.is_root = true
 		renderer.apply_resource_attributes()
@@ -141,12 +148,14 @@ func _create_renderers_recursive(parent, children, render_props = {}):
 				"view_box": view_box,
 				"is_in_root_viewport": is_in_root_viewport,
 				"is_in_clip_path": is_in_clip_path,
+				"cache_id": renderer.render_cache_id
 			}
 			if renderer is SVGRenderViewport or renderer.attr_mask != SVGValueConstant.NONE or renderer.attr_clip_path != SVGValueConstant.NONE:
 				new_options.is_in_root_viewport = false
 			if renderer is SVGRenderClipPath:
 				new_options.is_in_clip_path = true
 			_create_renderers_recursive(renderer, child.children, new_options)
+		child_index += 1
 
 func _apply_stylesheet_recursive(children, rule_state = null):
 	var rules = _global_stylesheet
@@ -240,7 +249,6 @@ func _find_elements_by_name(name: String, parent_resource = null):
 				found_resources.append_array(_find_elements_by_name(name, child_resource))
 	return found_resources
 
-
 func _queue_render_from_scratch():
 	if not _is_queued_render_from_scratch:
 		_is_queued_render_from_scratch = true
@@ -259,6 +267,11 @@ func _render_from_scratch():
 	
 	# Create renderers
 	if _svg is SVGResource and _svg.viewport != null:
+		_is_render_cache_computed = _svg.render_cache != null
+		if not _disable_render_cache and not _is_render_cache_computed:
+			_svg.render_cache = {
+				"process_polygon": {},
+			}
 		_create_renderers_recursive(self, [_svg.viewport])
 		if _global_stylesheet.size() > 0:
 			_apply_stylesheet_recursive([_svg.viewport])
@@ -301,7 +314,10 @@ func _process_polygon_thread(_userdata):
 		_polygons_to_process_mutex.unlock()
 		if is_instance_valid(_polygon_to_process.renderer):
 			var polygon = _polygon_to_process.renderer.call("_process_simplified_polygon")
-			_polygon_to_process.renderer.call_deferred("_process_simplified_polygon_complete", polygon)
+			if is_instance_valid(_polygon_to_process.renderer):
+				_polygon_to_process.renderer.call_deferred("_process_simplified_polygon_complete", polygon)
+				if not _disable_render_cache and not _is_render_cache_computed:
+					_svg.render_cache.process_polygon[_polygon_to_process.renderer.render_cache_id] = polygon
 		_polygons_to_process_mutex.lock()
 		has_polygons_to_process = _polygons_to_process.size() > 0
 		_polygons_to_process_mutex.unlock()
@@ -312,6 +328,21 @@ func _process_polygon_thread_end():
 	if _process_polygon_thread != null:
 		_process_polygon_thread.wait_to_finish()
 		_process_polygon_thread = null
+	call_deferred("_process_polygon_end_notify")
+
+func _process_polygon_end_notify():
+	if (
+		_is_editor_hint and
+		not _disable_render_cache and
+		not _is_render_cache_computed and
+		_polygons_to_process.size() == 0 and
+		_svg != null and
+		_editor_plugin != null
+	):
+		var error = _editor_plugin.overwrite_svg_resource(_svg)
+		if error != OK:
+			print("[godot-svg] Editor error occurred when saving render cache back to SVG resource. Code: ", error)
+		_is_render_cache_computed = true
 
 # Editor
 
@@ -373,3 +404,13 @@ func _set_assume_no_self_intersections(assume_no_self_intersections):
 
 func _get_assume_no_self_intersections():
 	return _assume_no_self_intersections
+
+func _set_disable_render_cache(disable_render_cache):
+	if _disable_render_cache != disable_render_cache:
+		_disable_render_cache = disable_render_cache
+		if _svg != null:
+			_svg.render_cache = null
+		_queue_render_from_scratch()
+	
+func _get_disable_render_cache():
+	return _disable_render_cache
