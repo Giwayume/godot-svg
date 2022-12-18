@@ -255,8 +255,8 @@ static func sort_linked(list):
 	return list
 
 static func z_order(x, y, min_x, min_y, inv_size):
-	x = (x - min_x) * inv_size | 0;
-	y = (y - min_y) * inv_size | 0;
+	x = int(x - min_x) * int(inv_size) | int(0);
+	y = int(y - min_y) * int(inv_size) | int(0);
 
 	x = (x | (x << 8)) & 0x00FF00FF;
 	x = (x | (x << 4)) & 0x0F0F0F0F;

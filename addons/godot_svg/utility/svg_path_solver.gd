@@ -17,18 +17,21 @@ class PathShape:
 	var segments = []
 	var intersection_check_length
 	var bounding_box
+	var control_point_bounding_box
 	var intersections = []
 	var exit_direction = Vector2.ZERO
 	var pend
 	var path_end_is_close = false # This shape closes the path, special handling needed here to prevent intersection artifacts
 	
-	func intersect_with(other_shape, is_include_self_start_point = false, is_include_other_start_point = false):
+	func intersect_with(other_shape, is_include_self_start_point = false, is_include_other_start_point = false, skip_bounding_box_check = false):
 		var new_intersections = []
 		if (
-			bounding_box.position.x + bounding_box.size.x < other_shape.bounding_box.position.x or
-			bounding_box.position.x > other_shape.bounding_box.position.x + other_shape.bounding_box.size.x or
-			bounding_box.position.y + bounding_box.size.y < other_shape.bounding_box.position.y or
-			bounding_box.position.y > other_shape.bounding_box.position.y + other_shape.bounding_box.size.y
+			not skip_bounding_box_check and (
+				bounding_box.position.x + bounding_box.size.x < other_shape.bounding_box.position.x or
+				bounding_box.position.x > other_shape.bounding_box.position.x + other_shape.bounding_box.size.x or
+				bounding_box.position.y + bounding_box.size.y < other_shape.bounding_box.position.y or
+				bounding_box.position.y > other_shape.bounding_box.position.y + other_shape.bounding_box.size.y
+			)
 		):
 			return new_intersections
 		
@@ -131,6 +134,7 @@ class PathSegment extends PathShape:
 	
 	func _compute_bounding_box():
 		bounding_box = SVGHelper.get_point_list_bounds(segments)
+		control_point_bounding_box = bounding_box
 	
 	func find_direction_at(_t):
 		return p0.direction_to(p1)
@@ -195,8 +199,8 @@ class PathQuadraticBezier extends PathShape:
 			previous_segment = new_segment
 	
 	func _compute_bounding_box():
-		var control_points = [p0, p1, p2]
-		bounding_box = SVGHelper.get_point_list_bounds(control_points)
+		bounding_box = SVGMath.quadratic_bezier_bounds(p0, p1, p2)
+		control_point_bounding_box = SVGHelper.get_point_list_bounds([p0, p1, p2])
 	
 	func find_direction_at(t):
 		var epsilon = 0.00001
@@ -272,8 +276,8 @@ class PathCubicBezier extends PathShape:
 			previous_segment = new_segment
 	
 	func _compute_bounding_box():
-		var control_points = [p0, p1, p2, p3]
-		bounding_box = SVGHelper.get_point_list_bounds(control_points)
+		bounding_box = SVGMath.cubic_bezier_bounds(p0, p1, p2, p3)
+		control_point_bounding_box = SVGHelper.get_point_list_bounds([p0, p1, p2, p3])
 	
 	func find_direction_at(t):
 		var epsilon = 0.00001
@@ -428,7 +432,7 @@ static func find_solved_paths_that_use_shape_index(solved_paths, closest_hit_sha
 	for i in range(0, solved_paths.size()):
 		var path_ranges = solved_paths[i].path_ranges
 		for path_range in path_ranges:
-			if closest_hit_shape_index >= path_range[0] and closest_hit_shape_index < path_range[1]:
+			if closest_hit_shape_index >= path_range[0] and closest_hit_shape_index <= path_range[1]:
 				found_path_indices.push_back(i)
 				break
 	return found_path_indices
@@ -757,12 +761,13 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 				var shape = path_shapes[shape_index]
 				# Count collisions for a line that starts at check point and travels infinitely in -y direction
 				if (
-					check_point.x >= shape.bounding_box.position.x and
-					check_point.x <= shape.bounding_box.position.x + shape.bounding_box.size.x and
-					check_point.y >= shape.bounding_box.position.y
+					check_point.x >= shape.control_point_bounding_box.position.x and
+					check_point.x <= shape.control_point_bounding_box.position.x + shape.control_point_bounding_box.size.x and
+					check_point.y >= shape.control_point_bounding_box.position.y
 				):
-					var check_collision_segment = PathSegment.new(check_point, Vector2(check_point.x, shape.bounding_box.position.y - 1.0))
-					var line_intersections = check_collision_segment.intersect_with(shape, true, false)
+					var check_point_end = Vector2(check_point.x, shape.control_point_bounding_box.position.y - 1.0)
+					var check_collision_segment = PathSegment.new(check_point, check_point_end)
+					var line_intersections = check_collision_segment.intersect_with(shape, true, false, true)
 					var line_intersections_size = line_intersections.size()
 					for line_intersection in line_intersections:
 						var line_intersection_distance = check_point.distance_to(line_intersection.point)
@@ -782,7 +787,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 							insideness += 1
 						else:
 							insideness -= 1
-			
+		
 		var is_filled = false
 		match fill_rule:
 			FillRule.EVEN_ODD:
