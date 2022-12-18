@@ -41,7 +41,7 @@ func load(path: String, original_path: String):
 	
 	var svg_resource = SVGResource.new()
 	svg_resource.xml = xml_string
-	svg_resource.render_cache = str2var(render_cache)
+	svg_resource.render_cache = null if render_cache == null else str2var(render_cache)
 	svg_resource.imported_path = path
 	
 	var parent_stack = [{

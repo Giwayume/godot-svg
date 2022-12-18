@@ -179,8 +179,10 @@ void fragment() {
 	vec4 blend_color = texture(fill_texture, transform_applied_uv) * fill_color * gradient_color;
 	if (COLOR.a < 0.3) {
 		COLOR = quadratic_ps(COLOR.rg, 2.0 * (0.5 - step(COLOR.a, 0.15)), blend_color);
+//		COLOR = vec4(0.0, 0.0, 0.0, 0.0);
 	} else if (COLOR.a < 0.6) {
 		COLOR = cubic_ps(COLOR.rgb, 2.0 * (0.5 - step(COLOR.a, 0.45)), blend_color);
+//		COLOR = vec4(0.0, 0.0, 0.0, 0.0);
 	} else if (COLOR.a < 0.8) {
 		COLOR = blend_color;
 	} else {

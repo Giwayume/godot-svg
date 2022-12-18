@@ -589,7 +589,9 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 			var sliced_polygon_with_holes = []
 			var interior_hole_polygons = []
 			interior_hole_polygons = SVGHelper.array_slice(interior_polygon, hole_start_break_index)
+			
 			sliced_polygon_with_holes.append_array(sliced_polygon)
+			
 			for hole_path_index in range(path_group_holes_start_index - 1, polygon_break_indices.size() - 1):
 				var hole_break_index = polygon_break_indices[hole_path_index]
 				hole_indices.push_back(hole_break_index)
