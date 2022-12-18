@@ -834,6 +834,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 			"is_clockwise": filled_paths_clockwise_checks[path_index],
 			"hole_instructions": hole_instructions,
 		})
+	
 	return instruction_groups
 
 static func dash_array(path_reference: Array, dash_array: Array, dash_offset: float):

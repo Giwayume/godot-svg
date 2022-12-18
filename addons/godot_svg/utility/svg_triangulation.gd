@@ -366,6 +366,7 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 		
 		# Split up bezier curves based on triangle bounding box collisions
 		if control_points.size() > 0:
+			var other_path_check_index = 0
 			for other_path_check in path_intersection_checks:
 				if other_path_check.control_points.size() > 0:
 					var tessellation_counter = 0
@@ -388,6 +389,7 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 						if tessellation_counter >= 32: # Prevent infinite loop if things go terribly wrong
 							print("Infinite loop encountered during bezier tessellation. ", control_points, " ", other_path_check.control_points)
 							break
+				other_path_check_index += 1
 		
 		path_intersection_checks.push_back({
 			"control_points": control_points,

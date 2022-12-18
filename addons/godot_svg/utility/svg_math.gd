@@ -70,7 +70,8 @@ static func quadratic_bezier_length(p0: Vector2, p1: Vector2, p2: Vector2):
 # Generates a square bounding box touching the edges of the quadratic bezer curve
 static func quadratic_bezier_bounds(p0: Vector2, p1: Vector2, p2: Vector2):
 	# TODO - actual quadratic formula
-	return cubic_bezier_bounds(p0, p1, p1, p2)
+	var bounds = cubic_bezier_bounds(p0, p1, p1, p2)
+	return bounds
 
 # Splits quadratic bezier curve into 2, returning the new positions and control points
 static func split_quadratic_bezier(p0: Vector2, p1: Vector2, p2: Vector2, t: float):
@@ -310,6 +311,7 @@ static func intersect_point_segment(segment_start: Vector2, segment_end: Vector2
 			return point_intersection_along_segment(segment_start, segment_end, point)
 	return null
 
+# https://stackoverflow.com/questions/2778240/detection-of-triangle-collision-in-2d-space
 static func triangle_intersects_triangle_cross(points, triangle):
 	var pa = points[0]
 	var pb = points[1]
@@ -326,7 +328,7 @@ static func triangle_intersects_triangle_cross(points, triangle):
 	var dx21 = p2.x - p1.x
 	var dy12 = p1.y - p2.y
 	var d = dy12 * (p0.x - p2.x) + dx21 * (p0.y - p2.y)
-	var sa = dy12 * dxa + dx21 + dya
+	var sa = dy12 * dxa + dx21 * dya
 	var sb = dy12 * dxb + dx21 * dyb
 	var sc = dy12 * dxc + dx21 * dyc
 	var ta = (p2.y - p0.y) * dxa + (p0.x - p2.x) * dya
