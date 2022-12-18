@@ -90,8 +90,10 @@ func _process_polygon():
 				var last_fill_command = fill_commands.back()
 				if last_fill_command.command == PathCommand.CUBIC_BEZIER_CURVE:
 					p1 = last_fill_command.points[2] + (last_fill_command.points[2] - last_fill_command.points[1])
+				elif last_fill_command.command == PathCommand.QUADRATIC_BEZIER_CURVE:
+					p1 = last_fill_command.points[1] + (last_fill_command.points[1] - last_fill_command.points[0])
 				else:
-					p1 = last_fill_command.points[2]
+					p1 = last_fill_command.points[0]
 				fill_commands.push_back({
 					"command": PathCommand.CUBIC_BEZIER_CURVE,
 					"points": [p1, p2, p3],
@@ -119,12 +121,14 @@ func _process_polygon():
 				var relative_offset = (current_point if is_relative else Vector2())
 				var p0 = current_point
 				var p1 = Vector2()
-				var p2 = relative_offset + Vector2(values[2], values[3])
+				var p2 = relative_offset + Vector2(values[0], values[1])
 				var last_fill_command = fill_commands.back()
-				if last_fill_command.command == PathCommand.QUADRATIC_BEZIER_CURVE:
+				if last_fill_command.command == PathCommand.CUBIC_BEZIER_CURVE:
+					p1 = last_fill_command.points[2] + (last_fill_command.points[2] - last_fill_command.points[1])
+				elif last_fill_command.command == PathCommand.QUADRATIC_BEZIER_CURVE:
 					p1 = last_fill_command.points[1] + (last_fill_command.points[1] - last_fill_command.points[0])
 				else:
-					p1 = last_fill_command.points[1]
+					p1 = last_fill_command.points[0]
 				fill_commands.push_back({
 					"command": PathCommand.QUADRATIC_BEZIER_CURVE,
 					"points": [p1, p2],
