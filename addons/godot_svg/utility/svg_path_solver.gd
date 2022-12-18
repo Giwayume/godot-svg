@@ -12,6 +12,16 @@ enum FillRule {
 	NEGATIVE
 }
 
+class HitShapeUtility:
+	static func sort_hit_shape_order(a: Dictionary, b: Dictionary):
+		return a.distance < b.distance
+	
+	static func reduce_hit_shape_order_to_indices(order: Array):
+		var indices = []
+		for item in order:
+			indices.push_back(item.index)
+		return indices
+
 class PathShape:
 	var length
 	var segments = []
@@ -427,15 +437,182 @@ static func convert_path_shapes_to_instructions(path_shapes, force_close = false
 	})
 	return instructions
 
-static func find_solved_paths_that_use_shape_index(solved_paths, closest_hit_shape_index):
+# Builds a list of indices in the solved_paths array corresponding to paths that contain 
+# A shape index in the hit_shape_indices array, where that solved_path is not a hole (is filled)
+static func find_filled_solved_paths_that_use_shape_index(solved_paths: Array, hit_shape_indices: Array):
 	var found_path_indices = []
-	for i in range(0, solved_paths.size()):
-		var path_ranges = solved_paths[i].path_ranges
-		for path_range in path_ranges:
-			if closest_hit_shape_index >= path_range[0] and closest_hit_shape_index <= path_range[1]:
-				found_path_indices.push_back(i)
-				break
+	for hit_shape_index in hit_shape_indices:
+		var is_hole_candidate = false
+		for i in range(0, solved_paths.size()):
+			var path_ranges = solved_paths[i].path_ranges
+			for path_range in path_ranges:
+				if hit_shape_index >= path_range[0] and hit_shape_index <= path_range[1]:
+					if solved_paths[i].is_hole_candidate:
+						is_hole_candidate = true
+						break
+					found_path_indices.push_back(i)
+					break
+		if not is_hole_candidate:
+			break
 	return found_path_indices
+
+# Apply the dash-array SVG attribute to a path, by transforming it into a list of sub-paths
+static func dash_array(path_reference: Array, dash_array: Array, dash_offset: float):
+	# Figure out starting offset for dash
+	var current_dash_size_index = 0
+	var current_dash_size = 0.0
+	var current_distance_traversed = 0.0
+	var is_dash_render = true
+	if dash_offset != 0:
+		var repeat_size = 0
+		for size in dash_array:
+			repeat_size += size
+		var repeat_count = floor(abs(dash_offset / repeat_size))
+		var cumulative_offset = repeat_count * dash_offset
+		if int(repeat_count) % 2 == 1:
+			is_dash_render = false
+		if dash_offset > 0:
+			for current_index in range(0, dash_array.size()):
+				var size = float(dash_array[current_index])
+				cumulative_offset += size
+				if cumulative_offset > dash_offset:
+					current_dash_size_index = current_index
+					current_distance_traversed = cumulative_offset - dash_offset
+					break
+		else:
+			cumulative_offset *= -1
+			for current_index in range(dash_array.size() - 1, -1, -1):
+				var size = float(dash_array[current_index])
+				cumulative_offset -= size
+				if cumulative_offset < dash_offset:
+					current_dash_size_index = current_index
+					current_distance_traversed = cumulative_offset - dash_offset
+					break
+	current_dash_size = float(dash_array[current_dash_size_index])
+	
+	# Loop through path shapes and create new paths based on size
+	var current_reference_index = 0
+	var current_reference_size_total = 0
+	var previous_reference_size_used = 0
+	var current_reference_size_used = 0
+	var loop_count = 0
+	var current_point = Vector2.ZERO
+	var dashed_path = []
+	var was_dash_render = false
+	while current_reference_index < path_reference.size():
+		if loop_count > 65536: # Prevent infinite loop
+			break
+		loop_count += 1
+		
+		var reference_instruction = path_reference[current_reference_index]
+		if reference_instruction.command == PathCommand.MOVE_TO:
+			current_point = reference_instruction.points[0]
+			current_reference_index += 1
+			continue
+		if reference_instruction.command == PathCommand.CLOSE_PATH:
+			current_reference_index += 1
+			continue
+		
+		# Calculate length of the referenced segment of the path
+		if current_reference_size_total == 0:
+			match reference_instruction.command:
+				PathCommand.LINE_TO:
+					current_reference_size_total = current_point.distance_to(reference_instruction.points[0])
+				PathCommand.QUADRATIC_BEZIER_CURVE:
+					current_reference_size_total = SVGMath.quadratic_bezier_length(current_point, reference_instruction.points[0], reference_instruction.points[1])
+				PathCommand.CUBIC_BEZIER_CURVE:
+					current_reference_size_total = SVGMath.cubic_bezier_length(current_point, reference_instruction.points[0], reference_instruction.points[1], reference_instruction.points[2])
+		
+		previous_reference_size_used = current_reference_size_used
+		current_reference_size_used += current_dash_size - current_distance_traversed
+		current_reference_size_used = min(current_reference_size_used, current_reference_size_total)
+		current_distance_traversed += current_reference_size_used
+		
+		# Add a segment of the current shape as necessary
+		match reference_instruction.command:
+			PathCommand.LINE_TO:
+				var end_point = current_point + (current_point.direction_to(reference_instruction.points[0]) * current_reference_size_used)
+				if is_dash_render:
+					if not was_dash_render:
+						was_dash_render = true
+						dashed_path.push_back({
+							"command": PathCommand.MOVE_TO,
+							"points": [current_point + (current_point.direction_to(reference_instruction.points[0]) * previous_reference_size_used)]
+						})
+					dashed_path.push_back({
+						"command": PathCommand.LINE_TO,
+						"points": [end_point]
+					})
+			PathCommand.QUADRATIC_BEZIER_CURVE:
+				var sliced_quadratic = SVGMath.slice_quadratic_bezier(
+					current_point,
+					reference_instruction.points[0],
+					reference_instruction.points[1],
+					previous_reference_size_used / current_reference_size_total,
+					current_reference_size_used / current_reference_size_total
+				)
+				if is_dash_render:
+					if not was_dash_render:
+						was_dash_render = true
+						dashed_path.push_back({
+							"command": PathCommand.MOVE_TO,
+							"points": [sliced_quadratic[0]]
+						})
+					dashed_path.push_back({
+						"command": PathCommand.QUADRATIC_BEZIER_CURVE,
+						"points": SVGHelper.array_slice(sliced_quadratic, 1)
+					})
+			PathCommand.CUBIC_BEZIER_CURVE:
+				var sliced_cubic = SVGMath.slice_cubic_bezier(
+					current_point,
+					reference_instruction.points[0],
+					reference_instruction.points[1],
+					reference_instruction.points[2],
+					previous_reference_size_used / current_reference_size_total,
+					current_reference_size_used / current_reference_size_total
+				)
+				if is_dash_render:
+					if not was_dash_render:
+						was_dash_render = true
+						dashed_path.push_back({
+							"command": PathCommand.MOVE_TO,
+							"points": [sliced_cubic[0]]
+						})
+					dashed_path.push_back({
+						"command": PathCommand.CUBIC_BEZIER_CURVE,
+						"points": SVGHelper.array_slice(sliced_cubic, 1)
+					})
+		
+		# Jump to next size in dash array when current size is exhausted
+		if current_distance_traversed >= current_dash_size:
+			if current_dash_size_index < dash_array.size() - 1:
+				current_dash_size_index += 1
+			else:
+				current_dash_size_index = 0
+			current_distance_traversed = 0.0
+			current_dash_size = float(dash_array[current_dash_size_index])
+			was_dash_render = is_dash_render
+			is_dash_render = not is_dash_render
+		
+		# Jump to next reference shape when reached end of current one
+		if current_reference_size_used >= current_reference_size_total:
+			previous_reference_size_used = 0.0
+			current_reference_size_used = 0.0
+			current_reference_size_total = 0.0
+			match reference_instruction.command:
+				PathCommand.LINE_TO:
+					current_point = reference_instruction.points[0]
+				PathCommand.QUADRATIC_BEZIER_CURVE:
+					current_point = reference_instruction.points[1]
+				PathCommand.CUBIC_BEZIER_CURVE:
+					current_point = reference_instruction.points[2]
+			current_reference_index += 1
+	
+	if dashed_path.size() > 0:
+		return dashed_path
+	else:
+		return path_reference
+
 
 # Attempt to resolve self-intersections in a list of multiple path commands by...
 # ...splitting one path into multiple shapes at the intersections.
@@ -566,7 +743,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 			current_loop_range_index += 1
 			current_loop_range_has_any_intersection = false
 			current_path_bounding_box = create_new_bounding_box()
-	
+
 	# For each intersection point, follow the intersection lines forward, then take right turns until it comes back to the initial point
 	if intersections.size() > 0:
 		current_path_bounding_box = create_new_bounding_box()
@@ -745,56 +922,67 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 	var hole_candidates = []
 	var current_solved_path_index = 0
 	for solved_path_info in solved_paths:
-		var insideness = 0
+#		print_debug(SVGAttributeParser.serialize_d(convert_path_shapes_to_instructions(solved_path_info.path)))
+		var is_insideness_even = true
+		var is_insideness_non_zero = false
 		var solved_path = solved_path_info.path
 		var is_clockwise = solved_path_info.is_clockwise
 		var is_hole_candidate = false
-		var second_closest_hit_shape_index = -1
+		var hit_shape_order = []
 		if assume_no_self_intersections:
-			insideness = 1
+			is_insideness_even = false
+			is_insideness_non_zero = true
 		else:
-			var check_point = solved_path[0].get_inside_check_point(1.0 if is_clockwise else -1.0)
-			var closest_hit_shape_index = -1
-			var closest_hit_shape_distance = INF
-			var second_closest_hit_shape_distance = INF
-			for shape_index in range(0, path_shapes.size()):
-				var shape = path_shapes[shape_index]
-				# Count collisions for a line that starts at check point and travels infinitely in -y direction
-				if (
-					check_point.x >= shape.control_point_bounding_box.position.x and
-					check_point.x <= shape.control_point_bounding_box.position.x + shape.control_point_bounding_box.size.x and
-					check_point.y >= shape.control_point_bounding_box.position.y
-				):
-					var check_point_end = Vector2(check_point.x, shape.control_point_bounding_box.position.y - 1.0)
-					var check_collision_segment = PathSegment.new(check_point, check_point_end)
-					var line_intersections = check_collision_segment.intersect_with(shape, true, false, true)
-					var line_intersections_size = line_intersections.size()
-					for line_intersection in line_intersections:
-						var line_intersection_distance = check_point.distance_to(line_intersection.point)
-						if line_intersection_distance < closest_hit_shape_distance:
-							second_closest_hit_shape_index = closest_hit_shape_index
-							second_closest_hit_shape_distance = closest_hit_shape_distance
-							closest_hit_shape_distance = line_intersection_distance
-							closest_hit_shape_index = shape_index
-						elif line_intersection_distance < second_closest_hit_shape_distance:
-							second_closest_hit_shape_index = shape_index
-							second_closest_hit_shape_distance = line_intersection_distance
-					if line_intersections_size > 0:
-						is_hole_candidate = true
-					if line_intersections_size % 2 == 1:
-						# add or subtract insideness based on clockwise/counter-clockwise line collision direction
-						if shape.p0.x > shape.pend.x:
-							insideness += 1
-						else:
-							insideness -= 1
+			var even_votes = 0
+			var non_zero_votes = 0
+			# Since there can be inconsistency in collision results, sample the fill rule at multiple points;
+			# Majority rule determines what the fill rule should be
+			for sample_path_index in [0, floor(solved_path.size() * 1 / 3), floor(solved_path.size() * 2 / 3)]:
+				var insideness = 0
+				var check_point = solved_path[sample_path_index].get_inside_check_point(1.0 if is_clockwise else -1.0)
+				for shape_index in range(0, path_shapes.size()):
+					var shape = path_shapes[shape_index]
+					# Count collisions for a line that starts at check point and travels infinitely in -y direction
+					if (
+						check_point.x >= shape.control_point_bounding_box.position.x and
+						check_point.x <= shape.control_point_bounding_box.position.x + shape.control_point_bounding_box.size.x and
+						check_point.y >= shape.control_point_bounding_box.position.y
+					):
+						var check_point_end = Vector2(check_point.x, shape.control_point_bounding_box.position.y - 1.0)
+						var check_collision_segment = PathSegment.new(check_point, check_point_end)
+						var line_intersections = check_collision_segment.intersect_with(shape, true, false, true)
+						var line_intersections_size = line_intersections.size()
+						
+						for line_intersection in line_intersections:
+							hit_shape_order.push_back({
+								"distance": check_point.distance_to(line_intersection.point),
+								"index": shape_index,
+							})
+						if line_intersections_size > 0:
+							is_hole_candidate = true
+						if line_intersections_size % 2 == 1:
+							# add or subtract insideness based on clockwise/counter-clockwise line collision direction
+							if shape.p0.x > shape.pend.x:
+								insideness += 1
+							else:
+								insideness -= 1
+				if int(abs(insideness)) % 2 == 0:
+					even_votes += 1
+				if insideness != 0:
+					non_zero_votes += 1
+			is_insideness_even = true if even_votes >= 2 else false
+			is_insideness_non_zero = true if non_zero_votes >= 2 else false
+			
+		hit_shape_order.sort_custom(HitShapeUtility, "sort_hit_shape_order")
+		hit_shape_order.pop_front()
 		
 		var is_filled = false
 		match fill_rule:
 			FillRule.EVEN_ODD:
-				if int(abs(insideness)) % 2 == 1:
+				if not is_insideness_even:
 					is_filled = true
 			FillRule.NON_ZERO:
-				if insideness != 0:
+				if is_insideness_non_zero:
 					is_filled = true
 		
 		if is_filled:
@@ -802,17 +990,20 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 			filled_paths_clockwise_checks.push_back(is_clockwise)
 			filled_paths_solved_path_indices.push_back(current_solved_path_index)
 			hole_paths.push_back([])
+			is_hole_candidate = false
 		elif is_hole_candidate:
 			hole_candidates.push_back({
-				"second_closest_hit_shape_index": second_closest_hit_shape_index,
+				"hit_shape_indices": HitShapeUtility.reduce_hit_shape_order_to_indices(hit_shape_order),
 				"solved_path_info": solved_path_info,
 			})
+		
+		solved_path_info.is_hole_candidate = is_hole_candidate
 		
 		current_solved_path_index += 1
 	
 	# For shapes that appear to be holes, find the parent shapes containing the holes.
 	for hole_candidate in hole_candidates:
-		var paths_that_use_shape = find_solved_paths_that_use_shape_index(solved_paths, hole_candidate.second_closest_hit_shape_index)
+		var paths_that_use_shape = find_filled_solved_paths_that_use_shape_index(solved_paths, hole_candidate.hit_shape_indices)
 		for solved_path_index in paths_that_use_shape:
 			var found_index = filled_paths_solved_path_indices.find(solved_path_index)
 			if (
@@ -842,158 +1033,3 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 	
 	return instruction_groups
 
-static func dash_array(path_reference: Array, dash_array: Array, dash_offset: float):
-	# Figure out starting offset for dash
-	var current_dash_size_index = 0
-	var current_dash_size = 0.0
-	var current_distance_traversed = 0.0
-	var is_dash_render = true
-	if dash_offset != 0:
-		var repeat_size = 0
-		for size in dash_array:
-			repeat_size += size
-		var repeat_count = floor(abs(dash_offset / repeat_size))
-		var cumulative_offset = repeat_count * dash_offset
-		if int(repeat_count) % 2 == 1:
-			is_dash_render = false
-		if dash_offset > 0:
-			for current_index in range(0, dash_array.size()):
-				var size = float(dash_array[current_index])
-				cumulative_offset += size
-				if cumulative_offset > dash_offset:
-					current_dash_size_index = current_index
-					current_distance_traversed = cumulative_offset - dash_offset
-					break
-		else:
-			cumulative_offset *= -1
-			for current_index in range(dash_array.size() - 1, -1, -1):
-				var size = float(dash_array[current_index])
-				cumulative_offset -= size
-				if cumulative_offset < dash_offset:
-					current_dash_size_index = current_index
-					current_distance_traversed = cumulative_offset - dash_offset
-					break
-	current_dash_size = float(dash_array[current_dash_size_index])
-	
-	# Loop through path shapes and create new paths based on size
-	var current_reference_index = 0
-	var current_reference_size_total = 0
-	var previous_reference_size_used = 0
-	var current_reference_size_used = 0
-	var loop_count = 0
-	var current_point = Vector2.ZERO
-	var dashed_path = []
-	var was_dash_render = false
-	while current_reference_index < path_reference.size():
-		if loop_count > 65536: # Prevent infinite loop
-			break
-		loop_count += 1
-		
-		var reference_instruction = path_reference[current_reference_index]
-		if reference_instruction.command == PathCommand.MOVE_TO:
-			current_point = reference_instruction.points[0]
-			current_reference_index += 1
-			continue
-		if reference_instruction.command == PathCommand.CLOSE_PATH:
-			current_reference_index += 1
-			continue
-		
-		# Calculate length of the referenced segment of the path
-		if current_reference_size_total == 0:
-			match reference_instruction.command:
-				PathCommand.LINE_TO:
-					current_reference_size_total = current_point.distance_to(reference_instruction.points[0])
-				PathCommand.QUADRATIC_BEZIER_CURVE:
-					current_reference_size_total = SVGMath.quadratic_bezier_length(current_point, reference_instruction.points[0], reference_instruction.points[1])
-				PathCommand.CUBIC_BEZIER_CURVE:
-					current_reference_size_total = SVGMath.cubic_bezier_length(current_point, reference_instruction.points[0], reference_instruction.points[1], reference_instruction.points[2])
-		
-		previous_reference_size_used = current_reference_size_used
-		current_reference_size_used += current_dash_size - current_distance_traversed
-		current_reference_size_used = min(current_reference_size_used, current_reference_size_total)
-		current_distance_traversed += current_reference_size_used
-		
-		# Add a segment of the current shape as necessary
-		match reference_instruction.command:
-			PathCommand.LINE_TO:
-				var end_point = current_point + (current_point.direction_to(reference_instruction.points[0]) * current_reference_size_used)
-				if is_dash_render:
-					if not was_dash_render:
-						was_dash_render = true
-						dashed_path.push_back({
-							"command": PathCommand.MOVE_TO,
-							"points": [current_point + (current_point.direction_to(reference_instruction.points[0]) * previous_reference_size_used)]
-						})
-					dashed_path.push_back({
-						"command": PathCommand.LINE_TO,
-						"points": [end_point]
-					})
-			PathCommand.QUADRATIC_BEZIER_CURVE:
-				var sliced_quadratic = SVGMath.slice_quadratic_bezier(
-					current_point,
-					reference_instruction.points[0],
-					reference_instruction.points[1],
-					previous_reference_size_used / current_reference_size_total,
-					current_reference_size_used / current_reference_size_total
-				)
-				if is_dash_render:
-					if not was_dash_render:
-						was_dash_render = true
-						dashed_path.push_back({
-							"command": PathCommand.MOVE_TO,
-							"points": [sliced_quadratic[0]]
-						})
-					dashed_path.push_back({
-						"command": PathCommand.QUADRATIC_BEZIER_CURVE,
-						"points": SVGHelper.array_slice(sliced_quadratic, 1)
-					})
-			PathCommand.CUBIC_BEZIER_CURVE:
-				var sliced_cubic = SVGMath.slice_cubic_bezier(
-					current_point,
-					reference_instruction.points[0],
-					reference_instruction.points[1],
-					reference_instruction.points[2],
-					previous_reference_size_used / current_reference_size_total,
-					current_reference_size_used / current_reference_size_total
-				)
-				if is_dash_render:
-					if not was_dash_render:
-						was_dash_render = true
-						dashed_path.push_back({
-							"command": PathCommand.MOVE_TO,
-							"points": [sliced_cubic[0]]
-						})
-					dashed_path.push_back({
-						"command": PathCommand.CUBIC_BEZIER_CURVE,
-						"points": SVGHelper.array_slice(sliced_cubic, 1)
-					})
-		
-		# Jump to next size in dash array when current size is exhausted
-		if current_distance_traversed >= current_dash_size:
-			if current_dash_size_index < dash_array.size() - 1:
-				current_dash_size_index += 1
-			else:
-				current_dash_size_index = 0
-			current_distance_traversed = 0.0
-			current_dash_size = float(dash_array[current_dash_size_index])
-			was_dash_render = is_dash_render
-			is_dash_render = not is_dash_render
-		
-		# Jump to next reference shape when reached end of current one
-		if current_reference_size_used >= current_reference_size_total:
-			previous_reference_size_used = 0.0
-			current_reference_size_used = 0.0
-			current_reference_size_total = 0.0
-			match reference_instruction.command:
-				PathCommand.LINE_TO:
-					current_point = reference_instruction.points[0]
-				PathCommand.QUADRATIC_BEZIER_CURVE:
-					current_point = reference_instruction.points[1]
-				PathCommand.CUBIC_BEZIER_CURVE:
-					current_point = reference_instruction.points[2]
-			current_reference_index += 1
-	
-	if dashed_path.size() > 0:
-		return dashed_path
-	else:
-		return path_reference

@@ -118,6 +118,7 @@ func get_stylesheet():
 				current_prop_value = ""
 			else:
 				current_prop_value += c
+	
 	return stylesheet
 
 # Getters / Setters

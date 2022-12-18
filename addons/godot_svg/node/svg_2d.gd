@@ -182,14 +182,17 @@ func _apply_stylesheet_recursive(children, rule_state = null):
 					if not element_selector.any:
 						if element_selector.node_name != null:
 							if element_selector.node_name != renderer.node_name:
+								is_all_matching = false
 								continue
 						if element_selector.id != null:
 							if element_selector.id != renderer.attr_id:
+								is_all_matching = false
 								continue
 						if element_selector.class != null:
 							var renderer_classes = renderer.attr_class.split(" ", false)
 							for classname in element_selector.class:
 								if not renderer_classes.has(classname):
+									is_all_matching = false
 									continue
 					if is_all_matching:
 						if current_match_index < selector_path.size() - 1:

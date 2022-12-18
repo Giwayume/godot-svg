@@ -1,4 +1,3 @@
-
 # Adapted from earcut.js
 # License: ISC License
 # https://github.com/mapbox/earcut/blob/master/LICENSE
