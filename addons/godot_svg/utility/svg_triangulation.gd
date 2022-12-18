@@ -512,7 +512,7 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 				quadratic_uv.push_back(generate_uv_at_point(bounding_box, end_point))
 				for ti in range(0, 3):
 					# 0 flips the sign (clockwise curves look correct by default), 1 keeps the sign.
-					quadratic_signs.push_back(1 if is_interior == is_clockwise else 0)
+					quadratic_signs.push_back(1 if is_interior else 0)
 				
 				current_point = end_point
 			PathCommand.CUBIC_BEZIER_CURVE:
