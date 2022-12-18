@@ -311,9 +311,9 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 		all_paths = path
 	var all_path_size = all_paths.size()
 	
-	# - Check if the polygon is clockwise or counter-clockwise. Used to determine the inside of the path.
-	# - Build a list of triangle intersection checks.
-	# - Evaluate the bounding box of the overall shape for texture mapping.
+	# 1. Check if the polygon is clockwise or counter-clockwise. Used to determine the inside of the path.
+	# 2. Build a list of triangle intersection checks.
+	# 3. Evaluate the bounding box of the overall shape for texture mapping.
 	var clockwise_check_polygons = []
 	var clockwise_check_polygon = []
 	var path_intersection_checks = []
@@ -396,14 +396,20 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 		})
 	
 	var clockwise_checks = []
+	var check_polygon_index = 0
 	for check_polygon in clockwise_check_polygons:
 		if override_clockwise_check != null:
-			clockwise_checks.push_back(override_clockwise_check)
+			clockwise_checks.push_back(
+				override_clockwise_check
+				if check_polygon_index == 0 else
+				not override_clockwise_check
+			)
 		else:
 			# This method must work in a different coordinate space than Godot 2D, it gives the OPPOSITE result.
 			clockwise_checks.push_back(
 				!Geometry.is_polygon_clockwise(PoolVector2Array(check_polygon))
 			)
+		check_polygon_index += 1
 	
 	# Rebuild path based on new tessellation from triangle intersections.
 	var cubic_evaluations = {}
@@ -572,10 +578,11 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 	
 	for path_index in range(0, polygon_break_indices.size()): # range(0, path_group_holes_start_index):
 		var break_index = polygon_break_indices[path_index]
+		if path_index == path_group_holes_start_index:
+			break
 		var sliced_polygon = SVGHelper.array_slice(interior_polygon, last_break_index, break_index)
 		var triangulation = []
 		if has_holes:
-			var is_outer_clockwise = clockwise_checks[path_index]
 			var hole_indices = []
 			var sliced_polygon_with_holes = []
 			var interior_hole_polygons = []

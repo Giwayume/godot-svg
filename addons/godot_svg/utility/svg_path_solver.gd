@@ -771,14 +771,18 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 							second_closest_hit_shape_distance = closest_hit_shape_distance
 							closest_hit_shape_distance = line_intersection_distance
 							closest_hit_shape_index = shape_index
+						elif line_intersection_distance < second_closest_hit_shape_distance:
+							second_closest_hit_shape_index = shape_index
+							second_closest_hit_shape_distance = line_intersection_distance
 					if line_intersections_size > 0:
 						is_hole_candidate = true
 					if line_intersections_size % 2 == 1:
-						if shape.p0.x <= check_point.x and shape.pend.x >= check_point.x:
+						# add or subtract insideness based on clockwise/counter-clockwise line collision direction
+						if shape.p0.x > shape.pend.x:
 							insideness += 1
-						elif shape.p0.x >= check_point.x and shape.pend.x <= check_point.x:
+						else:
 							insideness -= 1
-		
+			
 		var is_filled = false
 		match fill_rule:
 			FillRule.EVEN_ODD:
