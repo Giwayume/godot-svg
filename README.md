@@ -16,6 +16,12 @@ This software is in early development.
 
 3. **Check the support table at the bottom before reporting bugs.**
 
+## Godot Core Issues
+
+Resolving the following issues in Godot core will improve this plugin. Please visit them and give a thumbs up.
+
+1. [OpenGL: MSAA antialiasing is not reimplemented yet](https://github.com/godotengine/godot/issues/69462) - SVGs are drawn on meshes, there are noticable aliasing artifacts especially as you scale out. This will fix that.
+
 ## Installation
 
 Copy the `addons/godot-svg` folder in this repository into your Godot project. Make sure the folder sits exactly at the path `res://addons/godot-svg`. If you put it somewhere else, some things like icons may break.
