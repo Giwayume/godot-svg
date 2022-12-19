@@ -2,7 +2,7 @@
 
 This Godot plugin **renders SVG files at runtime**. It achieves the effect of infinite scaling and smooth curves by calculating the curves in shaders drawn on polygons.
 
-To be clear, in case you are unaware, Godot already has built-in functionality to import SVGs and display them as rasterized (pixel map) textures in-game. This is likely what you should do 90% of the time instead of using this plugin to render every SVG in your game.
+To be clear, Godot already has built-in functionality to import SVGs and display them as rasterized (pixel map) textures in-game. This is likely what you should do 90% of the time instead of using this plugin to render every SVG in your game.
 
 It is **HIGHLY RECOMMENDED** to use this plugin with the GLES3 renderer, as GLES2 does not support many of the functions used to render SVG on the GPU (dFdx/dFdy/fwidth is used for anti-aliasing).
 
