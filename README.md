@@ -1,6 +1,6 @@
 # Godot SVG
 
-This Godot plugin **renders SVG files at runtime**. It achieves the effect of infinite scaling and smooth curves by calculating the curves in shaders drawn on polygons.
+This Godot 3.5 plugin **renders SVG files at runtime**. It achieves the effect of infinite scaling and smooth curves by calculating the curves in shaders drawn on polygons.
 
 To be clear, Godot already has built-in functionality to import SVGs and display them as rasterized (pixel map) textures in-game. This is likely what you should do 90% of the time instead of using this plugin to render every SVG in your game.
 
