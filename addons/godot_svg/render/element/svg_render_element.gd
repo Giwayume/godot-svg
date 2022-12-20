@@ -599,7 +599,7 @@ func draw_shape(updates):
 			if fill_index < polygon_lists.size():
 				_shape_fill.mesh = _create_mesh_from_triangulation(polygon_lists[fill_index])
 				_shape_fill.material = ShaderMaterial.new()
-				_shape_fill.material.shader = SVGRenderFillShader
+				_shape_fill.material.shader = SVGRenderFillShader if svg_node.antialiased else SVGRenderFillShaderGles2
 			_shape_fill.material.set_shader_param("fill_color", updates.fill_color)
 			_shape_fill.self_modulate = Color(1, 1, 1, max(0, min(1, attr_fill_opacity.get_length(1))))
 			if (
@@ -636,7 +636,7 @@ func draw_shape(updates):
 			if stroke_index < polygon_lists.size():
 				_shape_stroke.mesh = _create_mesh_from_triangulation(polygon_lists[stroke_index])
 				_shape_stroke.material = ShaderMaterial.new()
-				_shape_stroke.material.shader = SVGRenderFillShader
+				_shape_stroke.material.shader = SVGRenderFillShader if svg_node.antialiased else SVGRenderFillShaderGles2
 			else:
 				_shape_stroke.mesh = null
 			_shape_stroke.material.set_shader_param("fill_color", updates.stroke_color)
