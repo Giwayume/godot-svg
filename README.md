@@ -22,6 +22,8 @@ Resolving the following issues in Godot core will improve this plugin. Please vi
 
 1. [OpenGL: MSAA antialiasing is not reimplemented yet](https://github.com/godotengine/godot/issues/69462) - SVGs are drawn on meshes, there are noticable aliasing artifacts especially as you scale out. This will fix that.
 
+2. [Expose _edit_get_rect, _edit_use_rect to gdscript](https://github.com/godotengine/godot-proposals/issues/5289) - SVG2D is set up as a custom node, without this engine feature you cannot resize and rescale it with editor controls (must use the inspector).
+
 ## Installation
 
 Copy the `addons/godot-svg` folder in this repository into your Godot project. Make sure the folder sits exactly at the path `res://addons/godot-svg`. If you put it somewhere else, some things like icons may break.
