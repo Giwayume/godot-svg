@@ -237,8 +237,9 @@ class PathQuadraticBezier extends PathShape:
 			else:
 				return PathQuadraticBezier.new(p0, p1, p2)
 		else:
+			var split_epsilon = 0.0001
 			var left_split = SVGMath.split_quadratic_bezier(p0, p1, p2, start_t)
-			var right_split = SVGMath.split_quadratic_bezier(left_split[2], left_split[3], left_split[4], (end_t - start_t) / (1.0 - start_t))
+			var right_split = SVGMath.split_quadratic_bezier(left_split[2], left_split[3], left_split[4], (end_t - start_t) / max(split_epsilon, (1.0 - start_t)))
 			if is_reversed:
 				return PathQuadraticBezier.new(right_split[2], right_split[1], right_split[20])
 			else:
@@ -767,6 +768,9 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 				var did_path_return_to_start = false
 				while infinite_loop_iterator < 1000: # If you need paths with 1000+ instructions open an issue. Performance is bad.
 					infinite_loop_iterator += 1
+					if infinite_loop_iterator == 1000:
+						print("[godot-svg] Infinite loop encountered during path solving. This is likely a bug.")
+					
 					var next_intersection = null
 					var next_intersection_t = 0.0
 					
@@ -782,6 +786,12 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 									next_intersection = check_intersection
 									next_intersection_t = next_intersection_info.self_t
 									break
+					
+					# Normalize check_t range overflow caused by no intersection found code below
+					if check_t < 0.0:
+						check_t = 0.0
+					elif check_t > 1.0:
+						check_t = 1.0
 					
 					# If next intersection is our starting intersection, we're done
 					if encountered_intersections.has(next_intersection):
@@ -851,13 +861,11 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 									"shape_t": winning_t,
 								})
 						else:
-							print("Error solving simple shape: no valid direction found")
+							print("[godot-svg] Error solving simple shape: no valid direction found")
 							break
 					
 					# No intersection found, keep looping through current path segments
 					else:
-						if check_t > 0.014967 and check_t < 0.014969:
-							check_t = 0.14968
 						var new_sliced_shape = current_shape.slice(
 							check_t,
 							(1.0 if traverse_direction > 0.0 else 0.0)
@@ -886,7 +894,8 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 						final_rotation += current_shape.find_direction_at(1.0 if traverse_direction > 0.0 else 0.0).angle_to(
 							traverse_direction * next_shape.find_direction_at(0.0 if traverse_direction > 0.0 else 1.0)
 						)
-						check_t = 0.0 if traverse_direction > 0.0 else 1.0
+						# Put the check_t slightly out of 0.0 - 1.0 range in case the next intersection is exactly at the edges
+						check_t = -0.1 if traverse_direction > 0.0 else 1.1
 				
 				if did_path_return_to_start:
 					var trumps_all_existing_solutions = true
@@ -970,6 +979,9 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 					even_votes += 1
 				if insideness != 0:
 					non_zero_votes += 1
+				# Small optmization, break if majority votes already agree.
+				if sample_path_index > 0 and (even_votes == 0 or even_votes == 2) and (non_zero_votes == 0 or non_zero_votes == 2):
+					break
 			is_insideness_even = true if even_votes >= 2 else false
 			is_insideness_non_zero = true if non_zero_votes >= 2 else false
 			

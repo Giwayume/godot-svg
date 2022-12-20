@@ -256,3 +256,11 @@ static func serialize_d(path):
 			PathCommand.CLOSE_PATH:
 				d += " Z "
 	return d.strip_edges()
+
+static func serialize_point_list_as_d(points: Array):
+	var d = ""
+	var first = points.pop_front()
+	d += "M " + serialize_d_points([first])
+	for point in points:
+		d += " L " + serialize_d_points([point])
+	return d.strip_edges()

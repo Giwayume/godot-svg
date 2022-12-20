@@ -151,18 +151,26 @@ static func subdivide_cubic_bezier_path(p0, p1, p2, p3, subdivision_count = 1):
 static func is_curve_triangles_intersects_other_curve_triangles(curve_1_triangles, curve_2_triangles):
 	for curve_1_triangle in curve_1_triangles:
 		for curve_2_triangle in curve_2_triangles:
-			if curve_1_triangle[0] == curve_1_triangle[1]:
+			var is_curve_1_segment = (curve_1_triangle[0] == curve_1_triangle[1])
+			var is_curve_2_segment = (curve_2_triangle[0] == curve_2_triangle[1])
+			if is_curve_1_segment and is_curve_2_segment:
+				return false
+			elif is_curve_1_segment:
 				if (
 					SVGMath.segment_intersects_triangle(curve_1_triangle[0], curve_1_triangle[2], curve_2_triangle) and
 					not curve_1_triangle[0].is_equal_approx(curve_2_triangle[2]) and
-					not curve_1_triangle[2].is_equal_approx(curve_2_triangle[0])
+					not curve_1_triangle[2].is_equal_approx(curve_2_triangle[0]) and
+					not curve_1_triangle[0].is_equal_approx(curve_2_triangle[0]) and 
+					not curve_1_triangle[2].is_equal_approx(curve_2_triangle[2])
 				):
 					return true
-			elif curve_2_triangle[0] == curve_2_triangle[1]:
+			elif is_curve_2_segment:
 				if (
 					SVGMath.segment_intersects_triangle(curve_2_triangle[0], curve_2_triangle[2], curve_1_triangle) and
 					not curve_1_triangle[0].is_equal_approx(curve_2_triangle[2]) and
-					not curve_1_triangle[2].is_equal_approx(curve_2_triangle[0])
+					not curve_1_triangle[2].is_equal_approx(curve_2_triangle[0]) and
+					not curve_1_triangle[0].is_equal_approx(curve_2_triangle[0]) and 
+					not curve_1_triangle[2].is_equal_approx(curve_2_triangle[2])
 				):
 					return true
 			elif SVGMath.triangle_intersects_triangle(curve_1_triangle, curve_2_triangle):
@@ -387,7 +395,7 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 							)
 						tessellation_counter += 1
 						if tessellation_counter >= 32: # Prevent infinite loop if things go terribly wrong
-							print("Infinite loop encountered during bezier tessellation. ", control_points, " ", other_path_check.control_points)
+							print("[godot-svg] Infinite loop encountered during bezier tessellation. ", control_points, " ", other_path_check.control_points)
 							break
 				other_path_check_index += 1
 		
@@ -591,10 +599,14 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 			interior_hole_polygons = SVGHelper.array_slice(interior_polygon, hole_start_break_index)
 			
 			sliced_polygon_with_holes.append_array(sliced_polygon)
+#			print_debug(SVGAttributeParser.serialize_point_list_as_d(sliced_polygon))
 			
 			for hole_path_index in range(path_group_holes_start_index - 1, polygon_break_indices.size() - 1):
 				var hole_break_index = polygon_break_indices[hole_path_index]
+#				if hole_indices.size() > 0:
+#					print_debug(SVGAttributeParser.serialize_point_list_as_d(SVGHelper.array_slice(interior_polygon, hole_indices[hole_indices.size() - 1], hole_break_index)))
 				hole_indices.push_back(hole_break_index)
+#			print_debug(SVGAttributeParser.serialize_point_list_as_d(SVGHelper.array_slice(interior_polygon, hole_indices[hole_indices.size() - 1])))
 			sliced_polygon_with_holes.append_array(interior_hole_polygons)
 			triangulation = SVGEarcut.earcut_polygon_2d(sliced_polygon_with_holes, hole_indices)
 		else:

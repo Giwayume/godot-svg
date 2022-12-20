@@ -22,7 +22,7 @@ class PolygonNode:
 
 class Sorting:
 	static func compare_x(a, b):
-		return a.x - b.x
+		return true if a.x < b.x else false
 
 static func signed_area(data, start, end):
 	var sum = 0

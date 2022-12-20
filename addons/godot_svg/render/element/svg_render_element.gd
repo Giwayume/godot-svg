@@ -239,7 +239,7 @@ func _process_simplified_polygon():
 						simplified_fills.push_back(simplified_fill)
 						simplified_fill_clockwise_checks.push_back(path_simplification.is_clockwise)
 					else:
-						print("\nError occurred when simplifying fill path ", fill_path)
+						print("\n[godot-svg] Error occurred when simplifying fill path ", fill_path)
 						simplified_fills.push_back(fill_path)
 						simplified_fill_clockwise_checks.push_back(null)
 					simplified_holes.push_back(simplified_hole)

@@ -162,7 +162,7 @@ static func simplify(input_points, fill_rule = FillRule.EVEN_ODD):
 								"line_position": last_passed_intersection_start_position,
 							})
 					else:
-						print("Error solving simple shape: no valid direction found")
+						print("[godot-svg] Error solving simple shape: no valid direction found")
 						break
 				# No intersection found, keep looping through current path segments
 				else:
