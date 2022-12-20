@@ -618,7 +618,7 @@ static func dash_array(path_reference: Array, dash_array: Array, dash_offset: fl
 # Attempt to resolve self-intersections in a list of multiple path commands by...
 # ...splitting one path into multiple shapes at the intersections.
 # Paths is an array of command dictionaries.
-static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self_intersections = false):
+static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self_intersections = false, assume_no_holes = false):
 	var intersections = []
 	var intersections_at_positions = {}
 	var solved_paths = []
@@ -938,7 +938,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 		var is_clockwise = solved_path_info.is_clockwise
 		var is_hole_candidate = false
 		var hit_shape_order = []
-		if assume_no_self_intersections:
+		if assume_no_self_intersections and assume_no_holes:
 			is_insideness_even = false
 			is_insideness_non_zero = true
 		else:
@@ -1003,7 +1003,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 			filled_paths_solved_path_indices.push_back(current_solved_path_index)
 			hole_paths.push_back([])
 			is_hole_candidate = false
-		elif is_hole_candidate:
+		elif is_hole_candidate and not assume_no_holes:
 			hole_candidates.push_back({
 				"hit_shape_indices": HitShapeUtility.reduce_hit_shape_order_to_indices(hit_shape_order),
 				"solved_path_info": solved_path_info,

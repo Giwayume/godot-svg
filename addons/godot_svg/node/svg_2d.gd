@@ -30,6 +30,7 @@ export(Resource) var svg = null setget _set_svg, _get_svg
 export(float) var fixed_scaling_ratio = 0 setget _set_fixed_scaling_ratio, _get_fixed_scaling_ratio
 export(bool) var antialiased = true setget _set_antialiased, _get_antialiased
 export(bool) var assume_no_self_intersections = false setget _set_assume_no_self_intersections, _get_assume_no_self_intersections
+export(bool) var assume_no_holes = false setget _set_assume_no_holes, _get_assume_no_holes
 export(bool) var disable_render_cache = false setget _set_disable_render_cache, _get_disable_render_cache
 
 var is_gles2 = OS.get_current_video_driver() == OS.VIDEO_DRIVER_GLES2
@@ -37,6 +38,7 @@ var is_gles2 = OS.get_current_video_driver() == OS.VIDEO_DRIVER_GLES2
 var _root_viewport_renderer = null
 var _antialiased = true
 var _assume_no_self_intersections = false
+var _assume_no_holes = false
 var _disable_render_cache = false
 var _is_render_cache_computed = false
 var _is_editor_hint = false
@@ -127,6 +129,7 @@ func _create_renderers_recursive(parent, children, render_props = {}):
 		renderer.element_resource = child
 		renderer.node_text = child.text
 		renderer.assume_no_self_intersections = _assume_no_self_intersections
+		renderer.assume_no_holes = _assume_no_holes
 		renderer.is_in_root_viewport = is_in_root_viewport
 		renderer.is_in_clip_path = is_in_clip_path
 		renderer.render_cache_id = render_props.cache_id + "." + str(child_index)
@@ -407,6 +410,14 @@ func _set_assume_no_self_intersections(assume_no_self_intersections):
 
 func _get_assume_no_self_intersections():
 	return _assume_no_self_intersections
+
+func _set_assume_no_holes(assume_no_holes):
+	if _assume_no_holes != assume_no_holes:
+		_assume_no_holes = assume_no_holes
+		_queue_render_from_scratch()
+
+func _get_assume_no_holes():
+	return _assume_no_holes
 
 func _set_disable_render_cache(disable_render_cache):
 	if _disable_render_cache != disable_render_cache:

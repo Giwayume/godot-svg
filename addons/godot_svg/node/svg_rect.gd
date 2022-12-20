@@ -7,6 +7,8 @@ export(Resource) var svg = null setget _set_svg, _get_svg
 export(float) var fixed_scaling_ratio = 0 setget _set_fixed_scaling_ratio, _get_fixed_scaling_ratio
 export(bool) var antialiased = true setget _set_antialiased, _get_antialiased
 export(bool) var assume_no_self_intersections = false setget _set_assume_no_self_intersections, _get_assume_no_self_intersections
+export(bool) var assume_no_holes = false setget _set_assume_no_holes, _get_assume_no_holes
+export(bool) var disable_render_cache = false setget _set_disable_render_cache, _get_disable_render_cache
 
 var is_gles2 = OS.get_current_video_driver() == OS.VIDEO_DRIVER_GLES2
 
@@ -14,6 +16,8 @@ var _svg = null
 var _fixed_scaling_ratio = 0
 var _antialiased = true
 var _assume_no_self_intersections = false
+var _assume_no_holes = false
+var _disable_render_cache = false
 
 var _svg_2d = null
 var _is_size_svg_queued = false
@@ -147,3 +151,19 @@ func _set_assume_no_self_intersections(assume_no_self_intersections):
 
 func _get_assume_no_self_intersections():
 	return _assume_no_self_intersections
+
+func _set_assume_no_holes(assume_no_holes):
+	_assume_no_holes = assume_no_holes
+	if _svg_2d != null:
+		_svg_2d.assume_no_holes = assume_no_holes
+
+func _get_assume_no_holes():
+	return _assume_no_holes
+
+func _set_disable_render_cache(disable_render_cache):
+	_disable_render_cache = disable_render_cache
+	if _svg_2d != null:
+		_svg_2d.disable_render_cache = disable_render_cache
+
+func _get_disable_render_cache():
+	return _disable_render_cache
