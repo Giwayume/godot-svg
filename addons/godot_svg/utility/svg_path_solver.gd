@@ -685,7 +685,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 		if command == PathCommand.MOVE_TO:
 			current_loop_start_point = points[0]
 	
-	# Loop through the path commands and build a list of intersection points,
+	# Loop through the path shapes and build a list of intersection points,
 	# As well as a list of paths that don't intersect with anything else
 	var current_loop_range_index = 0
 	var current_loop_range_has_any_intersection = false
@@ -1041,9 +1041,20 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 		var fill_instructions = convert_path_shapes_to_instructions(filled_paths[path_index], true)
 		var hole_instructions = []
 		for hole_path in hole_paths[path_index]:
-			hole_instructions.push_back(
-				convert_path_shapes_to_instructions(hole_path)
-			)
+			var is_hole_path_well_formed = true
+			# Remove 2-line path with no area. A pointless command that breaks things. Have found professional SVGs that have this.
+			if (
+				hole_path.size() == 2 and
+				hole_path[0] is PathSegment and
+				hole_path[1] is PathSegment and
+				hole_path[0].p0.is_equal_approx(hole_path[1].p1) and
+				hole_path[0].p1.is_equal_approx(hole_path[1].p0)
+			):
+				is_hole_path_well_formed = false
+			if is_hole_path_well_formed:
+				hole_instructions.push_back(
+					convert_path_shapes_to_instructions(hole_path)
+				)
 		instruction_groups.push_back({
 			"fill_instructions": fill_instructions,
 			"is_clockwise": filled_paths_clockwise_checks[path_index],
