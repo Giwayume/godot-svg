@@ -619,6 +619,7 @@ static func dash_array(path_reference: Array, dash_array: Array, dash_offset: fl
 # ...splitting one path into multiple shapes at the intersections.
 # Paths is an array of command dictionaries.
 static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self_intersections = false, assume_no_holes = false):
+	
 	var intersections = []
 	var intersections_at_positions = {}
 	var solved_paths = []
@@ -700,7 +701,6 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 				var other_path_shape = path_shapes[j]
 				var new_intersections = path_shape.intersect_with(other_path_shape, j != i - 1, true)
 				if new_intersections.size() > 0:
-					current_loop_range_has_any_intersection = true
 					for new_intersection in new_intersections:
 						var is_existing_intersection = false
 						# Check if intersection point already exists, and modify it with new paths
@@ -715,8 +715,6 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 						# Don't count path start touching path end as an intersection
 						if i == current_loop_range.end and j == current_loop_range.start and new_intersection.self_t == 1.0 and new_intersection.other_t == 0.0:
 							is_existing_intersection = true
-							if new_intersections.size() == 1:
-								current_loop_range_has_any_intersection = false
 						# Add new intersection definition to intersections array for later use
 						if not is_existing_intersection:
 							var intersection = {
@@ -726,6 +724,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 								"solved": {},
 							}
 							intersections.push_back(intersection)
+							current_loop_range_has_any_intersection = true
 							if not intersections_at_positions.has(i):
 								intersections_at_positions[i] = []
 							if not intersections_at_positions.has(j):
@@ -744,7 +743,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 			current_loop_range_index += 1
 			current_loop_range_has_any_intersection = false
 			current_path_bounding_box = create_new_bounding_box()
-
+	
 	# For each intersection point, follow the intersection lines forward, then take right turns until it comes back to the initial point
 	if intersections.size() > 0:
 		current_path_bounding_box = create_new_bounding_box()
@@ -796,7 +795,15 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 					# If next intersection is our starting intersection, we're done
 					if encountered_intersections.has(next_intersection):
 						if next_intersection == intersection:
-							# TODO - add rest of shape to path?
+							# Add the rest of the shape to the path
+							if next_intersection_t != check_t:
+								new_path.push_back(
+									current_shape.slice(
+										check_t,
+										next_intersection_t
+									)
+								)
+							# Update path ranges
 							did_path_return_to_start = true
 							new_path_current_range[1] = current_shape_index
 							new_path_ranges.push_back(new_path_current_range)

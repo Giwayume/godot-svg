@@ -474,8 +474,8 @@ static func evaluate_control_points(control_points: Array):
 		))
 	
 	needs_subdivision_at.sort()
-	
 	return {
+		"classification": classification,
 		"vertices": vertices,
 		"implicit_coordinates": implicit_coordinates,
 		"needs_subdivision_at": needs_subdivision_at,

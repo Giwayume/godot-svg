@@ -30,6 +30,11 @@ _global_script_classes=[ {
 "path": "res://addons/godot_svg/utility/svg_cubics.gd"
 }, {
 "base": "Reference",
+"class": "SVGDelaunay",
+"language": "GDScript",
+"path": "res://addons/godot_svg/utility/svg_delaunay.gd"
+}, {
+"base": "Reference",
 "class": "SVGEarcut",
 "language": "GDScript",
 "path": "res://addons/godot_svg/utility/svg_earcut.gd"
@@ -109,6 +114,7 @@ _global_script_class_icons={
 "SVGAttributeParser": "",
 "SVGClockValue": "",
 "SVGCubics": "",
+"SVGDelaunay": "",
 "SVGEarcut": "",
 "SVGHelper": "",
 "SVGLengthPercentage": "",

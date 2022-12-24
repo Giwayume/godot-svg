@@ -174,6 +174,9 @@ static func is_curve_triangles_intersects_other_curve_triangles(curve_1_triangle
 				):
 					return true
 			elif SVGMath.triangle_intersects_triangle(curve_1_triangle, curve_2_triangle):
+				var main_path_intersection_point = Geometry.segment_intersects_segment_2d(
+					curve_1_triangle[0], curve_1_triangle[2], curve_2_triangle[0], curve_2_triangle[2]
+				)
 				return true
 	return false
 
@@ -304,6 +307,7 @@ static func circle_segment_to_quadratic_bezier(start_point, end_point, start_dir
 # { "command": PathCommand, "points": [Vector()] }
 # It only supports a subset of PathCommand. Points are absolute coordinates.
 static func triangulate_fill_path(path: Array, holes: Array = [], override_clockwise_check = null):
+#	print_debug(SVGAttributeParser.serialize_d(path))
 	var current_point = Vector2()
 	var current_path_start_point = current_point
 	var has_holes = holes.size() > 0
@@ -529,24 +533,26 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 				var control_point_2 = instruction.points[1]
 				var end_point = instruction.points[2]
 				var control_intersection = Geometry.segment_intersects_segment_2d(start_point, end_point, control_point_1, control_point_2)
+				# If the control points intersect the start/end points, interior polygon can vary wildly
 				if control_intersection != null and not control_intersection == start_point and not control_intersection == end_point:
 					var control_point_1_distance = SVGMath.point_distance_along_segment(start_point, end_point, control_point_1)
 					var control_point_2_distance = SVGMath.point_distance_along_segment(start_point, end_point, control_point_2)
 					var first_control_point = control_point_1 if control_point_1_distance < control_point_2_distance else control_point_2
 					var second_control_point = control_point_2 if control_point_1_distance < control_point_2_distance else control_point_1
-					if SVGMath.is_point_right_of_segment(start_point, end_point, first_control_point) != is_clockwise:
+					if SVGMath.is_point_right_of_segment(start_point, end_point, first_control_point) == is_clockwise:
 						interior_polygon.push_back(first_control_point)
 						add_duplicate_edge(duplicate_edges, start_point, first_control_point)
 						add_duplicate_edge(duplicate_edges, first_control_point, control_intersection)
 					else:
 						add_duplicate_edge(duplicate_edges, start_point, control_intersection)
 					interior_polygon.push_back(control_intersection)
-					if SVGMath.is_point_right_of_segment(start_point, end_point, second_control_point) != is_clockwise:
+					if SVGMath.is_point_right_of_segment(start_point, end_point, second_control_point) == is_clockwise:
 						interior_polygon.push_back(second_control_point)
 						add_duplicate_edge(duplicate_edges, control_intersection, second_control_point)
 						add_duplicate_edge(duplicate_edges, second_control_point, end_point)
 					else:
 						add_duplicate_edge(duplicate_edges, control_intersection, end_point)
+				# Both control points are inside the polygon
 				elif (
 					(start_point != control_point_1 and end_point != control_point_1 and SVGMath.is_point_right_of_segment(start_point, end_point, control_point_1) == is_clockwise) or
 					(start_point != control_point_2 and end_point != control_point_2 and SVGMath.is_point_right_of_segment(start_point, end_point, control_point_2) == is_clockwise)
@@ -556,6 +562,7 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 					add_duplicate_edge(duplicate_edges, start_point, control_point_1)
 					add_duplicate_edge(duplicate_edges, control_point_1, control_point_2)
 					add_duplicate_edge(duplicate_edges, control_point_2, end_point)
+				# Both control points are outside the polygon
 				else:
 					add_duplicate_edge(duplicate_edges, start_point, end_point)
 				interior_polygon.push_back(end_point)
@@ -578,6 +585,7 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 				if not current_path_start_point.is_equal_approx(current_point):
 					interior_polygon.push_back(current_path_start_point)
 				polygon_break_indices.push_back(interior_polygon.size())
+				break # For some reason multiple paths are being passed in some cases?
 	
 	# Triangulate the interior polygon(s).
 	var interior_vertices = PoolVector2Array()
@@ -679,36 +687,65 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 				2:
 					interior_implicit_coordinates.push_back(Vector3(0.0, 1.0, 0.0))
 	
-	# Create antialiasing lines for edges on the outside of the shape
-	for edge_key in duplicate_edges:
-		if duplicate_edges[edge_key].size() == 1:
-			var p0 = duplicate_edges[edge_key][0][1]
-			var p1 = duplicate_edges[edge_key][0][2]
-			var direction = p0.direction_to(p1)
-			var edge_size = 1.0
-			var ae0 = p0 + (direction.rotated(-PI / 2.0) * edge_size)
-			var ae1 = p1 + (direction.rotated(-PI / 2.0) * edge_size)
-			var ae2 = p1 + (direction.rotated(PI / 2.0) * edge_size)
-			var ae3 = p0 + (direction.rotated(PI / 2.0) * edge_size)
-			antialias_edge_vertices.push_back(ae0)
-			antialias_edge_vertices.push_back(ae1)
-			antialias_edge_vertices.push_back(ae2)
-			antialias_edge_vertices.push_back(ae0)
-			antialias_edge_vertices.push_back(ae2)
-			antialias_edge_vertices.push_back(ae3)
-			antialias_edge_implicit_coordinates.push_back(Vector2(0.0, 0.0))
-			antialias_edge_implicit_coordinates.push_back(Vector2(1.0, 0.0))
-			antialias_edge_implicit_coordinates.push_back(Vector2(1.0, 1.0))
-			antialias_edge_implicit_coordinates.push_back(Vector2(0.0, 0.0))
-			antialias_edge_implicit_coordinates.push_back(Vector2(1.0, 1.0))
-			antialias_edge_implicit_coordinates.push_back(Vector2(0.0, 1.0))
-			antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae0))
-			antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae1))
-			antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae2))
-			antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae0))
-			antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae2))
-			antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae3))
+	# FOR DEBUGGING - Create antialiasing lines for edges on the outside of the shape
+#	for i in range(1, interior_polygon.size()):
+#		var p0 = interior_polygon[i - 1]
+#		var p1 = interior_polygon[i]
+#		var direction = p0.direction_to(p1)
+#		var edge_size = 1.0
+#		var ae0 = p0 + (direction.rotated(-PI / 2.0) * edge_size)
+#		var ae1 = p1 + (direction.rotated(-PI / 2.0) * edge_size)
+#		var ae2 = p1 + (direction.rotated(PI / 2.0) * edge_size)
+#		var ae3 = p0 + (direction.rotated(PI / 2.0) * edge_size)
+#		antialias_edge_vertices.push_back(ae0)
+#		antialias_edge_vertices.push_back(ae1)
+#		antialias_edge_vertices.push_back(ae2)
+#		antialias_edge_vertices.push_back(ae0)
+#		antialias_edge_vertices.push_back(ae2)
+#		antialias_edge_vertices.push_back(ae3)
+#		antialias_edge_implicit_coordinates.push_back(Vector2(0.0, 0.0))
+#		antialias_edge_implicit_coordinates.push_back(Vector2(1.0, 0.0))
+#		antialias_edge_implicit_coordinates.push_back(Vector2(1.0, 1.0))
+#		antialias_edge_implicit_coordinates.push_back(Vector2(0.0, 0.0))
+#		antialias_edge_implicit_coordinates.push_back(Vector2(1.0, 1.0))
+#		antialias_edge_implicit_coordinates.push_back(Vector2(0.0, 1.0))
+#		antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae0))
+#		antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae1))
+#		antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae2))
+#		antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae0))
+#		antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae2))
+#		antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae3))
 	
+	if duplicate_edges.size() > 0:
+		for edge_key in duplicate_edges:
+			if duplicate_edges[edge_key].size() == 1:
+				var p0 = duplicate_edges[edge_key][0][1]
+				var p1 = duplicate_edges[edge_key][0][2]
+				var direction = p0.direction_to(p1)
+				var edge_size = 1.0
+				var ae0 = p0 + (direction.rotated(-PI / 2.0) * edge_size)
+				var ae1 = p1 + (direction.rotated(-PI / 2.0) * edge_size)
+				var ae2 = p1 + (direction.rotated(PI / 2.0) * edge_size)
+				var ae3 = p0 + (direction.rotated(PI / 2.0) * edge_size)
+				antialias_edge_vertices.push_back(ae0)
+				antialias_edge_vertices.push_back(ae1)
+				antialias_edge_vertices.push_back(ae2)
+				antialias_edge_vertices.push_back(ae0)
+				antialias_edge_vertices.push_back(ae2)
+				antialias_edge_vertices.push_back(ae3)
+				antialias_edge_implicit_coordinates.push_back(Vector2(0.0, 0.0))
+				antialias_edge_implicit_coordinates.push_back(Vector2(1.0, 0.0))
+				antialias_edge_implicit_coordinates.push_back(Vector2(1.0, 1.0))
+				antialias_edge_implicit_coordinates.push_back(Vector2(0.0, 0.0))
+				antialias_edge_implicit_coordinates.push_back(Vector2(1.0, 1.0))
+				antialias_edge_implicit_coordinates.push_back(Vector2(0.0, 1.0))
+				antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae0))
+				antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae1))
+				antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae2))
+				antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae0))
+				antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae2))
+				antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae3))
+		
 	var triangulation_result = {
 		"bounding_box": Rect2(bounding_box.left, bounding_box.top, bounding_box.right - bounding_box.left, bounding_box.bottom - bounding_box.top),
 		"interior_vertices": interior_vertices,
@@ -1286,7 +1323,7 @@ static func triangulate_stroke_subpath(path: Array, width, cap_mode, joint_mode,
 	all_paths.push_back({
 		"command": PathCommand.CLOSE_PATH,
 	})
-#	print_debug(SVGAttributeParser.serialize_d(all_paths))
+	
 	return triangulate_fill_path(all_paths)
 	
 

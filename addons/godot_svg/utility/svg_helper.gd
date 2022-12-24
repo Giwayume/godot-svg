@@ -30,6 +30,24 @@ static func array_sum(array):
 		sum += float(array[i])
 	return sum
 
+static func regex_string_split(regex_split_match: String, search: String, allow_empty = true) -> Array:
+	var result = []
+	var regex = RegEx.new()
+	regex.compile(regex_split_match)
+	var last_match_index = 0
+	for regex_match in regex.search_all(search):
+		var start = regex_match.get_start()
+		if start != last_match_index or allow_empty:
+			result.push_back(
+				search.substr(last_match_index, start - last_match_index)
+			)
+		last_match_index = regex_match.get_end()
+	if last_match_index != search.length() or allow_empty:
+		result.push_back(
+			search.substr(last_match_index, search.length() - last_match_index)
+		)
+	return result
+
 static func get_point_list_bounds(points):
 	var left = INF
 	var right = -INF

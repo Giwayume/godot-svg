@@ -238,13 +238,14 @@ func _set_attr_d(d):
 		var negative_split_regex = RegEx.new()
 		negative_split_regex.compile("(?=-)")
 		for c in d:
-			if letter_regex.search(c) != null:
+			if letter_regex.search(c) != null && c != "e":
 				var values = []
 				var space_split = current_values.split(" ", false)
 				for space_token in space_split:
 					var comma_split = space_token.split(",", false)
 					for comma_token in comma_split:
-						var negative_split = comma_token.split("-")
+#						var negative_split = comma_token.split("-")
+						var negative_split = SVGHelper.regex_string_split("(?<!e)-", comma_token)
 						var negative_multiplier = 1.0
 						for negative_token in negative_split:
 							if negative_token != "":
