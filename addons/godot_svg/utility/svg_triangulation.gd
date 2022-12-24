@@ -585,7 +585,7 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 				if not current_path_start_point.is_equal_approx(current_point):
 					interior_polygon.push_back(current_path_start_point)
 				polygon_break_indices.push_back(interior_polygon.size())
-				break # For some reason multiple paths are being passed in some cases?
+				# break # For some reason multiple paths are being passed in some cases?
 	
 	# Triangulate the interior polygon(s).
 	var interior_vertices = PoolVector2Array()
