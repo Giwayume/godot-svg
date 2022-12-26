@@ -10,8 +10,12 @@ var zoom_at_point = Vector2()
 var zoom_timer = 0.0
 var is_zooming_in = true
 
+var mouse_position_label: Label = Label.new()
+
 func _ready():
 	mouse_position = get_viewport().get_mouse_position()
+	mouse_position_label.add_color_override("font_color", Color(0,0,0,1))
+	add_child(mouse_position_label)
 
 func _process(delta):
 	if zoom_timer > 0.0:
@@ -56,6 +60,10 @@ func _input(event):
 				is_zooming_in = false
 				zoom_step = 10.0
 #				camera.zoom = Vector2(1.0, 1.0)
+	var canvas_position = mouse_position
+	canvas_position *= camera.zoom
+	canvas_position += (camera.get_camera_screen_center() - camera.get_viewport_rect().size / 2 * camera.zoom)
+	mouse_position_label.text = "X " + str(floor(canvas_position.x)) + "  Y " + str(floor(canvas_position.y))
 
 func _zoom_at_point(zoom_change, point):
 	var c0 = camera.global_position

@@ -250,7 +250,12 @@ func _process_simplified_polygon():
 	var simplified_fill_index = 0
 	for simplified_fill in simplified_fills:
 		if simplified_fill[0] is Dictionary:
-			var fill_triangulation = SVGTriangulation.triangulate_fill_path(simplified_fill, simplified_holes[simplified_fill_index], simplified_fill_clockwise_checks[simplified_fill_index])
+			var fill_triangulation = SVGTriangulation.triangulate_fill_path(
+				simplified_fill,
+				simplified_holes[simplified_fill_index],
+				simplified_fill_clockwise_checks[simplified_fill_index],
+				svg_node.triangulation_method
+			)
 			if (
 				fill_triangulation.interior_vertices.size() > 0 or
 				fill_triangulation.quadratic_vertices.size() > 0 or
@@ -561,6 +566,10 @@ func draw_shape(updates):
 			else:
 				processed_polygon = _process_simplified_polygon()
 				_rerender_prop_cache["processed_polygon"] = processed_polygon
+		
+		if processed_polygon == null:
+			print_debug('[godot-svg] A processed polygon was not created.')
+			return
 		
 		if processed_polygon.has("needs_refill"):
 			processed_polygon.erase("needs_refill")

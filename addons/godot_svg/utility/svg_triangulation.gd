@@ -1,6 +1,7 @@
 class_name SVGTriangulation
 
 const PathCommand = SVGValueConstant.PathCommand
+const TriangulationMethod = SVGValueConstant.TriangulationMethod
 
 static func evaluate_point_bounding_box(bounding_box: Dictionary, point: Vector2):
 	if point.x < bounding_box.left:
@@ -306,7 +307,7 @@ static func circle_segment_to_quadratic_bezier(start_point, end_point, start_dir
 # path is an array of dictionaries following the format:
 # { "command": PathCommand, "points": [Vector()] }
 # It only supports a subset of PathCommand. Points are absolute coordinates.
-static func triangulate_fill_path(path: Array, holes: Array = [], override_clockwise_check = null):
+static func triangulate_fill_path(path: Array, holes: Array = [], override_clockwise_check = null, triangulation_method = TriangulationMethod.EARCUT):
 #	print_debug(SVGAttributeParser.serialize_d(path))
 	var current_point = Vector2()
 	var current_path_start_point = current_point
@@ -607,20 +608,22 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 			interior_hole_polygons = SVGHelper.array_slice(interior_polygon, hole_start_break_index)
 			
 			sliced_polygon_with_holes.append_array(sliced_polygon)
-#			print_debug(SVGAttributeParser.serialize_point_list_as_d(sliced_polygon))
-			
 			for hole_path_index in range(path_group_holes_start_index - 1, polygon_break_indices.size() - 1):
 				var hole_break_index = polygon_break_indices[hole_path_index]
-#				if hole_indices.size() > 0:
-#					print_debug(SVGAttributeParser.serialize_point_list_as_d(SVGHelper.array_slice(interior_polygon, hole_indices[hole_indices.size() - 1], hole_break_index)))
 				hole_indices.push_back(hole_break_index)
-#			print_debug(SVGAttributeParser.serialize_point_list_as_d(SVGHelper.array_slice(interior_polygon, hole_indices[hole_indices.size() - 1])))
 			sliced_polygon_with_holes.append_array(interior_hole_polygons)
-			triangulation = SVGEarcut.earcut_polygon_2d(sliced_polygon_with_holes, hole_indices)
+			
+			if triangulation_method == TriangulationMethod.EARCUT:
+				triangulation = SVGEarcut.earcut_polygon_2d(sliced_polygon_with_holes, hole_indices)
+			elif triangulation_method == TriangulationMethod.DELAUNAY:
+				triangulation = SVGDelaunay.delaunay_polygon_2d(sliced_polygon_with_holes, hole_indices)
 		else:
 			triangulation = Geometry.triangulate_polygon(sliced_polygon)
 			if triangulation.size() == 0:
-				triangulation = SVGEarcut.earcut_polygon_2d(sliced_polygon, [])
+				if triangulation_method == TriangulationMethod.EARCUT:
+					triangulation = SVGEarcut.earcut_polygon_2d(sliced_polygon, [])
+				else:
+					triangulation = SVGDelaunay.delaunay_polygon_2d(sliced_polygon, [])
 		interior_triangulation.append_array(
 			SVGHelper.array_add(
 				triangulation,

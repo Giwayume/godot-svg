@@ -4,6 +4,7 @@ extends Node2D
 signal viewport_scale_changed(new_scale)
 signal renderers_created()
 
+const TriangulationMethod = SVGValueConstant.TriangulationMethod
 const SVGResource = preload("../resource/svg_resource.gd")
 const SVGRenderCircle = preload("../render/element/svg_render_circle.gd")
 const SVGRenderClipPath = preload("../render/element/svg_render_clip_path.gd")
@@ -29,6 +30,7 @@ const SVGRenderViewport = preload("../render/element/svg_render_viewport.gd")
 export(Resource) var svg = null setget _set_svg, _get_svg
 export(float) var fixed_scaling_ratio = 0 setget _set_fixed_scaling_ratio, _get_fixed_scaling_ratio
 export(bool) var antialiased = true setget _set_antialiased, _get_antialiased
+export(TriangulationMethod) var triangulation_method = TriangulationMethod.DELAUNAY setget _set_triangulation_method, _get_triangulation_method
 export(bool) var assume_no_self_intersections = false setget _set_assume_no_self_intersections, _get_assume_no_self_intersections
 export(bool) var assume_no_holes = false setget _set_assume_no_holes, _get_assume_no_holes
 export(bool) var disable_render_cache = false setget _set_disable_render_cache, _get_disable_render_cache
@@ -37,6 +39,7 @@ var is_gles2 = OS.get_current_video_driver() == OS.VIDEO_DRIVER_GLES2
 
 var _root_viewport_renderer = null
 var _antialiased = true
+var _triangulation_method = TriangulationMethod.DELAUNAY
 var _assume_no_self_intersections = false
 var _assume_no_holes = false
 var _disable_render_cache = false
@@ -403,9 +406,21 @@ func _set_antialiased(antialiased):
 func _get_antialiased():
 	return _antialiased
 
+func _set_triangulation_method(triangulation_method):
+	if _triangulation_method != triangulation_method:
+		_triangulation_method = triangulation_method
+		if _svg != null:
+			_svg.render_cache = null
+		_queue_render_from_scratch()
+
+func _get_triangulation_method():
+	return _triangulation_method
+
 func _set_assume_no_self_intersections(assume_no_self_intersections):
 	if _assume_no_self_intersections != assume_no_self_intersections:
 		_assume_no_self_intersections = assume_no_self_intersections
+		if _svg != null:
+			_svg.render_cache = null
 		_queue_render_from_scratch()
 
 func _get_assume_no_self_intersections():
@@ -414,6 +429,8 @@ func _get_assume_no_self_intersections():
 func _set_assume_no_holes(assume_no_holes):
 	if _assume_no_holes != assume_no_holes:
 		_assume_no_holes = assume_no_holes
+		if _svg != null:
+			_svg.render_cache = null
 		_queue_render_from_scratch()
 
 func _get_assume_no_holes():

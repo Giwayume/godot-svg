@@ -78,6 +78,11 @@ enum PathCoordinate {
 	RELATIVE
 }
 
+enum TriangulationMethod {
+	DELAUNAY = 0,
+	EARCUT = 1,
+}
+
 const GLOBAL_ATTRIBUTE_NAMES = [
 	"id",
 	"lang",

@@ -1043,6 +1043,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 		for hole_path in hole_paths[path_index]:
 			var is_hole_path_well_formed = true
 			# Remove 2-line path with no area. A pointless command that breaks things. Have found professional SVGs that have this.
+			# TODO - generalize this to detect zero area holes?
 			if (
 				hole_path.size() == 2 and
 				hole_path[0] is PathSegment and
