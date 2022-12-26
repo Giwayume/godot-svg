@@ -135,8 +135,10 @@ void fragment() {
 		COLOR = quadratic_ps(COLOR.rg, 2.0 * (0.5 - step(COLOR.a, 0.15)), blend_color);
 	} else if (COLOR.a < 0.6) {
 		COLOR = cubic_ps(COLOR.rgb, 2.0 * (0.5 - step(COLOR.a, 0.45)), blend_color);
-	} else {
+	} else if (COLOR.a < 0.8) {
 		COLOR = blend_color;
+	} else {
+		COLOR = vec4(0.0, 0.0, 0.0, 0.0);
 	}
 }
 "

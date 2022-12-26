@@ -293,15 +293,20 @@ class RobustPredicates:
 
 	static func orient2dadapt(ax, ay, bx, by, cx, cy, detsum):
 		var B = PoolRealArray()
-		B.resize(4)
+		for i in range(0, 4):
+			B.append(0)
 		var C1 = PoolRealArray()
-		C1.resize(8)
+		for i in range(0, 8):
+			C1.append(0)
 		var C2 = PoolRealArray()
-		C2.resize(12)
+		for i in range(0, 12):
+			C2.append(0)
 		var D = PoolRealArray()
-		D.resize(16)
+		for i in range(0, 16):
+			D.append(0)
 		var u = PoolRealArray()
-		u.resize(4)
+		for i in range(0, 4):
+			u.append(0)
 
 		var acxtail
 		var acytail
@@ -381,45 +386,65 @@ class RobustPredicates:
 
 	static func incircleadapt(ax, ay, bx, by, cx, cy, dx, dy, permanent):
 		var bc = PoolRealArray()
-		bc.resize(4)
+		for i in range(0, 4):
+			bc.append(0)
 		var ca = PoolRealArray()
-		ca.resize(4)
+		for i in range(0, 4):
+			ca.append(0)
 		var ab = PoolRealArray()
-		ab.resize(4)
+		for i in range(0, 4):
+			ab.append(0)
 		var aa = PoolRealArray()
-		aa.resize(4)
+		for i in range(0, 4):
+			aa.append(0)
 		var bb = PoolRealArray()
-		bb.resize(4)
+		for i in range(0, 4):
+			bb.append(0)
 		var cc = PoolRealArray()
-		cc.resize(4)
+		for i in range(0, 4):
+			cc.append(0)
 		var u = PoolRealArray()
-		u.resize(4)
+		for i in range(0, 4):
+			u.append(0)
 		var v = PoolRealArray()
-		v.resize(4)
+		for i in range(0, 4):
+			v.append(0)
 		var axtbc = PoolRealArray()
-		axtbc.resize(8)
+		for i in range(0, 8):
+			axtbc.append(0)
 		var aytbc = PoolRealArray()
-		aytbc.resize(8)
+		for i in range(0, 8):
+			aytbc.append(0)
 		var bxtca = PoolRealArray()
-		bxtca.resize(8)
+		for i in range(0, 8):
+			bxtca.append(0)
 		var bytca = PoolRealArray()
-		bytca.resize(8)
+		for i in range(0, 8):
+			bytca.append(0)
 		var cxtab = PoolRealArray()
-		cxtab.resize(8)
+		for i in range(0, 8):
+			cxtab.append(0)
 		var cytab = PoolRealArray()
-		cytab.resize(8)
+		for i in range(0, 8):
+			cytab.append(0)
 		var abt = PoolRealArray()
-		abt.resize(8)
+		for i in range(0, 8):
+			abt.append(0)
 		var bct = PoolRealArray()
-		bct.resize(8)
+		for i in range(0, 8):
+			bct.append(0)
 		var cat = PoolRealArray()
-		cat.resize(8)
+		for i in range(0, 8):
+			cat.append(0)
 		var abtt = PoolRealArray()
-		abtt.resize(4)
+		for i in range(0, 4):
+			abtt.append(0)
 		var bctt = PoolRealArray()
-		bctt.resize(4)
+		for i in range(0, 4):
+			bctt.append(0)
 		var catt = PoolRealArray()
-		catt.resize(4)
+		for i in range(0, 4):
+			catt.append(0)
 		
 		var _8 = PoolRealArray()
 		_8.resize(8)
@@ -798,11 +823,14 @@ class Delaunator:
 		# temporary arrays for tracking the edges of the advancing convex hull
 		_hash_size = ceil(sqrt(n))
 		_hull_prev = PoolIntArray() # edge to prev edge
-		_hull_prev.resize(n)
+		for i in range(0, n):
+			_hull_prev.append(0)
 		_hull_next = PoolIntArray() # edge to next edge
-		_hull_next.resize(n)
+		for i in range(0, n):
+			_hull_next.append(0)
 		_hull_tri = PoolIntArray() # edge to adjacent triangle
-		_hull_tri.resize(n)
+		for i in range(0, n):
+			_hull_tri.append(0)
 		_hull_hash = PoolIntArray() # angular edge hash
 		for i in range(0, _hash_size):
 			_hull_hash.append(-1)
@@ -896,7 +924,6 @@ class Delaunator:
 			_dists_qs = Array(_dists)
 			quicksort(_ids_qs, _dists_qs, 0, n - 1)
 			_ids = PoolIntArray(_ids_qs)
-			_dists = PoolIntArray(_dists_qs)
 			var hull = PoolIntArray()
 			hull.resize(n)
 			var j = 0
@@ -936,7 +963,6 @@ class Delaunator:
 		_dists_qs = Array(_dists)
 		quicksort(_ids_qs, _dists_qs, 0, n - 1)
 		_ids = PoolIntArray(_ids_qs)
-		_dists = PoolIntArray(_dists_qs)
 		
 		# set up the seed triangle as the starting hull
 		_hull_start = i0
@@ -1066,7 +1092,6 @@ class Delaunator:
 			_hull_hash[_hash_key(x, y)] = i
 			_hull_hash[_hash_key(coords[2 * e], coords[2 * e + 1])] = e
 			
-
 		hull = PoolIntArray()
 		hull.resize(hull_size)
 		var e = _hull_start
@@ -1203,7 +1228,10 @@ class Delaunator:
 		return t
 	
 	func pseudo_angle(dx, dy):
-		var p = dx / (abs(dx) + abs(dy))
+		var denominator = (abs(dx) + abs(dy))
+		if denominator == 0:
+			return INF
+		var p = dx / denominator
 		return (3 - p if dy > 0 else 1 + p) / 4 # [0..1]
 	
 	func dist(ax, ay, bx, by):
@@ -1237,7 +1265,10 @@ class Delaunator:
 
 		var bl = dx * dx + dy * dy
 		var cl = ex * ex + ey * ey
-		var d = 0.5 / (dx * ey - dy * ex)
+		var denominator = (dx * ey - dy * ex)
+		if denominator == 0:
+			return INF
+		var d = 0.5 / denominator
 
 		var x = (ey * bl - dy * cl) * d
 		var y = (dx * cl - ex * bl) * d
@@ -1252,7 +1283,10 @@ class Delaunator:
 
 		var bl = dx * dx + dy * dy
 		var cl = ex * ex + ey * ey
-		var d = 0.5 / (dx * ey - dy * ex)
+		var denominator = (dx * ey - dy * ex)
+		if denominator == 0:
+			return INF
+		var d = 0.5 / denominator
 
 		var x = ax + (ey * bl - dy * cl) * d
 		var y = ay + (dx * cl - ex * bl) * d
@@ -1882,13 +1916,8 @@ static func delaunay_polygon_2d(points: Array, hole_indices = []):
 	var delaunay = Delaunator.from(points_deduped)
 	
 	# Constrain edges that belong to the shape we're trying to triangulate
-	var non_hull_edges = Array()
-	for edge in edges:
-		if not (delaunay.hull.has(edge[0]) and delaunay.hull.has(edge[1])):
-			non_hull_edges.push_back(edge)
-	
 	var constrainautor = Constrainautor.new(delaunay)
-	for edge in non_hull_edges:
+	for edge in edges:
 		constrainautor.constrain_one(edge[0], edge[1])
 	
 	# Calculate fill rule per triangle
@@ -1920,8 +1949,6 @@ static func delaunay_polygon_2d(points: Array, hole_indices = []):
 						insideness -= 1
 		is_fill = int(abs(insideness)) % 2 == 1
 
-#		if not is_fill:
-#			print_debug(i, " ", check_point)
 		if is_fill:
 			triangles.append(_triangles[i])
 			triangles.append(_triangles[i + 1])

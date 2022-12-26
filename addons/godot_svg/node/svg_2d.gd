@@ -27,29 +27,75 @@ const SVGRenderStyle = preload("../render/element/svg_render_style.gd")
 const SVGRenderText = preload("../render/element/svg_render_text.gd")
 const SVGRenderViewport = preload("../render/element/svg_render_viewport.gd")
 
-export(Resource) var svg = null setget _set_svg, _get_svg
-export(float) var fixed_scaling_ratio = 0 setget _set_fixed_scaling_ratio, _get_fixed_scaling_ratio
-export(bool) var antialiased = true setget _set_antialiased, _get_antialiased
-export(TriangulationMethod) var triangulation_method = TriangulationMethod.DELAUNAY setget _set_triangulation_method, _get_triangulation_method
-export(bool) var assume_no_self_intersections = false setget _set_assume_no_self_intersections, _get_assume_no_self_intersections
-export(bool) var assume_no_holes = false setget _set_assume_no_holes, _get_assume_no_holes
-export(bool) var disable_render_cache = false setget _set_disable_render_cache, _get_disable_render_cache
+# Exported properties
+var svg = null setget _set_svg, _get_svg
+var fixed_scaling_ratio = 0 setget _set_fixed_scaling_ratio, _get_fixed_scaling_ratio
+var antialiased = true setget _set_antialiased, _get_antialiased
+var triangulation_method = TriangulationMethod.DELAUNAY setget _set_triangulation_method, _get_triangulation_method
+var assume_no_self_intersections = false setget _set_assume_no_self_intersections, _get_assume_no_self_intersections
+var assume_no_holes = false setget _set_assume_no_holes, _get_assume_no_holes
+var disable_render_cache = false setget _set_disable_render_cache, _get_disable_render_cache
 
-var is_gles2 = OS.get_current_video_driver() == OS.VIDEO_DRIVER_GLES2
-
-var _root_viewport_renderer = null
+var _svg = null
+var _fixed_scaling_ratio = 0
 var _antialiased = true
 var _triangulation_method = TriangulationMethod.DELAUNAY
 var _assume_no_self_intersections = false
 var _assume_no_holes = false
 var _disable_render_cache = false
+
+func _get_property_list():
+	return [
+		{
+			"name": "SVG2D",
+			"type": TYPE_NIL,
+			"usage": PROPERTY_USAGE_CATEGORY,
+		},
+		{
+			"name": "svg",
+			"type": TYPE_OBJECT,
+			"hint": PROPERTY_HINT_RESOURCE_TYPE,
+#			"hint_string": "SVGResource", # Disabling - Godot bug?
+		},
+		{
+			"name": "fixed_scaling_ratio",
+			"type": TYPE_REAL,
+		},
+		{
+			"name": "antialiased",
+			"type": TYPE_BOOL,
+		},
+		{
+			"name": "triangulation_method",
+			"type": TYPE_INT,
+			"hint": PROPERTY_HINT_ENUM,
+			"hint_string": "Delaunay,Earcut",
+		},
+		{
+			"name": "assume_no_self_intersections",
+			"type": TYPE_BOOL,
+		},
+		{
+			"name": "assume_no_holes",
+			"type": TYPE_BOOL,
+		},
+		{
+			"name": "disable_render_cache",
+			"type": TYPE_BOOL,
+		}
+	]
+
+# Internal Properties
+
+var is_gles2 = OS.get_current_video_driver() == OS.VIDEO_DRIVER_GLES2
+
+var _root_viewport_renderer = null
+
 var _is_render_cache_computed = false
 var _is_editor_hint = false
 var _is_queued_render_from_scratch = false
 var _editor_plugin = null
 var _last_known_viewport_scale = Vector2(0.0, 0.0)
-var _fixed_scaling_ratio = 0
-var _svg = null
 var _renderer_map = {}
 var _global_stylesheet = []
 var _resource_locator_cache = {}
