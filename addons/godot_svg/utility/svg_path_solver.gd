@@ -345,6 +345,14 @@ static func get_path_loop_range(loop_ranges, current_index):
 			return loop_range
 	return null
 
+static func get_path_loop_range_index(loop_ranges, current_index):
+	var index = 0
+	for loop_range in loop_ranges:
+		if current_index >= loop_range.start and current_index <= loop_range.end:
+			return index
+		index += 1
+	return -1
+
 static func create_new_bounding_box():
 	return {
 		"left": INF,
@@ -674,12 +682,13 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 			is_implicit_path_close or
 			is_end_of_paths
 		):
-			if is_end_of_paths and not current_point.is_equal_approx(current_loop_start_point):
-				path_shapes.push_back(PathSegment.new(current_point, current_loop_start_point))
-			shape_loop_ranges.push_back({
-				"start": current_loop_start,
-				"end": path_shapes.size() - 1,
-			})
+			if current_loop_start < path_shapes.size():
+				if is_end_of_paths and not current_point.is_equal_approx(current_loop_start_point):
+					path_shapes.push_back(PathSegment.new(current_point, current_loop_start_point))
+				shape_loop_ranges.push_back({
+					"start": current_loop_start,
+					"end": path_shapes.size() - 1,
+				})
 			current_loop_start = path_shapes.size()
 		
 		if command == PathCommand.MOVE_TO:
@@ -688,9 +697,16 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 	# Loop through the path shapes and build a list of intersection points,
 	# As well as a list of paths that don't intersect with anything else
 	var current_loop_range_index = 0
-	var current_loop_range_has_any_intersection = false
+	var current_loop_range_intersection_count = 0
 	var path_shapes_size = path_shapes.size()
 	var current_path_bounding_box = create_new_bounding_box()
+	
+	var loop_range_intersection_indices: Array = []
+	for i in shape_loop_ranges.size():
+		loop_range_intersection_indices.push_back([])
+	var path_start_end_intersection_indices: Array = []
+	var no_intersection_solved_paths: Array = []
+	
 	for i in range(0, path_shapes_size):
 		var path_shape = path_shapes[i]
 		var next_path_shape = path_shapes[i + 1 if i < path_shapes_size - 1 else 0]
@@ -702,47 +718,110 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 				var new_intersections = path_shape.intersect_with(other_path_shape, j != i - 1, true)
 				if new_intersections.size() > 0:
 					for new_intersection in new_intersections:
-						var is_existing_intersection = false
+						current_loop_range_intersection_count += 1
+						
+						var found_existing_intersection = null
+						var is_loop_range_edge = false
+						
 						# Check if intersection point already exists, and modify it with new paths
+						var existing_intersection_index = 0
 						for existing_intersection in intersections:
 							if existing_intersection.point.is_equal_approx(new_intersection.point):
-								existing_intersection.intersected_shape_indices.push_back(j)
-								existing_intersection.intersected_shape_t.push_back(new_intersection.other_t)
-								if not intersections_at_positions.has(j):
-									intersections_at_positions[j] = []
-								if not intersections_at_positions.has(existing_intersection):
-									intersections_at_positions[j].push_back(existing_intersection)
-						# Don't count path start touching path end as an intersection
+								found_existing_intersection = existing_intersection
+								break
+							existing_intersection_index += 1
+						
+						# Don't count path start touching path end as an intersection.
 						if i == current_loop_range.end and j == current_loop_range.start and new_intersection.self_t == 1.0 and new_intersection.other_t == 0.0:
-							is_existing_intersection = true
-						# Add new intersection definition to intersections array for later use
-						if not is_existing_intersection:
+							is_loop_range_edge = true
+						
+						# Add new intersection definition to intersections array for later use.
+						if found_existing_intersection == null:
 							var intersection = {
 								"point": new_intersection.point,
 								"intersected_shape_indices": [i, j],
 								"intersected_shape_t": [new_intersection.self_t, new_intersection.other_t],
 								"solved": {},
 							}
+							
+							# Keep track of which intersections occurred in each loop range.
+							var loop_range_i_index = get_path_loop_range_index(shape_loop_ranges, i)
+							var loop_range_j_index = get_path_loop_range_index(shape_loop_ranges, j)
+							loop_range_intersection_indices[loop_range_i_index].push_back(intersections.size())
+							if loop_range_i_index != loop_range_j_index:
+								loop_range_intersection_indices[loop_range_j_index].push_back(intersections.size())
+							if is_loop_range_edge:
+								path_start_end_intersection_indices.push_back(intersections.size())
+							
+							# Add intersection to global intersection list.
 							intersections.push_back(intersection)
-							current_loop_range_has_any_intersection = true
+							
+							# Keep a reverse lookup of intersections at specific points.
 							if not intersections_at_positions.has(i):
 								intersections_at_positions[i] = []
 							if not intersections_at_positions.has(j):
 								intersections_at_positions[j] = []
 							intersections_at_positions[i].push_back(intersection)
 							intersections_at_positions[j].push_back(intersection)
+						else:
+							# Keep track of which intersections occurred in each loop range.
+							if not loop_range_intersection_indices[current_loop_range_index].has(existing_intersection_index):
+								loop_range_intersection_indices[current_loop_range_index].push_back(existing_intersection_index)
+							if is_loop_range_edge and not path_start_end_intersection_indices.has(existing_intersection_index):
+								path_start_end_intersection_indices.push_back(existing_intersection_index)
+							
+							# Modify existing intersection to add this new shape to the list.
+							found_existing_intersection.intersected_shape_indices.push_back(j)
+							found_existing_intersection.intersected_shape_t.push_back(new_intersection.other_t)
+							if not intersections_at_positions.has(j):
+								intersections_at_positions[j] = []
+							if not intersections_at_positions.has(found_existing_intersection):
+								intersections_at_positions[j].push_back(found_existing_intersection)
+		
+		# We have reached the end of a loop, add path to solutions if no intersection occurred.
 		if i >= current_loop_range.end:
-			if not current_loop_range_has_any_intersection:
-				var path = SVGHelper.array_slice(path_shapes, current_loop_range.start, current_loop_range.end + 1)
-				solved_paths.push_back({
-					"path": path,
-					"path_ranges": [[current_loop_range.start, current_loop_range.end]],
-					"bounding_box": current_path_bounding_box,
-					"is_clockwise": PathShape.sum_over_edges(path) < 0.0,
-				})
+			# Store an immediate solution for later, if it is found that no intersections have occurred.
+			var path = SVGHelper.array_slice(path_shapes, current_loop_range.start, current_loop_range.end + 1)
+			no_intersection_solved_paths.push_back({
+				"path": path,
+				"path_ranges": [[current_loop_range.start, current_loop_range.end]],
+				"bounding_box": current_path_bounding_box,
+				"is_clockwise": PathShape.sum_over_edges(path) < 0.0,
+			})
 			current_loop_range_index += 1
-			current_loop_range_has_any_intersection = false
+			current_loop_range_intersection_count = 0
 			current_path_bounding_box = create_new_bounding_box()
+	
+	# Remove intersections at the start/end of path if no other path intersected with them.
+	var intersection_indices_to_remove: Array = []
+	for intersection_index in path_start_end_intersection_indices:
+		if intersections[intersection_index].intersected_shape_indices.size() == 2:
+			intersection_indices_to_remove.push_back(intersection_index)
+	
+	# Loop through the list of intersections that occurred in each loop range,
+	# immediately adding a path to the solved_paths array if no intersections took place for that loop.
+	for i in range(0, loop_range_intersection_indices.size()):
+		var current_loop_intersection_count = loop_range_intersection_indices[i].size()
+		# No intersections found! Add the loop to the solved path list.
+		if current_loop_intersection_count == 0:
+			solved_paths.push_back(no_intersection_solved_paths[i])
+		elif current_loop_intersection_count == 1:
+			var intersection_index = loop_range_intersection_indices[i][0]
+			if intersection_indices_to_remove.has(intersection_index):
+				solved_paths.push_back(no_intersection_solved_paths[i])
+	
+	intersection_indices_to_remove.sort()
+	intersection_indices_to_remove.invert()
+	for index_to_remove in intersection_indices_to_remove:
+		intersections.remove(index_to_remove)
+	
+	# These arrays no longer needed.
+	intersection_indices_to_remove.clear()
+	no_intersection_solved_paths.clear()
+	loop_range_intersection_indices.clear()
+	path_start_end_intersection_indices.clear()
+	
+	print_debug(intersections)
 	
 	# For each intersection point, follow the intersection lines forward, then take right turns until it comes back to the initial point
 	if intersections.size() > 0:
@@ -989,6 +1068,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 				# Small optmization, break if majority votes already agree.
 				if sample_path_index > 0 and (even_votes == 0 or even_votes == 2) and (non_zero_votes == 0 or non_zero_votes == 2):
 					break
+			
 			is_insideness_even = true if even_votes >= 2 else false
 			is_insideness_non_zero = true if non_zero_votes >= 2 else false
 			
@@ -1061,6 +1141,6 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 			"is_clockwise": filled_paths_clockwise_checks[path_index],
 			"hole_instructions": hole_instructions,
 		})
-	
+		
 	return instruction_groups
 
