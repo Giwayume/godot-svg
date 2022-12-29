@@ -1117,7 +1117,6 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 				if is_insideness_non_zero:
 					is_filled = true
 		
-		is_filled = true # TODO -remove
 		if is_filled:
 			filled_paths.push_back(solved_path)
 			filled_paths_clockwise_checks.push_back(is_clockwise)
