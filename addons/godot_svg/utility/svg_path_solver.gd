@@ -78,6 +78,16 @@ class PathShape:
 			a_length += a0.distance_to(a1)
 		return new_intersections
 	
+	func remove_intersection(point, self_t, other_t):
+		for i in range(0, intersections.size()):
+			if (
+				intersections[i].point.is_equal_approx(point) and
+				intersections[i].self_t == self_t and
+				intersections[i].other_t == other_t
+			):
+				intersections.remove(i)
+				break
+	
 	func find_self_intersections():
 		var self_intersections = []
 		var self_segment_range = segments.size() - 1
@@ -241,7 +251,7 @@ class PathQuadraticBezier extends PathShape:
 			var left_split = SVGMath.split_quadratic_bezier(p0, p1, p2, start_t)
 			var right_split = SVGMath.split_quadratic_bezier(left_split[2], left_split[3], left_split[4], (end_t - start_t) / max(split_epsilon, (1.0 - start_t)))
 			if is_reversed:
-				return PathQuadraticBezier.new(right_split[2], right_split[1], right_split[20])
+				return PathQuadraticBezier.new(right_split[2], right_split[1], right_split[2])
 			else:
 				return PathQuadraticBezier.new(right_split[0], right_split[1], right_split[2])
 	
@@ -810,9 +820,23 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 			if intersection_indices_to_remove.has(intersection_index):
 				solved_paths.push_back(no_intersection_solved_paths[i])
 	
+	# Remove intersections that we have identified above to ignore.
 	intersection_indices_to_remove.sort()
 	intersection_indices_to_remove.invert()
 	for index_to_remove in intersection_indices_to_remove:
+		var intersection_to_remove = intersections[index_to_remove]
+		for self_i in range(0, intersection_to_remove.intersected_shape_indices.size()):
+			var self_shape_index = intersection_to_remove.intersected_shape_indices[self_i]
+			var self_shape_t = intersection_to_remove.intersected_shape_t[self_i]
+			for other_i in range(0, intersection_to_remove.intersected_shape_indices.size()):
+				var other_shape_index = intersection_to_remove.intersected_shape_indices[other_i]
+				var other_shape_t = intersection_to_remove.intersected_shape_t[other_i]
+				if self_shape_index != other_shape_index:
+					path_shapes[self_shape_index].remove_intersection(
+						intersection_to_remove.point,
+						self_shape_t,
+						other_shape_t
+					)
 		intersections.remove(index_to_remove)
 	
 	# These arrays no longer needed.
@@ -821,8 +845,6 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 	loop_range_intersection_indices.clear()
 	path_start_end_intersection_indices.clear()
 	
-	print_debug(intersections)
-	
 	# For each intersection point, follow the intersection lines forward, then take right turns until it comes back to the initial point
 	if intersections.size() > 0:
 		current_path_bounding_box = create_new_bounding_box()
@@ -830,6 +852,15 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 			for shape_start_array_index in range(0, intersection.intersected_shape_indices.size()):
 				var shape_start_index = intersection.intersected_shape_indices[shape_start_array_index]
 				var shape_start_t = intersection.intersected_shape_t[shape_start_array_index]
+				
+				var shape_start_loop_range = get_path_loop_range(shape_loop_ranges, shape_start_index)
+				if shape_start_t == 1.0:
+					if shape_start_index < shape_start_loop_range.end:
+						shape_start_index += 1
+					else:
+						shape_start_index = shape_start_loop_range.start
+					shape_start_t = 0.0
+				
 				var last_passed_intersection = intersection
 				var last_passed_intersection_start_shape_index = shape_start_index
 				var has_looped_from_beginning = false
@@ -844,6 +875,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 				var existing_solutions = []
 				var encountered_intersections = [intersection]
 				var did_path_return_to_start = false
+				
 				while infinite_loop_iterator < 1000: # If you need paths with 1000+ instructions open an issue. Performance is bad.
 					infinite_loop_iterator += 1
 					if infinite_loop_iterator == 1000:
@@ -966,6 +998,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 							current_shape_index = path_loop_range.start
 							has_looped_from_beginning = true
 						elif current_shape_index < path_loop_range.start:
+							print_debug("less")
 							current_shape_index = path_loop_range.end
 							has_looped_from_beginning = true
 						
@@ -1084,6 +1117,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 				if is_insideness_non_zero:
 					is_filled = true
 		
+		is_filled = true # TODO -remove
 		if is_filled:
 			filled_paths.push_back(solved_path)
 			filled_paths_clockwise_checks.push_back(is_clockwise)

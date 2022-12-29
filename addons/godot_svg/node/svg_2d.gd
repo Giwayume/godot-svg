@@ -405,9 +405,9 @@ func _get_configuration_warning():
 	if _svg is Texture:
 		return "You added an SVG file that is imported as \"Texture\". In the Import tab, choose \"Import As: SVG\" instead!"
 	elif _svg != null and not _svg is SVGResource:
-		return "You must import your SVG file as \"GodotSVG\" in the import settings!"
+		return "You must import your SVG file as \"SVG\" in the import settings!"
 	elif is_gles2 and _antialiased:
-		return "\"antialiased\" is enabled, but GLES2 does not support the antialiasing technique used by this plugin. Use GLES3 instead."
+		return "\"antialiased\" is enabled, but GLES2 does not support the antialiasing technique used by this plugin. Use the GLES3 renderer instead."
 	return ""
 
 func _get_item_rect():
