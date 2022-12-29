@@ -998,7 +998,6 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 							current_shape_index = path_loop_range.start
 							has_looped_from_beginning = true
 						elif current_shape_index < path_loop_range.start:
-							print_debug("less")
 							current_shape_index = path_loop_range.end
 							has_looped_from_beginning = true
 						
