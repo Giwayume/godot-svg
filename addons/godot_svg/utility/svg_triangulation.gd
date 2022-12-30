@@ -718,7 +718,7 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 #		antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae0))
 #		antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae2))
 #		antialias_edge_uv.push_back(generate_uv_at_point(bounding_box, ae3))
-	
+#
 	if duplicate_edges.size() > 0:
 		for edge_key in duplicate_edges:
 			if duplicate_edges[edge_key].size() == 1:

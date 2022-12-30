@@ -185,9 +185,11 @@ void fragment() {
 //		COLOR = vec4(0.0, 0.0, 0.0, 0.0);
 	} else if (COLOR.a < 0.8) {
 		COLOR = blend_color;
+//		COLOR = vec4(1.0, 0.0, 0.0, 1.0);
 //		COLOR = vec4(0.0, 0.0, 0.0, 0.0);
 	} else {
 		COLOR = antialiased_edge(COLOR.rg, blend_color);
+//		COLOR = antialiased_edge(COLOR.rg, vec4(1.0, 1.0, 1.0, 1.0));
 	}
 }
 "

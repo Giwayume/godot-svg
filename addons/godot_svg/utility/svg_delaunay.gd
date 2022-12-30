@@ -794,6 +794,7 @@ class Delaunator:
 	var halfedges
 	var triangles_len
 	var hull
+	var bounding_box
 
 	static func from(points: Array):
 		var n = points.size()
@@ -812,6 +813,7 @@ class Delaunator:
 		var n = coords.size() >> 1
 
 		self.coords = coords
+		bounding_box = Rect2()
 
 		# arrays that will store the triangulation graph
 		var max_triangles = max(2 * n - 5, 0)
@@ -868,6 +870,11 @@ class Delaunator:
 			if y > max_y:
 				max_y = y
 			_ids[i] = i
+		
+		bounding_box.position.x = min_x
+		bounding_box.position.y = min_y
+		bounding_box.size.x = max_x - min_x
+		bounding_box.size.y = max_y - min_y
 
 		var cx = (min_x + max_x) / 2
 		var cy = (min_y + max_y) / 2
@@ -1886,8 +1893,13 @@ class Constrainautor:
 			del.coords[p * 2], del.coords[p * 2 + 1]
 		) == 0.0
 
-# Solve for polygon with holes
+# The subsequent code is licensed under this project.
 
+class DelaunaySorting:
+	static func sort_x(a, b):
+		return a[2].y > b[2].y # compare max x position
+
+# Solve for polygon with holes
 static func delaunay_polygon_2d(points: Array, hole_indices = []):
 	# 1. Remove duplicate points from points array, Constrainautor can see this as an error.
 	# 2. Add hole polygon vertex pairs as constrained edges
@@ -1925,6 +1937,20 @@ static func delaunay_polygon_2d(points: Array, hole_indices = []):
 	var coords = delaunay.coords
 	var _triangles = delaunay.triangles
 	var n = coords.size() >> 1
+	
+	var all_collision_segments = []
+	for i in range(0, n - 1):
+		if hole_indices.find(i + 1) == -1:
+			var pos_a = Vector2(coords[i * 2], coords[i * 2 + 1])
+			var pos_b = Vector2(coords[(i + 1) * 2], coords[(i + 1) * 2 + 1])
+			var segment = PoolVector2Array([
+				pos_a,
+				pos_b,
+				Vector2(min(pos_a.x, pos_b.x), max(pos_a.x, pos_b.x))
+			])
+			all_collision_segments.push_back(segment)
+	all_collision_segments.sort_custom(DelaunaySorting, "sort_x")
+	
 	for i in range(0, _triangles.size(), 3):
 		var is_fill = true
 		var insideness = 0
@@ -1934,24 +1960,33 @@ static func delaunay_polygon_2d(points: Array, hole_indices = []):
 		var c3 = Vector2(coords[_triangles[i + 2] * 2], coords[_triangles[i + 2] * 2 + 1])
 		check_point += c1 + c2 + c3
 		check_point /= Vector2(3.0, 3.0)
-		for k in range(0, n - 1):
-			if hole_indices.find(k+1) == -1:
-				var segment_start = Vector2(coords[k * 2], coords[k * 2 + 1])
-				var segment_end = Vector2(coords[(k + 1) * 2], coords[(k + 1) * 2 + 1])
-				var check_end_point = Vector2(
-					check_point.x,
-					min(segment_start.y, segment_end.y) - 1
-				)
-				if Geometry.segment_intersects_segment_2d(check_point, check_end_point, segment_start, segment_end):
-					if segment_start.x < segment_end.x:
-						insideness += 1
-					else:
-						insideness -= 1
-		is_fill = int(abs(insideness)) % 2 == 1
 
+		for segment in all_collision_segments:
+			if segment[2].x > check_point.x:
+				continue
+			
+			var segment_start: Vector2 = segment[0]
+			var segment_end: Vector2 = segment[1]
+			var check_end_point = Vector2(
+				check_point.x,
+				min(segment_start.y, segment_end.y) - 1
+			)
+			if Geometry.segment_intersects_segment_2d(check_point, check_end_point, segment_start, segment_end):
+				if segment_start.x < segment_end.x:
+					insideness += 1
+				else:
+					insideness -= 1
+					
+			# We can short circuit due to x-sorting of all_collision_segments
+			if segment_start.x < check_point.x and segment_end.x < check_point.x:
+				break
+		
+		is_fill = int(abs(insideness)) % 2 == 1
 		if is_fill:
-			triangles.append(_triangles[i])
-			triangles.append(_triangles[i + 1])
-			triangles.append(_triangles[i + 2])
-	
+			var triangles_size = triangles.size()
+			triangles.resize(triangles_size + 3)
+			triangles[triangles_size] = _triangles[i]
+			triangles[triangles_size + 1] = _triangles[i + 1]
+			triangles[triangles_size + 2] = _triangles[i + 2]
+			
 	return triangles
