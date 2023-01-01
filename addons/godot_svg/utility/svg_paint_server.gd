@@ -126,10 +126,10 @@ static func generate_radial_gradient_server(
 	}
 
 static func generate_pattern_server(
-	pattern_renderer,
+	pattern_controller,
 	inherited_view_box: Rect2
 ) -> Dictionary:
-	var viewport = pattern_renderer._baking_viewport
+	var viewport = pattern_controller._baking_viewport
 	viewport.size = Vector2(2.0, 2.0)
 	viewport.render_target_v_flip = true
 	viewport.hdr = false
@@ -140,7 +140,7 @@ static func generate_pattern_server(
 	viewport_texture.flags = Texture.FLAGS_DEFAULT
 	return {
 		"view_box": inherited_view_box,
-		"renderer": pattern_renderer,
+		"controller": pattern_controller,
 		"viewport": viewport,
 		"texture": viewport_texture,
 	}
@@ -151,9 +151,9 @@ static func pow_2_texture_size(size: Vector2):
 		pow(2, ceil(log(size.y) / log(2)))
 	)
 
-static func resolve_paint(reference_renderer, attr_paint, server_name: String):
-	var svg_node = reference_renderer.svg_node
-	var inherited_view_box = reference_renderer.inherited_view_box
+static func resolve_paint(reference_controller, attr_paint, server_name: String):
+	var root_controller = reference_controller.root_controller
+	var inherited_view_box = reference_controller.inherited_view_box
 	var paint = {
 		"color": Color(1, 1, 1, 1),
 		"texture": null,
@@ -162,56 +162,56 @@ static func resolve_paint(reference_renderer, attr_paint, server_name: String):
 	}
 	if attr_paint is SVGPaint:
 		if attr_paint.url != null:
-			var result = svg_node._resolve_resource_locator(attr_paint.url)
-			var renderer = result.renderer
-			if renderer == null:
+			var result = root_controller.resolve_url(attr_paint.url)
+			var controller = result.controller
+			if controller == null:
 				paint.color = attr_paint.color
-			elif renderer.node_name == "linearGradient" or renderer.node_name == "radialGradient":
-				renderer = renderer.resolve_href()
-				var stops = svg_node._find_elements_by_name("stop", renderer.element_resource)
+			elif controller.node_name == "linearGradient" or controller.node_name == "radialGradient":
+				controller = controller.resolve_href()
+				var stops = root_controller.get_elements_by_name("stop", controller.element_resource)
 				var gradient = Gradient.new()
 				gradient.colors = []
 				gradient.offsets = []
 				for stop in stops:
-					var offset = stop.renderer.attr_offset.get_length(1)
-					var color = stop.renderer.attr_stop_color
-					var opacity = stop.renderer.attr_stop_opacity
+					var offset = stop.controller.attr_offset.get_length(1)
+					var color = stop.controller.attr_stop_color
+					var opacity = stop.controller.attr_stop_opacity
 					if opacity < 1.0:
 						color.a = opacity
 					gradient.add_point(offset, color)
 				var gradient_texture = null
-				var gradient_transform = renderer.attr_gradient_transform
+				var gradient_transform = controller.attr_gradient_transform
 				var texture_repeat_mode = {
 					SVGValueConstant.PAD: GradientTexture2D.REPEAT_NONE,
 					SVGValueConstant.REPEAT: GradientTexture2D.REPEAT,
 					SVGValueConstant.REFLECT: GradientTexture2D.REPEAT_MIRROR,
-				}[renderer.attr_spread_method]
-				paint.texture_units = renderer.attr_gradient_units
-				if renderer.node_name == "linearGradient":
-					free_paint_server_texture(reference_renderer, server_name)
+				}[controller.attr_spread_method]
+				paint.texture_units = controller.attr_gradient_units
+				if controller.node_name == "linearGradient":
+					free_paint_server_texture(reference_controller, server_name)
 					gradient_texture = GradientTexture2D.new()
 					gradient_texture.gradient = gradient
 					gradient_texture.fill = GradientTexture2D.FILL_LINEAR
 					gradient_texture.repeat = texture_repeat_mode
-					if renderer.attr_gradient_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
+					if controller.attr_gradient_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
 						gradient_texture.fill_from = gradient_transform.xform(Vector2(
-							renderer.attr_x1.get_length(1),
-							renderer.attr_y1.get_length(1)
+							controller.attr_x1.get_length(1),
+							controller.attr_y1.get_length(1)
 						))
 						gradient_texture.fill_to = gradient_transform.xform(Vector2(
-							renderer.attr_x2.get_length(1),
-							renderer.attr_y2.get_length(1)
+							controller.attr_x2.get_length(1),
+							controller.attr_y2.get_length(1)
 						))
 					else: # USER_SPACE_ON_USE
 						var transformed_fill_from = gradient_transform.xform(
-							Vector2(renderer.attr_x1.get_length(1), renderer.attr_y1.get_length(1))
+							Vector2(controller.attr_x1.get_length(1), controller.attr_y1.get_length(1))
 						)
 						gradient_texture.fill_from = Vector2(
 							SVGLengthPercentage.calculate_normalized_length(transformed_fill_from.x, inherited_view_box.size.x, inherited_view_box.position.x),
 							SVGLengthPercentage.calculate_normalized_length(transformed_fill_from.y, inherited_view_box.size.y, inherited_view_box.position.y)
 						)
 						var transformed_fill_to = gradient_transform.xform(
-							Vector2(renderer.attr_x2.get_length(1), renderer.attr_y2.get_length(1))
+							Vector2(controller.attr_x2.get_length(1), controller.attr_y2.get_length(1))
 						)
 						gradient_texture.fill_to = Vector2(
 							SVGLengthPercentage.calculate_normalized_length(transformed_fill_to.x, inherited_view_box.size.x, inherited_view_box.position.x),
@@ -220,34 +220,34 @@ static func resolve_paint(reference_renderer, attr_paint, server_name: String):
 				else: # "radialGradient"
 					var start_center
 					var end_center
-					var start_radius = renderer.attr_fr.get_normalized_length(inherited_view_box.size.x)
-					var end_radius = renderer.attr_r.get_normalized_length(inherited_view_box.size.x)
+					var start_radius = controller.attr_fr.get_normalized_length(inherited_view_box.size.x)
+					var end_radius = controller.attr_r.get_normalized_length(inherited_view_box.size.x)
 					var texture_size = Vector2(64.0, 64.0)
-					if renderer.attr_gradient_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
-						var bounding_box = reference_renderer.get_bounding_box()
+					if controller.attr_gradient_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
+						var bounding_box = reference_controller.get_bounding_box()
 						texture_size = pow_2_texture_size(Vector2(1.0, 1.0) * min(4096, max(bounding_box.size.x, bounding_box.size.y)))
 						start_center = gradient_transform.xform(Vector2(
-							renderer.attr_cx.get_length(1),
-							renderer.attr_cy.get_length(1)
+							controller.attr_cx.get_length(1),
+							controller.attr_cy.get_length(1)
 						))
-						var attr_fx = renderer.attr_cx if renderer.attr_fx is String else renderer.attr_fx
-						var attr_fy = renderer.attr_cy if renderer.attr_fy is String else renderer.attr_fy
+						var attr_fx = controller.attr_cx if controller.attr_fx is String else controller.attr_fx
+						var attr_fy = controller.attr_cy if controller.attr_fy is String else controller.attr_fy
 						end_center = gradient_transform.xform(Vector2(
 							attr_fx.get_length(1),
 							attr_fy.get_length(1)
 						))
-						start_radius = renderer.attr_fr.get_length(1)
-						end_radius = renderer.attr_r.get_length(1)
+						start_radius = controller.attr_fr.get_length(1)
+						end_radius = controller.attr_r.get_length(1)
 					else: # USER_SPACE_ON_USE
 						var transformed_start_center = gradient_transform.xform(
-							Vector2(renderer.attr_cx.get_length(1), renderer.attr_cy.get_length(1))
+							Vector2(controller.attr_cx.get_length(1), controller.attr_cy.get_length(1))
 						)
 						start_center = Vector2(
 							SVGLengthPercentage.calculate_normalized_length(transformed_start_center.x, inherited_view_box.size.x, inherited_view_box.position.x),
 							SVGLengthPercentage.calculate_normalized_length(transformed_start_center.y, inherited_view_box.size.y, inherited_view_box.position.y)
 						)
-						var attr_fx = renderer.attr_cx if renderer.attr_fx is String else renderer.attr_fx
-						var attr_fy = renderer.attr_cy if renderer.attr_fy is String else renderer.attr_fy
+						var attr_fx = controller.attr_cx if controller.attr_fx is String else controller.attr_fx
+						var attr_fy = controller.attr_cy if controller.attr_fy is String else controller.attr_fy
 						var transformed_end_center = gradient_transform.xform(
 							Vector2(attr_fx.get_length(1), attr_fy.get_length(1))
 						)
@@ -255,15 +255,15 @@ static func resolve_paint(reference_renderer, attr_paint, server_name: String):
 							SVGLengthPercentage.calculate_normalized_length(transformed_end_center.x, inherited_view_box.size.x, inherited_view_box.position.x),
 							SVGLengthPercentage.calculate_normalized_length(transformed_end_center.y, inherited_view_box.size.y, inherited_view_box.position.y)
 						)
-						start_radius = renderer.attr_fr.get_normalized_length(inherited_view_box.size.x)
-						end_radius = renderer.attr_r.get_normalized_length(inherited_view_box.size.x)
+						start_radius = controller.attr_fr.get_normalized_length(inherited_view_box.size.x)
+						end_radius = controller.attr_r.get_normalized_length(inherited_view_box.size.x)
 
 						texture_size = inherited_view_box.size
 					
 					var gradient_texture_param = GradientTexture.new()
 					gradient_texture_param.gradient = gradient
 					
-					gradient_texture = store_paint_server_texture(reference_renderer, server_name, {
+					gradient_texture = store_paint_server_texture(reference_controller, server_name, {
 						"texture": null,
 						"shader_params": {
 							"gradient_type": 2,
@@ -276,66 +276,66 @@ static func resolve_paint(reference_renderer, attr_paint, server_name: String):
 						}
 					})
 				paint.texture = gradient_texture
-				if renderer._is_href_duplicate:
-					renderer.queue_free()
-			elif renderer.node_name == "pattern":
-				renderer = renderer.resolve_href()
-				var pattern_texture = store_paint_server_texture(reference_renderer, server_name,
+				if controller._is_href_duplicate:
+					controller.controlled_node.queue_free()
+			elif controller.node_name == "pattern":
+				controller = controller.resolve_href()
+				var pattern_texture = store_paint_server_texture(reference_controller, server_name,
 					generate_pattern_server(
-						renderer,
+						controller,
 						inherited_view_box
 					)
 				)
-				if renderer.attr_pattern_units == SVGValueConstant.USER_SPACE_ON_USE:
+				if controller.attr_pattern_units == SVGValueConstant.USER_SPACE_ON_USE:
 					paint.texture_units = Rect2(
 						0.0,
 						0.0,
-						renderer._baking_viewport.size.x,
-						renderer._baking_viewport.size.y
+						controller._baking_viewport.size.x,
+						controller._baking_viewport.size.y
 					)
 				else:
-					paint.texture_units = renderer.attr_pattern_units
-				paint.texture_uv_transform = renderer.attr_pattern_transform
+					paint.texture_units = controller.attr_pattern_units
+				paint.texture_uv_transform = controller.attr_pattern_transform
 				paint.texture = pattern_texture
 		else:
-			free_paint_server_texture(reference_renderer, server_name)
+			free_paint_server_texture(reference_controller, server_name)
 			paint.color = attr_paint.color
 	elif typeof(attr_paint) == TYPE_STRING:
 		if attr_paint == SVGValueConstant.CURRENT_COLOR:
-			paint = resolve_paint(reference_renderer, reference_renderer.attr_color, server_name)
+			paint = resolve_paint(reference_controller, reference_controller.attr_color, server_name)
 	return paint
 
-static func store_paint_server_texture(reference_renderer, store_name: String, server_response: Dictionary):
-	free_paint_server_texture(reference_renderer, store_name)
-	reference_renderer._paint_server_textures[store_name] = server_response
-	if server_response.has("viewport") or server_response.has("renderer"):
-		if reference_renderer._paint_server_container_node == null:
-			reference_renderer._paint_server_container_node = Node2D.new()
-			reference_renderer._paint_server_container_node.set_name("PaintServerAssets")
-			reference_renderer._add_child_direct(reference_renderer._paint_server_container_node)
-		if server_response.has("renderer"):
-			reference_renderer._paint_server_container_node.add_child(server_response.renderer)
-			if server_response.has("view_box") and server_response.renderer.has_method("update_as_user"):
-				server_response.renderer.update_as_user(server_response.view_box)
+static func store_paint_server_texture(reference_controller, store_name: String, server_response: Dictionary):
+	free_paint_server_texture(reference_controller, store_name)
+	reference_controller._paint_server_textures[store_name] = server_response
+	if server_response.has("viewport") or server_response.has("controller"):
+		if reference_controller._paint_server_container_node == null:
+			reference_controller._paint_server_container_node = Node2D.new()
+			reference_controller._paint_server_container_node.set_name("PaintServerAssets")
+			reference_controller._add_child_direct(reference_controller._paint_server_container_node)
+		if server_response.has("controller"):
+			reference_controller._paint_server_container_node.add_child(server_response.controller)
+			if server_response.has("view_box") and server_response.controller.has_method("update_as_user"):
+				server_response.controller.update_as_user(server_response.view_box)
 		else:
-			reference_renderer._paint_server_container_node.add_child(server_response.viewport)
+			reference_controller._paint_server_container_node.add_child(server_response.viewport)
 	return server_response.texture
 
-static func free_paint_server_texture(reference_renderer, store_name: String):
-	if reference_renderer._paint_server_textures.has(store_name):
-		var old_store = reference_renderer._paint_server_textures[store_name]
-		if old_store.has("renderer") and is_instance_valid(old_store.renderer):
-			old_store.renderer.queue_free()
+static func free_paint_server_texture(reference_controller, store_name: String):
+	if reference_controller._paint_server_textures.has(store_name):
+		var old_store = reference_controller._paint_server_textures[store_name]
+		if old_store.has("controller") and is_instance_valid(old_store.controller):
+			old_store.controller.controlled_node.queue_free()
 		if old_store.has("viewport") and is_instance_valid(old_store.viewport):
 			old_store.viewport.queue_free()
 		if old_store.has("texture_rect") and is_instance_valid(old_store.texture_rect):
 			old_store.texture_rect.queue_free()
-	reference_renderer._paint_server_textures.erase(store_name)
+	reference_controller._paint_server_textures.erase(store_name)
 
-static func apply_shader_params(reference_renderer, store_name: String, shape_node):
+static func apply_shader_params(reference_controller, store_name: String, shape_node):
 	var needs_reset_params = false
-	if reference_renderer._paint_server_textures.has(store_name):
-		var server_response = reference_renderer._paint_server_textures[store_name]
+	if reference_controller._paint_server_textures.has(store_name):
+		var server_response = reference_controller._paint_server_textures[store_name]
 		if server_response.has("shader_params"):
 			for shader_param_name in server_response.shader_params:
 				shape_node.material.set_shader_param(shader_param_name, server_response.shader_params[shader_param_name])

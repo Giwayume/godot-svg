@@ -1,4 +1,9 @@
-extends "svg_render_element.gd"
+class_name SVGControllerImage
+extends SVGControllerElement
+
+#------------#
+# Attributes #
+#------------#
 
 var attr_x = SVGLengthPercentage.new("0") setget _set_attr_x
 var attr_y = SVGLengthPercentage.new("0") setget _set_attr_y
@@ -15,17 +20,22 @@ var attr_preserve_aspect_ratio = {
 } setget _set_attr_preserve_aspect_ratio
 var attr_crossorigin = ""
 
-# Internal Variables
+#--------------------#
+# Internal Variables #
+#--------------------#
 
 var _control_frame = null
 var _image_sprite = null
 
-# Lifecycle
+#-----------#
+# Lifecycle #
+#-----------#
 
 func _init():
 	node_name = "image"
 
 func _notification(what):
+	._notification(what)
 	if what == NOTIFICATION_PREDELETE:
 		if _control_frame != null:
 			if is_instance_valid(_control_frame):
@@ -36,13 +46,13 @@ func _notification(what):
 				_image_sprite.queue_free()
 			_image_sprite = null
 
-func _props_applied():
-	._props_applied()
+func _props_applied(changed_props = []):
+	._props_applied(changed_props)
 	
 	if attr_visibility == SVGValueConstant.VISIBLE and attr_href != SVGValueConstant.NONE:
-		show()
+		controlled_node.show()
 	else:
-		hide()
+		controlled_node.hide()
 		return
 	
 	if _control_frame == null:
@@ -58,14 +68,14 @@ func _props_applied():
 	
 	var image_resource_path = SVGAttributeParser.relative_to_absolute_resource_url(
 		attr_href,
-		svg_node._svg.resource_path
+		root_controller.svg.resource_path
 	)
 	var image_texture = null
 	if ResourceLoader.exists(image_resource_path):
 		image_texture = load(image_resource_path)
 	
 	if image_texture == null:
-		hide()
+		controlled_node.hide()
 		return
 	
 	_image_sprite.texture = image_texture
@@ -73,7 +83,7 @@ func _props_applied():
 	var x = attr_x.get_length(inherited_view_box.size.x, inherited_view_box.position.x)
 	var y = attr_y.get_length(inherited_view_box.size.y, inherited_view_box.position.y)
 
-	transform.origin = Vector2(x, y)
+	controlled_node.transform.origin = Vector2(x, y)
 	
 	var texture_width = image_texture.get_width()
 	var texture_height = image_texture.get_height()
@@ -91,7 +101,7 @@ func _props_applied():
 		height = texture_height
 	
 	if texture_width == 0 or texture_height == 0 or width == 0 or height == 0:
-		hide()
+		controlled_node.hide()
 		return
 	
 	_control_frame.rect_size = Vector2(width, height)
@@ -148,21 +158,23 @@ func _props_applied():
 				var leftover_space = width - (texture_width * _image_sprite.scale.x)
 				_image_sprite.position = Vector2(x_align_ratio * leftover_space, 0.0)
 
-# Getters / Setters
+#-------------------#
+# Getters / Setters #
+#-------------------#
 
 func _set_attr_x(x):
 	if typeof(x) != TYPE_STRING:
 		attr_x = x
 	else:
 		attr_x = SVGLengthPercentage.new(x)
-	apply_props()
+	apply_props("x")
 
 func _set_attr_y(y):
 	if typeof(y) != TYPE_STRING:
 		attr_y = y
 	else:
 		attr_y = SVGLengthPercentage.new(y)
-	apply_props()
+	apply_props("y")
 
 func _set_attr_width(width):
 	if typeof(width) != TYPE_STRING:
@@ -172,7 +184,7 @@ func _set_attr_width(width):
 			attr_width = width
 		else:
 			attr_width = SVGLengthPercentage.new(width)
-	apply_props()
+	apply_props("width")
 
 func _set_attr_height(height):
 	if typeof(height) != TYPE_STRING:
@@ -182,11 +194,11 @@ func _set_attr_height(height):
 			attr_height = height
 		else:
 			attr_height = SVGLengthPercentage.new(height)
-	apply_props()
+	apply_props("height")
 
 func _set_attr_href(href):
 	attr_href = href
-	apply_props()
+	apply_props("href")
 
 func _set_attr_xlink_href(xlink_href):
 	_set_attr_href(xlink_href)
@@ -209,4 +221,4 @@ func _set_attr_preserve_aspect_ratio(preserve_aspect_ratio):
 				},
 				"meet_or_slice": split[1] if split[1].length() > 1 else SVGValueConstant.MEET,
 			}
-	apply_props()
+	apply_props("preserve_aspect_ratio")

@@ -1,6 +1,7 @@
 class_name SVGAttributeParser
 
 const PathCommand = SVGValueConstant.PathCommand
+const PathCoordinate = SVGValueConstant.PathCoordinate
 
 static func to_snake_case(attribute_name):
 	var camel_case_regex = RegEx.new()
@@ -234,6 +235,146 @@ static func relative_to_absolute_resource_url(relative_url, current_file_path):
 	combined_path.append_array(SVGHelper.array_slice(current_path_split, 0, end_index))
 	combined_path.append_array(SVGHelper.array_slice(relative_path_split, start_index))
 	return "/".join(combined_path)
+
+static func parse_d(d: String):
+	d = d + "$"
+	var attr_d = []
+	var current_command = -1
+	var current_coordinate = -1
+	var current_values = ""
+	var letter_regex = RegEx.new()
+	letter_regex.compile("[a-zA-Z$]")
+	var negative_split_regex = RegEx.new()
+	negative_split_regex.compile("(?=-)")
+	for c in d:
+		if letter_regex.search(c) != null && c != "e":
+			var values = []
+			var space_split = current_values.split(" ", false)
+			for space_token in space_split:
+				var comma_split = space_token.split(",", false)
+				for comma_token in comma_split:
+					var negative_split = SVGHelper.regex_string_split("(?<!e)-", comma_token)
+					var negative_multiplier = 1.0
+					for negative_token in negative_split:
+						if negative_token != "":
+							var decimal_split = negative_token.split(".")
+							values.push_back(negative_multiplier * ".".join(SVGHelper.array_slice(decimal_split, 0, 2)).to_float())
+							if decimal_split.size() > 2:
+								for decimal_index in range(2, decimal_split.size()):
+									values.push_back(("." + str(decimal_split[decimal_index])).to_float())
+						negative_multiplier = -1.0
+			
+			# Split out implicit commands
+			var implicit_commands = []
+			var use_implicit_command = -1
+			var use_implicit_point_count = 0
+			if [PathCommand.MOVE_TO, PathCommand.LINE_TO].has(current_command):
+				use_implicit_command = PathCommand.LINE_TO
+				use_implicit_point_count = 2
+			elif current_command == PathCommand.HORIZONTAL_LINE_TO:
+				use_implicit_command = PathCommand.HORIZONTAL_LINE_TO
+				use_implicit_point_count = 1
+			elif current_command == PathCommand.VERTICAL_LINE_TO:
+				use_implicit_command = PathCommand.VERTICAL_LINE_TO
+				use_implicit_point_count = 1
+			elif current_command == PathCommand.CUBIC_BEZIER_CURVE:
+				use_implicit_command = PathCommand.CUBIC_BEZIER_CURVE
+				use_implicit_point_count = 6
+			elif current_command == PathCommand.SMOOTH_CUBIC_BEZIER_CURVE:
+				use_implicit_command = PathCommand.SMOOTH_CUBIC_BEZIER_CURVE
+				use_implicit_point_count = 4
+			elif current_command == PathCommand.QUADRATIC_BEZIER_CURVE:
+				use_implicit_command = PathCommand.QUADRATIC_BEZIER_CURVE
+				use_implicit_point_count = 4
+			elif current_command == PathCommand.SMOOTH_QUADRATIC_BEZIER_CURVE:
+				use_implicit_command = PathCommand.SMOOTH_QUADRATIC_BEZIER_CURVE
+				use_implicit_point_count = 2
+			elif current_command == PathCommand.ELLIPTICAL_ARC_CURVE:
+				use_implicit_command = PathCommand.ELLIPTICAL_ARC_CURVE
+				use_implicit_point_count = 7
+			if use_implicit_command > -1:
+				var implicit_values = SVGHelper.array_slice(values, use_implicit_point_count)
+				for point_group_index in range(0, implicit_values.size(), use_implicit_point_count):
+					if point_group_index + use_implicit_point_count - 1 < implicit_values.size():
+						implicit_commands.push_back({
+							"command": use_implicit_command,
+							"coordinate_type": current_coordinate,
+							"values": SVGHelper.array_slice(implicit_values, point_group_index, point_group_index + use_implicit_point_count)
+						})
+			attr_d.push_back({
+				"command": current_command,
+				"coordinate_type": current_coordinate,
+				"values": values,
+			})
+			if implicit_commands.size() > 0:
+				for implicit_command in implicit_commands:
+					attr_d.push_back(implicit_command)
+			current_command = -1
+			current_coordinate = -1
+			current_values = ""
+		if c == "M":
+			current_command = PathCommand.MOVE_TO
+			current_coordinate = PathCoordinate.ABSOLUTE
+		elif c == "m":
+			current_command = PathCommand.MOVE_TO
+			current_coordinate = PathCoordinate.RELATIVE
+		elif c == "L":
+			current_command = PathCommand.LINE_TO
+			current_coordinate = PathCoordinate.ABSOLUTE
+		elif c == "l":
+			current_command = PathCommand.LINE_TO
+			current_coordinate = PathCoordinate.RELATIVE
+		elif c == "H":
+			current_command = PathCommand.HORIZONTAL_LINE_TO
+			current_coordinate = PathCoordinate.ABSOLUTE
+		elif c == "h":
+			current_command = PathCommand.HORIZONTAL_LINE_TO
+			current_coordinate = PathCoordinate.RELATIVE
+		elif c == "V":
+			current_command = PathCommand.VERTICAL_LINE_TO
+			current_coordinate = PathCoordinate.ABSOLUTE
+		elif c == "v":
+			current_command = PathCommand.VERTICAL_LINE_TO
+			current_coordinate = PathCoordinate.RELATIVE
+		elif c == "C":
+			current_command = PathCommand.CUBIC_BEZIER_CURVE
+			current_coordinate = PathCoordinate.ABSOLUTE
+		elif c == "c":
+			current_command = PathCommand.CUBIC_BEZIER_CURVE
+			current_coordinate = PathCoordinate.RELATIVE
+		elif c == "S":
+			current_command = PathCommand.SMOOTH_CUBIC_BEZIER_CURVE
+			current_coordinate = PathCoordinate.ABSOLUTE
+		elif c == "s":
+			current_command = PathCommand.SMOOTH_CUBIC_BEZIER_CURVE
+			current_coordinate = PathCoordinate.RELATIVE
+		elif c == "Q":
+			current_command = PathCommand.QUADRATIC_BEZIER_CURVE
+			current_coordinate = PathCoordinate.ABSOLUTE
+		elif c == "q":
+			current_command = PathCommand.QUADRATIC_BEZIER_CURVE
+			current_coordinate = PathCoordinate.RELATIVE
+		elif c == "T":
+			current_command = PathCommand.SMOOTH_QUADRATIC_BEZIER_CURVE
+			current_coordinate = PathCoordinate.ABSOLUTE
+		elif c == "t":
+			current_command = PathCommand.SMOOTH_QUADRATIC_BEZIER_CURVE
+			current_coordinate = PathCoordinate.RELATIVE
+		elif c == "A":
+			current_command = PathCommand.ELLIPTICAL_ARC_CURVE
+			current_coordinate = PathCoordinate.ABSOLUTE
+		elif c == "a":
+			current_command = PathCommand.ELLIPTICAL_ARC_CURVE
+			current_coordinate = PathCoordinate.RELATIVE
+		elif c == "Z":
+			current_command = PathCommand.CLOSE_PATH
+			current_coordinate = PathCoordinate.ABSOLUTE
+		elif c == "z":
+			current_command = PathCommand.CLOSE_PATH
+			current_coordinate = PathCoordinate.RELATIVE
+		else:
+			current_values += c
+	return attr_d
 
 static func serialize_d_points(points):
 	var ps = ""

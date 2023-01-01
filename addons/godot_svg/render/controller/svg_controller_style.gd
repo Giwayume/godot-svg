@@ -1,15 +1,25 @@
-extends "svg_render_element.gd"
+class_name SVGControllerStyle
+extends SVGControllerElement
+
+#------------#
+# Attributes #
+#------------#
 
 var attr_type = "text/css" setget _set_attr_type
 var attr_media = "all" setget _set_attr_media
 var attr_title = "none" setget _set_attr_title
 
-# Lifecycle
+#-----------#
+# Lifecycle #
+#-----------#
 
 func _init():
 	node_name = "style"
+	is_renderable = false
 
-# Public Methods
+#----------------#
+# Public Methods #
+#----------------#
 
 func get_stylesheet():
 	var stylesheet = []
@@ -121,16 +131,18 @@ func get_stylesheet():
 	
 	return stylesheet
 
-# Getters / Setters
+#-------------------#
+# Getters / Setters #
+#-------------------#
 
 func _set_attr_type(type):
 	attr_type = type
-	apply_props()
+	apply_props("type")
 
 func _set_attr_media(media):
 	attr_media = media
-	apply_props()
+	apply_props("media")
 	
 func _set_attr_title(title):
 	attr_title = title
-	apply_props()
+	apply_props("title")

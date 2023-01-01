@@ -1,9 +1,16 @@
-extends "svg_render_element.gd"
+class_name SVGControllerPolyline
+extends SVGControllerElement
+
+#------------#
+# Attributes #
+#------------#
 
 var attr_points = [] setget _set_attr_points
 var attr_path_length = SVGValueConstant.NONE setget _set_attr_path_length
 
-# Lifecycle
+#-----------#
+# Lifecycle #
+#-----------#
 
 func _init():
 	node_name = "polyline"
@@ -37,52 +44,26 @@ func _process_polygon():
 		"stroke_closed": false,
 	}
 
-func _props_applied():
-	._props_applied()
+func _props_applied(changed_props = []):
+	._props_applied(changed_props)
 	if attr_points.size() < 2:
-		hide()
+		controlled_node.hide()
 		return
 	else:
-		show()
-	
-	var scale_factor = get_scale_factor()
-	
-	var fill_paint = resolve_fill_paint()
-	var fill_color = fill_paint.color
-	var fill_texture = fill_paint.texture
-	var fill_texture_units = fill_paint.texture_units
-	var fill_texture_uv_transform = fill_paint.texture_uv_transform
-	
-	var stroke_paint = resolve_stroke_paint()
-	var stroke_color = stroke_paint.color
-	var stroke_texture = stroke_paint.texture
-	var stroke_texture_units = stroke_paint.texture_units
-	var stroke_texture_uv_transform = stroke_paint.texture_uv_transform
-	
-	var stroke_width = attr_stroke_width.get_length(inherited_view_box.size.x)
-	
-	draw_shape({
-		"scale_factor": scale_factor,
-		"fill_color": fill_color,
-		"fill_texture": fill_texture,
-		"fill_texture_units": fill_texture_units,
-		"fill_texture_uv_transform": fill_texture_uv_transform,
-		"stroke_color": stroke_color,
-		"stroke_texture": stroke_texture,
-		"stroke_texture_units": stroke_texture_units,
-		"stroke_texture_uv_transform": stroke_texture_uv_transform,
-		"stroke_width": stroke_width,
-	})
+		controlled_node.show()
 
-
-# Internal Methods
+#------------------#
+# Internal Methods #
+#------------------#
 
 func _calculate_bounding_box():
 	# TODO
 	_bounding_box = Rect2(0, 0, 0, 0)
 	emit_signal("bounding_box_calculated", _bounding_box)
 
-# Getters / Setters
+#-------------------#
+# Getters / Setters #
+#-------------------#
 
 func _set_attr_points(points):
 	points = get_style("points", points)
@@ -103,11 +84,11 @@ func _set_attr_points(points):
 					attr_points.push_back(current_point)
 					current_point = Vector2()
 				value_index += 1
-	apply_props()
+	apply_props("points")
 
 func _set_attr_path_length(path_length):
 	if typeof(path_length) != TYPE_STRING:
 		attr_path_length = path_length
 	else:
 		attr_path_length = path_length.to_float()
-	apply_props()
+	apply_props("path_length")

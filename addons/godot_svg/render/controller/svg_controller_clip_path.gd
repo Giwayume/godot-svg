@@ -1,16 +1,28 @@
-extends "svg_render_element.gd"
+class_name SVGControllerClipPath
+extends SVGControllerElement
+
+#------------#
+# Attributes #
+#------------#
 
 var attr_clip_path_units = SVGValueConstant.USER_SPACE_ON_USE setget _set_attr_clip_path_units
+
+#---------------------#
+# Internal Properties #
+#---------------------#
 
 var _clip_path_background = null
 var _clip_path_viewport = null
 var _clip_path_update_queue = []
 var _current_clip_path_update_target = null
 
-# Lifecycle
+#-----------#
+# Lifecycle #
+#-----------#
 
 func _init():
 	node_name = "clipPath"
+	is_renderable = false
 	_clip_path_viewport = Viewport.new()
 	_clip_path_viewport.usage = Viewport.USAGE_2D_NO_SAMPLING
 	_clip_path_viewport.render_target_update_mode = Viewport.UPDATE_DISABLED
@@ -20,13 +32,14 @@ func _init():
 	_clip_path_background.color = Color(0, 0, 0, 1)
 	_clip_path_viewport.add_child(_clip_path_background)
 	.add_child(_clip_path_viewport)
-	hide()
 
 func _process(_delta):
 	if _current_clip_path_update_target != null:
 		call_deferred("_on_clip_path_draw_deferred")
 
-# Internal Methods
+#------------------#
+# Internal Methods #
+#------------------#
 
 func _on_clip_path_draw_deferred():
 	if _current_clip_path_update_target != null:
@@ -85,14 +98,16 @@ func _prepare_viewport_for_draw():
 
 func _update_view_box_recursive(new_view_box, parent = null):
 	for child in parent.children:
-		if svg_node._renderer_map.has(child):
-			var renderer = svg_node._renderer_map[child]
-			if renderer.node_name != "viewport":
-				renderer.inherited_view_box = new_view_box
+		if root_controller._element_resource_to_controller_map.has(child):
+			var controller = root_controller._element_resource_to_controller_map[child]
+			if controller.node_name != "viewport":
+				controller.inherited_view_box = new_view_box
 				_update_view_box_recursive(new_view_box, child)
-			renderer.update()
+			controller.controlled_node.update()
 
-# Public Methods
+#----------------#
+# Public Methods #
+#----------------#
 
 func add_child(new_child, legible_unique_name = false):
 	if _clip_path_viewport != null:
@@ -115,8 +130,9 @@ func request_clip_path_update(callback_node):
 		_current_clip_path_update_target = _clip_path_update_queue.pop_front()
 		_prepare_viewport_for_draw()
 
-# Getters / Setters
+#-------------------#
+# Getters / Setters #
+#-------------------#
 
 func _set_attr_clip_path_units(clip_path_units):
 	attr_clip_path_units = clip_path_units
-	

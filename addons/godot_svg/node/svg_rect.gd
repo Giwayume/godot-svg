@@ -74,7 +74,7 @@ var _is_size_svg_queued = false
 func _init():
 	rect_clip_content = true
 	_svg_2d = SVG2D.new()
-	_svg_2d.connect("renderers_created", self, "_size_svg")
+	_svg_2d.connect("controllers_created", self, "_size_svg")
 	.add_child(_svg_2d)
 	_svg_2d.svg = _svg
 	_svg_2d.fixed_scaling_ratio = _fixed_scaling_ratio
@@ -98,28 +98,28 @@ func _queue_size_svg():
 
 func _size_svg():
 	_is_size_svg_queued = false
-	if _svg_2d and _svg_2d._root_viewport_renderer != null:
-		var viewport_renderer = _svg_2d._root_viewport_renderer
-		if viewport_renderer != null:
-			var view_box = viewport_renderer.calculate_view_box()
-			if typeof(viewport_renderer.attr_preserve_aspect_ratio) == TYPE_STRING:
-				if viewport_renderer.attr_preserve_aspect_ratio == SVGValueConstant.NONE:
+	if _svg_2d and _svg_2d.controller.root_element_controller != null:
+		var viewport_controller = _svg_2d.controller.root_element_controller
+		if viewport_controller != null:
+			var view_box = viewport_controller.calculate_view_box()
+			if typeof(viewport_controller.attr_preserve_aspect_ratio) == TYPE_STRING:
+				if viewport_controller.attr_preserve_aspect_ratio == SVGValueConstant.NONE:
 					_svg_2d.scale = Vector2(
 						rect_size.x / view_box.size.x,
 						rect_size.y / view_box.size.y
 					)
 			else:
 				var x_align_ratio = 0.0
-				if viewport_renderer.attr_preserve_aspect_ratio.align.x == SVGValueConstant.MID:
+				if viewport_controller.attr_preserve_aspect_ratio.align.x == SVGValueConstant.MID:
 					x_align_ratio = 0.5
-				elif viewport_renderer.attr_preserve_aspect_ratio.align.x == SVGValueConstant.MAX:
+				elif viewport_controller.attr_preserve_aspect_ratio.align.x == SVGValueConstant.MAX:
 					x_align_ratio = 1.0
 				var y_align_ratio = 0.0
-				if viewport_renderer.attr_preserve_aspect_ratio.align.y == SVGValueConstant.MID:
+				if viewport_controller.attr_preserve_aspect_ratio.align.y == SVGValueConstant.MID:
 					y_align_ratio = 0.5
-				elif viewport_renderer.attr_preserve_aspect_ratio.align.y == SVGValueConstant.MAX:
+				elif viewport_controller.attr_preserve_aspect_ratio.align.y == SVGValueConstant.MAX:
 					y_align_ratio = 1.0
-				if viewport_renderer.attr_preserve_aspect_ratio.meet_or_slice == SVGValueConstant.SLICE:
+				if viewport_controller.attr_preserve_aspect_ratio.meet_or_slice == SVGValueConstant.SLICE:
 					if (view_box.size.x / view_box.size.y) > (rect_size.x / rect_size.y):
 						var scale_y = rect_size.y / view_box.size.y
 						_svg_2d.scale = Vector2(

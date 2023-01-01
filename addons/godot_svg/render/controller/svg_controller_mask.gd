@@ -1,4 +1,9 @@
-extends "svg_render_element.gd"
+class_name SVGControllerMask
+extends SVGControllerElement
+
+#------------#
+# Attributes #
+#------------#
 
 var attr_height = SVGLengthPercentage.new("120%") setget _set_attr_height
 var attr_mask_content_units = SVGValueConstant.USER_SPACE_ON_USE setget _set_attr_mask_content_units
@@ -7,16 +12,23 @@ var attr_x = SVGLengthPercentage.new("-10%") setget _set_attr_x
 var attr_y = SVGLengthPercentage.new("-10%") setget _set_attr_y
 var attr_width = SVGLengthPercentage.new("120%") setget _set_attr_width
 
+#---------------------#
+# Internal Properties #
+#---------------------#
+
 var _mask_background = null
 var _mask_viewport = null
 var _mask_update_queue = []
 var _current_mask_update_target = null
 var _current_mask_tick_count = 0
 
-# Lifecycle
+#-----------#
+# Lifecycle #
+#-----------#
 
 func _init():
 	node_name = "mask"
+	is_renderable = false
 	_mask_viewport = Viewport.new()
 	_mask_viewport.usage = Viewport.USAGE_2D_NO_SAMPLING
 	_mask_viewport.render_target_update_mode = Viewport.UPDATE_DISABLED
@@ -26,13 +38,14 @@ func _init():
 	_mask_background.color = Color(0, 0, 0, 1)
 	_mask_viewport.add_child(_mask_background)
 	.add_child(_mask_viewport)
-	hide()
 
 func _process(_delta):
 	if _current_mask_update_target != null:
 		call_deferred("_on_mask_draw_deferred")
 
-# Internal Methods
+#------------------#
+# Internal Methods #
+#------------------#
 
 func _on_mask_draw_deferred():
 	if _current_mask_update_target != null:
@@ -86,14 +99,16 @@ func _prepare_viewport_for_draw():
 
 func _update_view_box_recursive(new_view_box, parent = null):
 	for child in parent.children:
-		if svg_node._renderer_map.has(child):
-			var renderer = svg_node._renderer_map[child]
-			if renderer.node_name != "viewport":
-				renderer.inherited_view_box = new_view_box
+		if root_controller._element_resource_to_controller_map.has(child):
+			var controller = root_controller._element_resource_to_controller_map[child]
+			if controller.node_name != "viewport":
+				controller.inherited_view_box = new_view_box
 				_update_view_box_recursive(new_view_box, child)
-			renderer.update()
+			controller.update()
 
-# Public Methods
+#----------------#
+# Public Methods #
+#----------------#
 
 func add_child(new_child, legible_unique_name = false):
 	if _mask_viewport != null:
@@ -126,34 +141,42 @@ func request_mask_update(callback_node):
 		_current_mask_tick_count = 0
 		_prepare_viewport_for_draw()
 
-# Getters / Setters
+#-------------------#
+# Getters / Setters #
+#-------------------#
 
 func _set_attr_height(height):
 	if typeof(height) != TYPE_STRING:
 		attr_height = height
 	else:
 		attr_height = SVGLengthPercentage.new(height)
+	apply_props("height")
 
 func _set_attr_mask_content_units(mask_content_units):
 	attr_mask_content_units = mask_content_units
+	apply_props("content_units")
 
 func _set_attr_mask_units(mask_units):
 	attr_mask_units = mask_units
+	apply_props("mask_units")
 
 func _set_attr_x(x):
 	if typeof(x) != TYPE_STRING:
 		attr_x = x
 	else:
 		attr_x = SVGLengthPercentage.new(x)
+	apply_props("x")
 
 func _set_attr_y(y):
 	if typeof(y) != TYPE_STRING:
 		attr_y = y
 	else:
 		attr_y = SVGLengthPercentage.new(y)
+	apply_props("y")
 
 func _set_attr_width(width):
 	if typeof(width) != TYPE_STRING:
 		attr_width = width
 	else:
 		attr_width = SVGLengthPercentage.new(width)
+	apply_props("width")

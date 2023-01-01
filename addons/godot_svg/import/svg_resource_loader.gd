@@ -17,7 +17,6 @@ func handles_type(typename: String) -> bool:
 	return ClassDB.is_parent_class(typename, "Resource")
 
 func load(path: String, original_path: String):
-	var xml_parser = XMLParser.new()
 	var file: File = File.new()
 	var error = file.open(path, File.READ)
 	if error != OK:
@@ -44,11 +43,15 @@ func load(path: String, original_path: String):
 	svg_resource.render_cache = null if render_cache == null else str2var(render_cache)
 	svg_resource.imported_path = path
 	
+	return load_svg_resource_from_buffer(svg_resource, xml_string.to_utf8())
+
+func load_svg_resource_from_buffer(svg_resource, xml_string_buffer: PoolByteArray):
 	var parent_stack = [{
 		"resource": svg_resource,
 		"global_attributes": {},
 	}]
-	if xml_parser.open_buffer(xml_string.to_utf8()) == OK:
+	var xml_parser = XMLParser.new()
+	if xml_parser.open_buffer(xml_string_buffer) == OK:
 		while xml_parser.read() == OK:
 			var node_type = xml_parser.get_node_type()
 			if node_type == XMLParser.NODE_ELEMENT:
@@ -96,6 +99,4 @@ func load(path: String, original_path: String):
 			
 			elif node_type == XMLParser.NODE_CDATA:
 				pass
-				
-	
 	return svg_resource

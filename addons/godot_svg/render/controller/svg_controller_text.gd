@@ -1,4 +1,9 @@
-extends "svg_render_element.gd"
+class_name SVGControllerText
+extends SVGControllerElement
+
+#------------#
+# Attributes #
+#------------#
 
 var attr_x = SVGLengthPercentage.new("0") setget _set_attr_x
 var attr_y = SVGLengthPercentage.new("0") setget _set_attr_y
@@ -8,7 +13,9 @@ var attr_rotate = SVGValueConstant.NONE setget _set_attr_rotate
 var attr_length_adjust = SVGValueConstant.SPACING setget _set_attr_length_adjust
 var attr_text_length = SVGValueConstant.NONE setget _set_attr_text_length
 
-# Internal Methods
+#------------------#
+# Internal Methods #
+#------------------#
 
 func _calculate_bounding_box():
 	var x = attr_x.get_length(inherited_view_box.size.x, inherited_view_box.position.x)
@@ -17,7 +24,9 @@ func _calculate_bounding_box():
 	_bounding_box = Rect2(x, y, 0, 0)
 	emit_signal("bounding_box_calculated", _bounding_box)
 
-# Getters / Setters
+#-------------------#
+# Getters / Setters #
+#-------------------#
 
 func _set_attr_x(x):
 	x = get_style("x", x)
@@ -25,7 +34,7 @@ func _set_attr_x(x):
 		attr_x = x
 	else:
 		attr_x = SVGLengthPercentage.new(x)
-	apply_props()
+	apply_props("x")
 
 func _set_attr_y(y):
 	y = get_style("y", y)
@@ -33,7 +42,7 @@ func _set_attr_y(y):
 		attr_y = y
 	else:
 		attr_y = SVGLengthPercentage.new(y)
-	apply_props()
+	apply_props("y")
 
 func _set_attr_dx(dx):
 	dx = get_style("dx", dx)
@@ -44,7 +53,7 @@ func _set_attr_dx(dx):
 			attr_dx = dx
 		else:
 			attr_dx = SVGLengthPercentage.new(dx)
-	apply_props()
+	apply_props("dx")
 
 func _set_attr_dy(dy):
 	dy = get_style("dy", dy)
@@ -55,7 +64,7 @@ func _set_attr_dy(dy):
 			attr_dy = dy
 		else:
 			attr_dy = SVGLengthPercentage.new(dy)
-	apply_props()
+	apply_props("dy")
 
 func _set_attr_rotate(rotate):
 	rotate = get_style("rotate", rotate)
@@ -66,12 +75,12 @@ func _set_attr_rotate(rotate):
 			attr_rotate = []
 		else:
 			attr_rotate = [] # TODO
-	apply_props()
+	apply_props("rotate")
 
 func _set_attr_length_adjust(length_adjust):
 	length_adjust = get_style("length_adjust", length_adjust)
 	attr_length_adjust = length_adjust
-	apply_props()
+	apply_props("length_adjust")
 
 func _set_attr_text_length(text_length):
 	text_length = get_style("text_length", text_length)
@@ -82,4 +91,4 @@ func _set_attr_text_length(text_length):
 			attr_text_length = text_length
 		else:
 			attr_text_length = SVGLengthPercentage.new(text_length)
-	apply_props()
+	apply_props("text_length")
