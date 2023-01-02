@@ -81,7 +81,16 @@ func resolve_href():
 				if controller_to_copy == null:
 					controller_to_copy = controller
 			
-			var generation_result = root_controller._generate_node_controller_structure(controlled_node, [controller_to_copy.element_resource])
+			var generation_result = root_controller._generate_node_controller_structure(
+				controlled_node,
+				[controller_to_copy.element_resource],
+				{
+					"view_box": inherited_view_box,
+					"cache_id": render_cache_id,
+					"is_in_root_viewport": is_in_root_viewport,
+					"is_in_clip_path": is_in_clip_path,
+				}
+			)
 			resolved = generation_result.top_level_controllers[0]
 			
 			var override_attributes = {}
