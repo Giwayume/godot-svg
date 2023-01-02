@@ -75,7 +75,7 @@ Use in 2D scenes similar to how you would use a *TextureRect*. How the SVG fits 
 
 | Method Signature | Notes |
 |:-----------------|:------|
-| get_element_by_id(id: String) -> Dictionary | Finds the SVG element with the given id attribute. A dictionary is returned in the format `{ "node": SVGElement2D or SVGElement3D, "resource": SVGResourceElement }` if found, `null` is returned if not found. |
+| get_element_by_id(id: String) -> Dictionary | Finds the SVG element with the given id attribute. If the node is found, a dictionary is returned in the format `{ "node": SVGElement2D or SVGElement3D, "resource": SVGResourceElement }`. If not found, `null` is returned. |
 | get_elements_by_name(name: String) -> Array | Finds all SVG elements with the given tag/node name. An array containing dictionaries is returned, each dictionary in the format `{ "node": SVGElement2D or SVGElement3D, "resource": SVGResourceElement }`. An empty array is returned if nothing is found. |
 | load_svg_from_buffer(buffer: PoolByteArray) | Loads a SVG on the fly. This is not a good idea for complex SVGs as it blocks the main thread. If you have the SVG contents as a string, you can use `String.to_utf8()` to convert it to a `PoolByteArray`. |
 
