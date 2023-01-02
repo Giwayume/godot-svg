@@ -82,7 +82,7 @@ These nodes share a similar API.
 
 ### SVGElement2D Documentation
 
-SVGElement2D is returned from SVG2D APIs such as `get_element_by_id` or `get_elements_by_name`. It represents a single element (e.g. shape, etc.) in the SVG document.
+`SVGElement2D` is returned from `SVG2D` methods such as `get_element_by_id` or `get_elements_by_name`. It represents a single element (e.g. shape, etc.) in the SVG document.
 
 **Note:** If you use any undocumented methods or properties, you risk your code breaking in any future update.
 
