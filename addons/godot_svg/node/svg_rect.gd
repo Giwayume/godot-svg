@@ -1,10 +1,17 @@
 tool
 extends Control
 
+#-----------#
+# Constants #
+#-----------#
+
 const TriangulationMethod = SVGValueConstant.TriangulationMethod
 const SVG2D = preload("svg_2d.gd")
 
-# Exported properties
+#-----------------#
+# User Properties #
+#-----------------#
+
 var svg = null setget _set_svg, _get_svg
 var fixed_scaling_ratio = 0 setget _set_fixed_scaling_ratio, _get_fixed_scaling_ratio
 var antialiased = true setget _set_antialiased, _get_antialiased
@@ -62,14 +69,81 @@ func _get_property_list():
 		}
 	]
 
-# Internal Properties
+#-------------------#
+# Getters / Setters #
+#-------------------#
+
+func _set_svg(svg):
+	_svg = svg
+	if _svg_2d != null:
+		_svg_2d.svg = svg
+	_queue_size_svg()
+	update_configuration_warning()
+
+func _get_svg():
+	return _svg
+
+func _set_fixed_scaling_ratio(fixed_scaling_ratio):
+	_fixed_scaling_ratio = fixed_scaling_ratio
+	if _svg_2d != null:
+		_svg_2d.fixed_scaling_ratio = fixed_scaling_ratio
+
+func _get_fixed_scaling_ratio():
+	return _fixed_scaling_ratio
+
+func _set_antialiased(antialiased):
+	_antialiased = antialiased
+	if _svg_2d != null:
+		_svg_2d.antialiased = antialiased
+		update_configuration_warning()
+
+func _get_antialiased():
+	return _antialiased
+
+func _set_triangulation_method(triangulation_method):
+	_triangulation_method = triangulation_method
+	if _svg_2d != null:
+		_svg_2d.triangulation_method = triangulation_method
+
+func _get_triangulation_method():
+	return _triangulation_method
+
+func _set_assume_no_self_intersections(assume_no_self_intersections):
+	_assume_no_self_intersections = assume_no_self_intersections
+	if _svg_2d != null:
+		_svg_2d.assume_no_self_intersections = assume_no_self_intersections
+
+func _get_assume_no_self_intersections():
+	return _assume_no_self_intersections
+
+func _set_assume_no_holes(assume_no_holes):
+	_assume_no_holes = assume_no_holes
+	if _svg_2d != null:
+		_svg_2d.assume_no_holes = assume_no_holes
+
+func _get_assume_no_holes():
+	return _assume_no_holes
+
+func _set_disable_render_cache(disable_render_cache):
+	_disable_render_cache = disable_render_cache
+	if _svg_2d != null:
+		_svg_2d.disable_render_cache = disable_render_cache
+
+func _get_disable_render_cache():
+	return _disable_render_cache
+
+#---------------------#
+# Internal Properties #
+#---------------------#
 
 var is_gles2 = OS.get_current_video_driver() == OS.VIDEO_DRIVER_GLES2
 
 var _svg_2d = null
 var _is_size_svg_queued = false
 
-# Lifecycle
+#-----------#
+# Lifecycle #
+#-----------#
 
 func _init():
 	rect_clip_content = true
@@ -89,7 +163,9 @@ func _notification(what):
 			if is_instance_valid(_svg_2d):
 				_svg_2d.queue_free()
 
-# Internal Methods
+#------------------#
+# Internal Methods #
+#------------------#
 
 func _queue_size_svg():
 	if not _is_size_svg_queued:
@@ -155,7 +231,9 @@ func _size_svg():
 						_svg_2d.position = Vector2(x_align_ratio * leftover_space, 0.0)
 						
 
-# Editor
+#--------#
+# Editor #
+#--------#
 
 func _get_configuration_warning():
 	if _svg is Texture:
@@ -166,61 +244,15 @@ func _get_configuration_warning():
 		return "\"antialiased\" is enabled, but GLES2 does not support the antialiasing technique used by this plugin. Use GLES3 instead."
 	return ""
 
-# Getters / Setters
+#----------------#
+# Public Methods #
+#----------------#
 
-func _set_svg(svg):
-	_svg = svg
-	if _svg_2d != null:
-		_svg_2d.svg = svg
-	_queue_size_svg()
+func get_element_by_id(id: String):
+	return _svg_2d.resolve_url("#" + id)
 
-func _get_svg():
-	return _svg
+func get_elements_by_name(name: String):
+	return _svg_2d.get_elements_by_name(name)
 
-func _set_fixed_scaling_ratio(fixed_scaling_ratio):
-	_fixed_scaling_ratio = fixed_scaling_ratio
-	if _svg_2d != null:
-		_svg_2d.fixed_scaling_ratio = fixed_scaling_ratio
-
-func _get_fixed_scaling_ratio():
-	return _fixed_scaling_ratio
-
-func _set_antialiased(antialiased):
-	_antialiased = antialiased
-	if _svg_2d != null:
-		_svg_2d.antialiased = antialiased
-
-func _get_antialiased():
-	return _antialiased
-
-func _set_triangulation_method(triangulation_method):
-	_triangulation_method = triangulation_method
-	if _svg_2d != null:
-		_svg_2d.triangulation_method = triangulation_method
-
-func _get_triangulation_method():
-	return _triangulation_method
-
-func _set_assume_no_self_intersections(assume_no_self_intersections):
-	_assume_no_self_intersections = assume_no_self_intersections
-	if _svg_2d != null:
-		_svg_2d.assume_no_self_intersections = assume_no_self_intersections
-
-func _get_assume_no_self_intersections():
-	return _assume_no_self_intersections
-
-func _set_assume_no_holes(assume_no_holes):
-	_assume_no_holes = assume_no_holes
-	if _svg_2d != null:
-		_svg_2d.assume_no_holes = assume_no_holes
-
-func _get_assume_no_holes():
-	return _assume_no_holes
-
-func _set_disable_render_cache(disable_render_cache):
-	_disable_render_cache = disable_render_cache
-	if _svg_2d != null:
-		_svg_2d.disable_render_cache = disable_render_cache
-
-func _get_disable_render_cache():
-	return _disable_render_cache
+func load_svg_from_buffer(buffer: PoolByteArray):
+	return _svg_2d.load_svg_from_buffer(buffer)

@@ -58,6 +58,8 @@ Use in 2D scenes similar to how you would use a *TextureRect*. How the SVG fits 
 
 These nodes share a similar API.
 
+**Note:** If you use any undocumented methods or properties, you risk your code breaking in any future update.
+
 **PROPERTIES**
 
 | Property Name | Value Type | Notes |
@@ -70,6 +72,26 @@ These nodes share a similar API.
 | assume_no_holes | bool | This is an optimization that can make the initial construction/animation of the shape faster by not even attempting to solve for holes. If there are potential holes, they are ignored. |
 | disable_render_cache | bool | When you first load a SVG in the editor, it will spend time solving and triangulating the paths. This solution is saved back to the asset for a faster load time. This property disables that process. |
 
+**METHODS**
+
+| Method Signature | Notes |
+|:-----------------|:------|
+| get_element_by_id(id: String) -> Dictionary | Finds the SVG element with the given id attribute. A dictionary is returned in the format `{ "node": SVGElement2D or SVGElement3D, "resource": SVGResourceElement }` if found, `null` is returned if not found. |
+| get_elements_by_name(name: String) -> Array | Finds all SVG elements with the given tag/node name. An array containing dictionaries is returned, each dictionary in the format `{ "node": SVGElement2D or SVGElement3D, "resource": SVGResourceElement }`. An empty array is returned if nothing is found. |
+| load_svg_from_buffer(buffer: PoolByteArray) | Loads a SVG on the fly. This is not a good idea for complex SVGs as it blocks the main thread. If you have the SVG contents as a string, you can use `String.to_utf8()` to convert it to a `PoolByteArray`. |
+
+### SVGElement2D Documentation
+
+SVGElement2D is returned from SVG2D APIs such as `get_element_by_id` or `get_elements_by_name`. It represents a single element (e.g. shape, etc.) in the SVG document.
+
+**Note:** If you use any undocumented methods or properties, you risk your code breaking in any future update.
+
+**METHODS**
+
+| Method Signature | Notes |
+|:-----------------|:------|
+| remove_attribute(name: String) | Removes an attribute with the specified name. |
+| set_attribute(name: String, value: String) | Sets the value of an attribute with the specified name. It is recommended at the moment to pass a string value, equivalent to what you would type in an SVG document. |
 
 ## Performance Considerations
 

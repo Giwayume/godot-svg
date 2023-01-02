@@ -209,7 +209,6 @@ func _initialize_controller():
 	
 	if old_controller != null:
 		old_controller._exit_tree()
-	
 
 #----------------#
 # Editor Methods #
@@ -238,3 +237,16 @@ func _on_svg_plugin_scripts_changed():
 	for child in children:
 		remove_child(child)
 	_initialize_controller()
+
+#----------------#
+# Public Methods #
+#----------------#
+
+func get_element_by_id(id: String):
+	return controller.resolve_url("#" + id)
+
+func get_elements_by_name(name: String):
+	return controller.get_elements_by_name(name)
+
+func load_svg_from_buffer(buffer: PoolByteArray):
+	return controller.load_svg_from_buffer(buffer)
