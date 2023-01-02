@@ -45,18 +45,17 @@ In Godot, go to `Project -> Project Settings -> Plugins` and check the `Enable` 
     <img src="./docs/tutorial_create_svg2d_node.png" alt="Visual instructions">
 </p>
 
-### The SVG2D Node
-
-Use in 2D scenes similar to how you would use a *Sprite*. The default size of the SVG2D is determined by the [`viewBox`](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/viewBox), [`width`](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/width), and [`height`](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/height) attributes on the imported [`<svg>`](https://developer.mozilla.org/en-US/docs/Web/SVG/Element/svg) element.
-
-### The SVGRect Node
-
-Use in 2D scenes similar to how you would use a *TextureRect*. How the SVG fits inside of this rectangle is determined by the [`preserveAspectRatio`](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/preserveAspectRatio) attribute on the imported [`<svg>`](https://developer.mozilla.org/en-US/docs/Web/SVG/Element/svg) element.
-
-
 ### SVG2D & SVGRect Documentation
 
 These nodes share a similar API.
+
+**The SVG2D Node:**
+
+Use in 2D scenes similar to how you would use a *Sprite*. The default size of the SVG2D is determined by the [`viewBox`](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/viewBox), [`width`](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/width), and [`height`](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/height) attributes on the imported [`<svg>`](https://developer.mozilla.org/en-US/docs/Web/SVG/Element/svg) element.
+
+**The SVGRect Node:**
+
+Use in 2D scenes similar to how you would use a *TextureRect*. How the SVG fits inside of this rectangle is determined by the [`preserveAspectRatio`](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/preserveAspectRatio) attribute on the imported [`<svg>`](https://developer.mozilla.org/en-US/docs/Web/SVG/Element/svg) element.
 
 **Note:** If you use any undocumented methods or properties, you risk your code breaking in any future update.
 
