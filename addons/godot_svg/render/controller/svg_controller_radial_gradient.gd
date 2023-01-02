@@ -1,5 +1,4 @@
-class_name SVGControllerRadialGradient
-extends SVGControllerElement
+extends "svg_controller_element.gd"
 
 #------------#
 # Attributes #
@@ -39,7 +38,7 @@ func resolve_href():
 			resolved = load(controller_to_copy.get_script().resource_path).new()
 			resolved._is_href_duplicate = true
 			resolved.element_resource = controller_to_copy.element_resource
-			resolved.read_attributes_from_element_resource_now()
+			resolved.read_attributes_from_element_resource() # TODO - read controller attributes instead?
 			var override_attributes = {}
 			var overridable_attributes = ["gradient_units", "gradient_transform", "spread_method", "cx", "cy", "fr", "fx", "fy", "r"]
 			for attribute_name in element_resource.attributes:

@@ -1,5 +1,4 @@
-class_name SVGControllerLine
-extends SVGControllerElement
+extends "svg_controller_element.gd"
 
 #------------#
 # Attributes #

@@ -5,6 +5,7 @@ const plugin_config = preload("./plugin_config.gd")
 
 signal svg_resources_reimported(resource_names)
 signal editor_viewport_scale_changed(new_scale)
+signal svg_plugin_scripts_changed()
 
 var svg_import_plugin = null
 var edited_scene_viewport = null
@@ -36,6 +37,8 @@ func _enter_tree():
 	var editor_interface = get_editor_interface()
 	editor_interface.get_resource_filesystem().connect("resources_reimported", self, "_on_resources_reimported")
 	
+	if Engine.is_editor_hint():
+		connect("resource_saved", self, "_on_resource_saved")
 	connect("scene_changed", self, "_on_editing_scene_changed")
 
 func _print_rec(node, level = 0):
@@ -50,9 +53,11 @@ func _exit_tree():
 	remove_import_plugin(svg_import_plugin)
 	remove_custom_type("SVG2D")
 	remove_custom_type("SVGRect")
-	remove_autoload_singleton("SVGLine2DTexture")
 	
 	get_editor_interface().get_resource_filesystem().disconnect("resources_reimported", self, "_on_resources_reimported")
+	
+	if Engine.is_editor_hint():
+		disconnect("resource_saved", self, "_on_resource_saved")
 	disconnect("scene_changed", self, "_on_editing_scene_changed")
 	
 	svg_import_plugin = null
@@ -63,6 +68,10 @@ func _on_resources_reimported(resources):
 		if resource_name.ends_with(".svg"):
 			svg_resources.push_back(resource_name)
 	emit_signal("svg_resources_reimported", svg_resources)
+
+func _on_resource_saved(resource):
+	if resource.resource_path.begins_with(plugin_folder_path):
+		emit_signal("svg_plugin_scripts_changed")
 
 func _find_edit_viewport(node):
 	var viewport = null

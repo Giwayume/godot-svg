@@ -12,6 +12,7 @@ signal controllers_created()
 # Constants #
 #-----------#
 
+const SVGControllerRoot = preload("../render/controller/svg_controller_root.gd")
 const TriangulationMethod = SVGValueConstant.TriangulationMethod
 
 #-----------------#
@@ -101,6 +102,7 @@ func _set_antialiased(antialiased):
 	if _antialiased != antialiased:
 		_antialiased = antialiased
 		controller.antialiased = antialiased
+		update_configuration_warning()
 
 func _get_antialiased():
 	return _antialiased
@@ -159,6 +161,7 @@ var controller = null # SVGControllerRoot instance
 # Private Properties #
 #--------------------#
 
+var _editor_plugin = null
 var _is_ready: bool = false
 
 #-----------#
@@ -166,22 +169,47 @@ var _is_ready: bool = false
 #-----------#
 
 func _init():
-	controller = SVGControllerRoot.new(self)
+	_initialize_controller()
 
 func _ready():
 	_is_ready = true
 
 func _enter_tree():
 	if controller.is_editor_hint:
-		controller.editor_plugin = get_node("/root/EditorNode/GodotSVGEditorPlugin")
+		_editor_plugin = get_node("/root/EditorNode/GodotSVGEditorPlugin")
+		controller.editor_plugin = _editor_plugin
+		_editor_plugin.connect("svg_plugin_scripts_changed", self, "_on_svg_plugin_scripts_changed")
 	controller._enter_tree()
 
 func _exit_tree():
 	controller._exit_tree()
+	
+	if _editor_plugin != null:
+		_editor_plugin.disconnect("svg_plugin_scripts_changed", self, "_on_svg_plugin_scripts_changed")
 
 #func _process(delta):
 #	if controller != null and controller.has_method("_process"):
 #		controller._process(delta)
+
+#------------------#
+# Internal Methods #
+#------------------#
+
+func _initialize_controller():
+	var old_controller = controller
+	
+	controller = SVGControllerRoot.new(self)
+	controller.svg = _svg
+	controller.fixed_scaling_ratio = _fixed_scaling_ratio
+	controller.antialiased = _antialiased
+	controller.triangulation_method = _triangulation_method
+	controller.assume_no_self_intersections = _assume_no_self_intersections
+	controller.assume_no_holes = _assume_no_holes
+	controller.disable_render_cache = _disable_render_cache
+	
+	if old_controller != null:
+		old_controller._exit_tree()
+	
 
 #----------------#
 # Editor Methods #
@@ -204,3 +232,9 @@ func _get_item_rect():
 		if viewport_controller != null:
 			edit_rect = viewport_controller.calculate_view_box()
 	return edit_rect
+
+func _on_svg_plugin_scripts_changed():
+	var children = get_children()
+	for child in children:
+		remove_child(child)
+	_initialize_controller()

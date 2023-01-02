@@ -1,5 +1,4 @@
-class_name SVGControllerPath
-extends SVGControllerElement
+extends "svg_controller_element.gd"
 
 #-----------#
 # Constants #

@@ -1,5 +1,4 @@
-class_name SVGControllerDefs
-extends SVGControllerElement
+extends "svg_controller_element.gd"
 
 #-----------#
 # Lifecycle #

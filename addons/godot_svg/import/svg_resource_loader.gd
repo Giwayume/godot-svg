@@ -71,21 +71,21 @@ func load_svg_resource_from_buffer(svg_resource, xml_string_buffer: PoolByteArra
 				new_resource.node_name = node_name
 				new_resource.children = []
 				var attributes = {}
-				var global_attributes = parent_stack[0].global_attributes.duplicate()
+#				var global_attributes = parent_stack[0].global_attributes.duplicate()
 				for attribute_index in xml_parser.get_attribute_count():
 					var attribute_name = SVGAttributeParser.to_snake_case(xml_parser.get_attribute_name(attribute_index))
 					var attribute_value = xml_parser.get_attribute_value(attribute_index).strip_edges()
 					attributes[attribute_name] = attribute_value
-					if SVGValueConstant.GLOBAL_INHERITED_ATTRIBUTE_NAMES.has(attribute_name):
-						global_attributes[attribute_name] = attribute_value
-				for attribute_name in global_attributes:
-					if not attributes.has(attribute_name):
-						attributes[attribute_name] = global_attributes[attribute_name]
+#					if SVGValueConstant.GLOBAL_INHERITED_ATTRIBUTE_NAMES.has(attribute_name):
+#						global_attributes[attribute_name] = attribute_value
+#				for attribute_name in global_attributes:
+#					if not attributes.has(attribute_name):
+#						attributes[attribute_name] = global_attributes[attribute_name]
 				new_resource.attributes = attributes
 				if not xml_parser.is_empty():
 					parent_stack.push_front({
 						"resource": new_resource,
-						"global_attributes": global_attributes,
+#						"global_attributes": global_attributes,
 					})
 			
 			elif node_type == XMLParser.NODE_ELEMENT_END:

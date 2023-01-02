@@ -1,5 +1,4 @@
-class_name SVGControllerClipPath
-extends SVGControllerElement
+extends "svg_controller_element.gd"
 
 #------------#
 # Attributes #

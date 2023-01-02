@@ -1,5 +1,4 @@
-class_name SVGControllerPattern
-extends SVGControllerElement
+extends "svg_controller_element.gd"
 
 #------------#
 # Attributes #
@@ -56,7 +55,7 @@ func resolve_href():
 		resolved.root_controller = root_controller
 		resolved._is_href_duplicate = true
 		resolved.element_resource = controller_to_copy.element_resource
-		resolved.read_attributes_from_element_resource_now() # TODO - read controller attributes instead?
+		resolved.read_attributes_from_element_resource() # TODO - read controller attributes instead?
 		var override_attributes = {}
 		var overridable_attributes = ["view_box", "pattern_units", "pattern_transform", "pattern_content_units", "preserve_aspect_ratio", "x", "y", "width", "height"]
 		for attribute_name in element_resource.attributes:

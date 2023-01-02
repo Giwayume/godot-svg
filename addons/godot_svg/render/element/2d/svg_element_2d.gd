@@ -12,7 +12,7 @@ signal bounding_box_calculated(new_bounding_box)
 #-------------------#
 
 var node_name: String = ""
-var controller: SVGControllerElement
+var controller = null
 
 #-----------#
 # Lifecycle #

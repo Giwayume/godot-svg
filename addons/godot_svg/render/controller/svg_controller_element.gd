@@ -1,11 +1,10 @@
-tool
-class_name SVGControllerElement
 
 #---------#
 # Signals #
 #---------#
 
 signal bounding_box_calculated(new_bounding_box)
+signal distribute_inherited_properties(inherited_props)
 
 #-----------#
 # Constants #
@@ -34,50 +33,90 @@ var node_name: String = ""
 var node_text: String = ""
 var render_cache_id: String = ""
 var root_controller = null # SVGControllerRoot instance
+var parent_controller = null setget _set_parent_controller # SVGControllerElement instance or null
+
+var global_default_property_values = {
+	"id": null,
+	"lang": null,
+	"tabindex": 0,
+	"class": "",
+	"style": {},
+	"required_extensions": null,
+	"required_features": null,
+	"system_language": null,
+	"clip_path": SVGValueConstant.NONE,
+	"clip_rule": SVGValueConstant.NON_ZERO,
+	"color": null,
+	"color_interpolation": null,
+	"color_rendering": null,
+	"cursor": null,
+	"display": "inline",
+	"fill": SVGPaint.new("#000000"),
+	"fill_opacity": SVGLengthPercentage.new("100%"),
+	"fill_rule": SVGValueConstant.NON_ZERO,
+	"filter": null,
+	"mask": SVGValueConstant.NONE,
+	"opacity": SVGLengthPercentage.new("100%"),
+	"pointer_events": null,
+	"shape_rendering": null,
+	"stroke": SVGPaint.new("#00000000"),
+	"stroke_dasharray": [],
+	"stroke_dashoffset": SVGLengthPercentage.new("0"),
+	"stroke_linecap": null,
+	"stroke_linejoin": SVGValueConstant.MITER,
+	"stroke_miterlimit": 4.0,
+	"stroke_opacity": SVGLengthPercentage.new("100%"),
+	"stroke_width": SVGLengthPercentage.new("1px"),
+	"transform": Transform2D(),
+	"vector_effect": SVGValueConstant.NONE,
+	"visibility": SVGValueConstant.VISIBLE,
+}
 
 # Core Attributes
-var attr_id = null setget _set_attr_id
-var attr_lang = null
-var attr_tabindex = 0
+var attr_id = global_default_property_values["id"] setget _set_attr_id
+var attr_lang = global_default_property_values["lang"] setget _set_attr_lang
+var attr_tabindex = global_default_property_values["tabindex"] setget _set_attr_tabindex
 
 # Styling Attributes
-var attr_class = ""
-var attr_style = {} setget _set_attr_style
+var attr_class = global_default_property_values["class"]
+var attr_style = global_default_property_values["style"] setget _set_attr_style
 
 # Conditional Processing Attributes
-var attr_required_extensions = null
-var attr_required_features = null
-var attr_system_language = null
+var attr_required_extensions = global_default_property_values["required_extensions"] setget _set_attr_required_extensions
+var attr_required_features = global_default_property_values["required_features"] setget _set_attr_required_features
+var attr_system_language = global_default_property_values["system_language"] setget _set_attr_system_language
 
 # Presentation Attributes
-var attr_clip_path = SVGValueConstant.NONE setget _set_attr_clip_path
-var attr_clip_rule = SVGValueConstant.NON_ZERO setget _set_attr_clip_rule
-var attr_color = null setget _set_attr_color
-var attr_color_interpolation = null
-var attr_color_rendering = null
-var attr_cursor = null
-var attr_display = "inline" setget _set_attr_display
-var attr_fill = SVGPaint.new("#000000") setget _set_attr_fill
-var attr_fill_opacity = SVGLengthPercentage.new("100%") setget _set_attr_fill_opacity
-var attr_fill_rule = SVGValueConstant.NON_ZERO setget _set_attr_fill_rule
-var attr_filter = null
-var attr_mask = SVGValueConstant.NONE setget _set_attr_mask
-var attr_opacity = SVGLengthPercentage.new("100%") setget _set_attr_opacity
-var attr_pointer_events = null
-var attr_shape_rendering = null
-var attr_stroke = SVGPaint.new("#00000000") setget _set_attr_stroke
-var attr_stroke_dasharray = [] setget _set_attr_stroke_dasharray
-var attr_stroke_dashoffset = SVGLengthPercentage.new("0") setget _set_attr_stroke_dashoffset
-var attr_stroke_linecap = null
-var attr_stroke_linejoin = SVGValueConstant.MITER setget _set_attr_stroke_linejoin
-var attr_stroke_miterlimit = 4.0 setget _set_attr_stroke_miterlimit
-var attr_stroke_opacity = SVGLengthPercentage.new("100%") setget _set_attr_stroke_opacity
-var attr_stroke_width = SVGLengthPercentage.new("1px") setget _set_attr_stroke_width
-var attr_transform = Transform2D() setget _set_attr_transform
-var attr_vector_effect = SVGValueConstant.NONE
-var attr_visibility = SVGValueConstant.VISIBLE
+var attr_clip_path = global_default_property_values["clip_path"] setget _set_attr_clip_path
+var attr_clip_rule = global_default_property_values["clip_rule"] setget _set_attr_clip_rule
+var attr_color = global_default_property_values["color"] setget _set_attr_color
+var attr_color_interpolation = global_default_property_values["color_interpolation"] setget _set_attr_color_interpolation
+var attr_color_rendering = global_default_property_values["color_rendering"] setget _set_attr_color_rendering
+var attr_cursor = global_default_property_values["cursor"] setget _set_attr_cursor
+var attr_display = global_default_property_values["display"] setget _set_attr_display
+var attr_fill = global_default_property_values["fill"] setget _set_attr_fill
+var attr_fill_opacity = global_default_property_values["fill_opacity"] setget _set_attr_fill_opacity
+var attr_fill_rule = global_default_property_values["fill_rule"] setget _set_attr_fill_rule
+var attr_filter = global_default_property_values["filter"] setget _set_attr_filter
+var attr_mask = global_default_property_values["mask"] setget _set_attr_mask
+var attr_opacity = global_default_property_values["opacity"] setget _set_attr_opacity
+var attr_pointer_events = global_default_property_values["pointer_events"] setget _set_attr_pointer_events
+var attr_shape_rendering = global_default_property_values["shape_rendering"] setget _set_attr_shape_rendering
+var attr_stroke = global_default_property_values["stroke"] setget _set_attr_stroke
+var attr_stroke_dasharray = global_default_property_values["stroke_dasharray"] setget _set_attr_stroke_dasharray
+var attr_stroke_dashoffset = global_default_property_values["stroke_dashoffset"] setget _set_attr_stroke_dashoffset
+var attr_stroke_linecap = global_default_property_values["stroke_linecap"] setget _set_attr_stroke_linecap
+var attr_stroke_linejoin = global_default_property_values["stroke_linejoin"] setget _set_attr_stroke_linejoin
+var attr_stroke_miterlimit = global_default_property_values["stroke_miterlimit"] setget _set_attr_stroke_miterlimit
+var attr_stroke_opacity = global_default_property_values["stroke_opacity"] setget _set_attr_stroke_opacity
+var attr_stroke_width = global_default_property_values["stroke_width"] setget _set_attr_stroke_width
+var attr_transform = global_default_property_values["transform"] setget _set_attr_transform
+var attr_vector_effect = global_default_property_values["vector_effect"] setget _set_attr_vector_effect
+var attr_visibility = global_default_property_values["visibility"] setget _set_attr_visibility
 
-# Getters/setters
+#-------------------#
+# Getters / Setters #
+#-------------------#
 
 func _set_attr_clip_path(clip_path):
 	clip_path = get_style("clip_path", clip_path)
@@ -88,10 +127,12 @@ func _set_attr_clip_path(clip_path):
 	apply_props("clip_path")
 
 func _set_attr_clip_rule(clip_rule):
+	clip_rule = _get_global_inherited_prop_value("clip_rule", clip_rule)
 	attr_clip_rule = clip_rule
 	apply_props("clip_rule")
 
 func _set_attr_color(color):
+	color = _get_global_inherited_prop_value("color", color)
 	if typeof(color) != TYPE_STRING:
 		attr_color = color
 	else:
@@ -106,12 +147,29 @@ func _set_attr_color(color):
 	_rerender_prop_cache.erase("lighting_color")
 	apply_props("color")
 
+func _set_attr_color_interpolation(color_interpolation):
+	color_interpolation = _get_global_inherited_prop_value("color_interpolation", color_interpolation)
+	attr_color_interpolation = color_interpolation
+	apply_props("color_interpolation")
+
+func _set_attr_color_rendering(color_rendering):
+	color_rendering = _get_global_inherited_prop_value("color_rendering", color_rendering)
+	attr_color_rendering = color_rendering
+	apply_props("color_rendering")
+
+func _set_attr_cursor(cursor):
+	cursor = _get_global_inherited_prop_value("cursor", cursor)
+	attr_cursor = cursor
+	apply_props("cursor")
+
 func _set_attr_display(display):
+	display = _get_global_inherited_prop_value("display", display)
 	display = get_style("display", display)
 	attr_display = display
 	apply_props("display")
 
 func _set_attr_fill(fill):
+	fill = _get_global_inherited_prop_value("fill", fill)
 	fill = get_style("fill", fill)
 	if typeof(fill) != TYPE_STRING:
 		attr_fill = fill
@@ -126,6 +184,7 @@ func _set_attr_fill(fill):
 	apply_props("fill")
 
 func _set_attr_fill_opacity(fill_opacity):
+	fill_opacity = _get_global_inherited_prop_value("fill_opacity", fill_opacity)
 	fill_opacity = get_style("fill_opacity", fill_opacity)
 	if typeof(fill_opacity) != TYPE_STRING:
 		attr_fill_opacity = fill_opacity
@@ -134,8 +193,19 @@ func _set_attr_fill_opacity(fill_opacity):
 	apply_props("fill_opacity")
 
 func _set_attr_fill_rule(fill_rule):
+	fill_rule = _get_global_inherited_prop_value("fill_rule", fill_rule)
 	attr_fill_rule = fill_rule
 	apply_props("fill_rule")
+
+func _set_attr_filter(filter):
+	filter = _get_global_inherited_prop_value("filter", filter)
+	attr_filter = filter
+	apply_props("filter")
+
+func _set_attr_lang(lang):
+	lang = _get_global_inherited_prop_value("lang", lang)
+	attr_lang = lang
+	apply_props("lang")
 
 func _set_attr_id(id):
 	if typeof(id) == TYPE_STRING:
@@ -162,7 +232,28 @@ func _set_attr_opacity(opacity):
 		attr_opacity = SVGLengthPercentage.new(opacity)
 	apply_props("opacity")
 
+func _set_attr_pointer_events(pointer_events):
+	pointer_events = _get_global_inherited_prop_value("pointer_events", pointer_events)
+	attr_pointer_events = pointer_events
+	apply_props("pointer_events")
+
+func _set_attr_required_extensions(required_extensions):
+	required_extensions = _get_global_inherited_prop_value("required_extensions", required_extensions)
+	attr_required_extensions = required_extensions
+	apply_props("required_extensions")
+
+func _set_attr_required_features(required_features):
+	required_features = _get_global_inherited_prop_value("required_features", required_features)
+	attr_required_features = required_features
+	apply_props("required_features")
+
+func _set_attr_shape_rendering(shape_rendering):
+	shape_rendering = _get_global_inherited_prop_value("shape_rendering", shape_rendering)
+	attr_shape_rendering = shape_rendering
+	apply_props("shape_rendering")
+
 func _set_attr_stroke(stroke):
+	stroke = _get_global_inherited_prop_value("stroke", stroke)
 	stroke = get_style("stroke", stroke)
 	if typeof(stroke) != TYPE_STRING:
 		attr_stroke = stroke
@@ -177,6 +268,7 @@ func _set_attr_stroke(stroke):
 	apply_props("stroke")
 
 func _set_attr_stroke_dasharray(stroke_dasharray):
+	stroke_dasharray = _get_global_inherited_prop_value("stroke_dasharray", stroke_dasharray)
 	stroke_dasharray = get_style("stroke_dasharray", stroke_dasharray)
 	if typeof(stroke_dasharray) != TYPE_STRING:
 		attr_stroke_dasharray = stroke_dasharray
@@ -196,6 +288,7 @@ func _set_attr_stroke_dasharray(stroke_dasharray):
 	apply_props("stroke_dasharray")
 
 func _set_attr_stroke_dashoffset(stroke_dashoffset):
+	stroke_dashoffset = _get_global_inherited_prop_value("stroke_dashoffset", stroke_dashoffset)
 	stroke_dashoffset = get_style("stroke_dashoffset", stroke_dashoffset)
 	if typeof(stroke_dashoffset) != TYPE_STRING:
 		attr_stroke_dashoffset = stroke_dashoffset
@@ -203,12 +296,19 @@ func _set_attr_stroke_dashoffset(stroke_dashoffset):
 		attr_stroke_dashoffset = SVGLengthPercentage.new(stroke_dashoffset)
 	apply_props("stroke_dashoffset")
 
+func _set_attr_stroke_linecap(stroke_linecap):
+	stroke_linecap = _get_global_inherited_prop_value("stroke_linecap", stroke_linecap)
+	attr_stroke_linecap = stroke_linecap
+	apply_props("stroke_linecap")
+
 func _set_attr_stroke_linejoin(stroke_linejoin):
+	stroke_linejoin = _get_global_inherited_prop_value("stroke_linejoin", stroke_linejoin)
 	stroke_linejoin = get_style("stroke_linejoin", stroke_linejoin)
 	attr_stroke_linejoin = stroke_linejoin
 	apply_props("stroke_linejoin")
 
 func _set_attr_stroke_miterlimit(stroke_miterlimit):
+	stroke_miterlimit = _get_global_inherited_prop_value("stroke_miterlimit", stroke_miterlimit)
 	stroke_miterlimit = get_style("stroke_miterlimit", stroke_miterlimit)
 	if typeof(stroke_miterlimit) != TYPE_STRING:
 		attr_stroke_miterlimit = stroke_miterlimit
@@ -217,6 +317,7 @@ func _set_attr_stroke_miterlimit(stroke_miterlimit):
 	apply_props("stroke_miterlimit")
 
 func _set_attr_stroke_opacity(stroke_opacity):
+	stroke_opacity = _get_global_inherited_prop_value("stroke_opacity", stroke_opacity)
 	stroke_opacity = get_style("stroke_opacity", stroke_opacity)
 	if typeof(stroke_opacity) != TYPE_STRING:
 		attr_stroke_opacity = stroke_opacity
@@ -225,6 +326,7 @@ func _set_attr_stroke_opacity(stroke_opacity):
 	apply_props("stroke_opacity")
 
 func _set_attr_stroke_width(stroke_width):
+	stroke_width = _get_global_inherited_prop_value("stroke_width", stroke_width)
 	stroke_width = get_style("stroke_width", stroke_width)
 	if typeof(stroke_width) != TYPE_STRING:
 		attr_stroke_width = stroke_width
@@ -245,11 +347,31 @@ func _set_attr_style(style):
 			self["attr_" + attr_name] = self["attr_" + attr_name]
 	apply_props("style")
 
+func _set_attr_system_language(system_language):
+	system_language = _get_global_inherited_prop_value("system_language", system_language)
+	attr_system_language = system_language
+	apply_props("system_language")
+
+func _set_attr_tabindex(tabindex):
+	tabindex = _get_global_inherited_prop_value("tabindex", tabindex)
+	attr_tabindex = tabindex
+	apply_props("tabindex")
+
 func _set_attr_transform(new_transform):
 	new_transform = get_style("transform", new_transform)
 	attr_transform = SVGAttributeParser.parse_transform_list(new_transform)
 	controlled_node.transform = attr_transform
 	apply_props("transform")
+
+func _set_attr_vector_effect(vector_effect):
+	vector_effect = _get_global_inherited_prop_value("vector_effect", vector_effect)
+	attr_vector_effect = vector_effect
+	apply_props("vector_effect")
+
+func _set_attr_visibility(visibility):
+	visibility = _get_global_inherited_prop_value("visibility", visibility)
+	attr_visibility = visibility
+	apply_props("visibility")
 
 func _set_controlled_node(new_controlled_node):
 	controlled_node = new_controlled_node
@@ -261,17 +383,27 @@ func _set_element_resource(new_element_resource):
 	if element_resource != null:
 		controlled_node.set_name(element_resource.node_name)
 
+func _set_parent_controller(new_parent_controller):
+	var old_parent_controller = parent_controller
+	parent_controller = new_parent_controller
+	if old_parent_controller != null and old_parent_controller.is_connected("distribute_inherited_properties", self, "_on_inherited_properties_updated"):
+		old_parent_controller.disconnect("distribute_inherited_properties", self, "_on_inherited_properties_updated")
+	if parent_controller != null:
+		parent_controller.connect("distribute_inherited_properties", self, "_on_inherited_properties_updated")
+
 #---------------------#
 # Internal properties #
 #---------------------#
 
 var _applied_stylesheet_style: Dictionary = {}
 var _apply_props_notify_list: Array = []
+var _assigned_global_property_names = [] # List of properties that were explicity assigned (not inherited)
 var _baked_sprite = null # Sprite that displays the _baking_viewport image
 var _baking_viewport = null # Viewport used for rendering raster effects, like mask
 var _bounding_box = Rect2(0, 0, 0, 0) # Bounding box for the current shape (not including stroke)
 var _child_container = null # Node where controlled_node should place its children via add_child()
 var _child_list = [] # List of children that should be inside of _child_container
+var _inherited_property_values = {} # Values of properties inherited from all of the parent nodes
 var _is_href_duplicate = false # Used while resolving href (gradients, etc) to mark that this is a duplicate controller of existing one.
 var _paint_server_container_node = null # Node that contains paint server assets, like viewports
 var _paint_server_textures = {} # Cache for paint server responses, key is store_name
@@ -323,6 +455,7 @@ func _ready():
 		call_deferred("_on_viewport_scale_changed", root_controller.last_known_viewport_scale)
 
 func _props_applied(prop_list = []):
+	_distribute_inherited_properties(prop_list)
 	if is_renderable:
 		_calculate_bounding_box()
 		_reorganize_baking_containers()
@@ -438,6 +571,18 @@ func _create_mesh_from_triangulation(fill_definition):
 	surface[ArrayMesh.ARRAY_TEX_UV] = uv
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, surface, [], 0)
 	return mesh
+
+# Pass props down to child controllers
+func _distribute_inherited_properties(prop_list):
+	var inherited_props = {}
+	for prop_name in prop_list:
+		if (
+			SVGValueConstant.GLOBAL_INHERITED_ATTRIBUTE_NAMES.has(prop_name) and
+			"attr_" + prop_name in self
+		):
+			inherited_props[prop_name] = self["attr_" + prop_name]
+	if inherited_props.size() > 0:
+		emit_signal("distribute_inherited_properties", inherited_props)
 
 # Creates/destroys MeshInstance2D nodes that represent the fill/stroke of the shape
 func _generate_shape_nodes(changed_prop_list: Array = []):
@@ -601,6 +746,19 @@ func _generate_shape_nodes(changed_prop_list: Array = []):
 	else:
 		for stroke in _shape_strokes:
 			stroke.hide()
+
+# Used in the setter function for global attributes to keep track of which were manually assigned
+func _get_global_inherited_prop_value(prop_name: String, prop_value):
+	if prop_value == null:
+		_assigned_global_property_names.erase(prop_name)
+		if _inherited_property_values.has(prop_name):
+			prop_value = _inherited_property_values[prop_name]
+		else:
+			prop_value = global_default_property_values[prop_name]
+	else:
+		if not _assigned_global_property_names.has(prop_name):
+			_assigned_global_property_names.push_back(prop_name)
+	return prop_value
 
  # Individual shape controller overrides this to define the commands that draw the shape
 func _process_polygon():
@@ -805,7 +963,8 @@ func _reorganize_baking_containers():
 # Such as when enabling/disabling baked raster rendering to a viewport
 func _swap_child_container(new_container):
 	var swapped_child_list = []
-	for child in _child_list:
+	var child_list = _child_list.duplicate()
+	for child in child_list:
 		if is_instance_valid(child):
 			var parent = child.get_parent()
 			if parent == self:
@@ -843,6 +1002,13 @@ func _update_shape_material_uv_params(shape_node, texture_units, texture_uv_tran
 func _on_bounding_box_calculated(new_bounding_box):
 	if controlled_node != null:
 		controlled_node.emit_signal("bounding_box_calculated", new_bounding_box)
+
+func _on_inherited_properties_updated(inherited_props: Dictionary):
+	_inherited_property_values = inherited_props
+	for prop_name in inherited_props:
+		if not _assigned_global_property_names.has(prop_name):
+			set("attr_" + prop_name, inherited_props[prop_name])
+			_assigned_global_property_names.erase(prop_name)
 
 func _on_visibility_changed():
 	if controlled_node.visible:
@@ -920,17 +1086,14 @@ func get_visible_stroke_width():
 				stroke_width = 0.0
 	return stroke_width
 
-func read_attributes_from_element_resource():
-	call_deferred("read_attributes_from_element_resource_now")
-
-# Attribute read is deferred so children controllers can be created first,
-# so inherited attributes can be passed down correctly.
-func read_attributes_from_element_resource_now():
+func read_attributes_from_element_resource() -> PoolStringArray:
+	var assigned_attribute_names = PoolStringArray()
 	if element_resource != null:
 		for attribute_name in element_resource.attributes:
 			if "attr_" + attribute_name in self:
+				assigned_attribute_names.append(attribute_name)
 				set("attr_" + attribute_name, element_resource.attributes[attribute_name])
-
+	return assigned_attribute_names
 
 func resolve_fill_paint():
 	if _rerender_prop_cache.has("fill"):
@@ -965,4 +1128,4 @@ func set_applied_stylesheet_style(applied_stylesheet_style):
 		for attr_name in _applied_stylesheet_style:
 			if "attr_" + attr_name in self:
 				self["attr_" + attr_name] = self["attr_" + attr_name]
-				apply_props("attr_name")
+				apply_props(attr_name)

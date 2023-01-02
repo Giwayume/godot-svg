@@ -1,5 +1,4 @@
-class_name SVGControllerEllipse
-extends SVGControllerElement
+extends "svg_controller_element.gd"
 
 #------------#
 # Attributes #

@@ -1,13 +1,38 @@
-tool
-class_name SVGControllerRoot
+#---------#
+# Signals #
+#---------#
 
 signal node_structure_generated
 signal controlled_node_process(delta)
 signal viewport_scale_changed(new_scale)
 
+#-----------#
+# Constants #
+#-----------#
+
 const TriangulationMethod = SVGValueConstant.TriangulationMethod
 const SVGElement2D = preload("../element/2d/svg_element_2d.gd")
 const SVGElement3D = preload("../element/3d/svg_element_3d.gd")
+const SVGControllerCircle = preload("svg_controller_circle.gd")
+const SVGControllerClipPath = preload("svg_controller_clip_path.gd")
+const SVGControllerDefs = preload("svg_controller_defs.gd")
+const SVGControllerEllipse = preload("svg_controller_ellipse.gd")
+const SVGControllerElement = preload("svg_controller_element.gd")
+const SVGControllerG = preload("svg_controller_g.gd")
+const SVGControllerImage = preload("svg_controller_image.gd")
+const SVGControllerLine = preload("svg_controller_line.gd")
+const SVGControllerLinearGradient = preload("svg_controller_linear_gradient.gd")
+const SVGControllerMask = preload("svg_controller_mask.gd")
+const SVGControllerPath = preload("svg_controller_path.gd")
+const SVGControllerPattern = preload("svg_controller_pattern.gd")
+const SVGControllerPolygon = preload("svg_controller_polygon.gd")
+const SVGControllerPolyline = preload("svg_controller_polyline.gd")
+const SVGControllerRadialGradient = preload("svg_controller_radial_gradient.gd")
+const SVGControllerRect = preload("svg_controller_rect.gd")
+const SVGControllerStop = preload("svg_controller_stop.gd")
+const SVGControllerStyle = preload("svg_controller_style.gd")
+const SVGControllerViewport = preload("svg_controller_viewport.gd")
+const SVGControllerText = preload("svg_controller_text.gd")
 
 #-----------------#
 # User properties #
@@ -89,7 +114,7 @@ func _exit_tree():
 	if is_editor_hint and editor_plugin != null:
 		editor_plugin.disconnect("svg_resources_reimported", self, "_on_svg_resources_reimported")
 		editor_plugin.disconnect("editor_viewport_scale_changed", self, "_on_editor_viewport_scale_changed")
-	
+
 func _process(_delta):
 	if not is_editor_hint and fixed_scaling_ratio == 0:
 		var new_viewport_scale = root_node.get_viewport().canvas_transform.get_scale()
@@ -167,6 +192,7 @@ func _generate_node_controller_structure(s_parent_node, s_children, s_render_pro
 		var view_box = null
 		var is_in_root_viewport = false
 		var is_in_clip_path = false
+		var inherited_props = {}
 		if not render_props.has("cache_id"):
 			render_props.cache_id = "0"
 		if render_props.has("view_box"):
@@ -175,6 +201,10 @@ func _generate_node_controller_structure(s_parent_node, s_children, s_render_pro
 			is_in_root_viewport = render_props.is_in_root_viewport
 		if render_props.has("is_in_clip_path"):
 			is_in_clip_path = render_props.is_in_clip_path
+		if render_props.has("inherited_props"):
+			inherited_props = render_props.inherited_props
+		
+		var parent_controller = stack_frame.parent_node.controller if "controller" in stack_frame.parent_node and stack_frame.parent_node.controller is SVGControllerElement else null
 		
 		var is_child_stack_completed = true
 		for child_index in range(stack_frame.child_evaluate_index, children.size()):
@@ -188,6 +218,7 @@ func _generate_node_controller_structure(s_parent_node, s_children, s_render_pro
 			controller.node_name = child.node_name
 			controller.controlled_node = controlled_node
 			controller.root_controller = self
+			controller.parent_controller = parent_controller
 			controller.element_resource = child
 			controller.node_text = child.text
 			controller.is_in_root_viewport = is_in_root_viewport
@@ -195,7 +226,9 @@ func _generate_node_controller_structure(s_parent_node, s_children, s_render_pro
 			controller.render_cache_id = render_props.cache_id + "." + str(child_index)
 			if view_box == null:
 				controller.is_root_element = true
-			controller.read_attributes_from_element_resource()
+			var assigned_attribute_names = controller.read_attributes_from_element_resource()
+			if inherited_props.size() > 0:
+				controller._on_inherited_properties_updated(inherited_props)
 			stack_frame.parent_node.add_child(controlled_node)
 			_element_resource_to_controller_map[child] = controller
 			
@@ -208,12 +241,18 @@ func _generate_node_controller_structure(s_parent_node, s_children, s_render_pro
 			if controller is SVGControllerStyle:
 				_global_stylesheet.append_array(controller.get_stylesheet())
 			
+			var child_inherited_props = inherited_props.duplicate()
+			for attribute_name in assigned_attribute_names:
+				if SVGValueConstant.GLOBAL_INHERITED_ATTRIBUTE_NAMES.has(attribute_name):
+					child_inherited_props[attribute_name] = controller.get("attr_" + attribute_name)
+			
 			if child.children.size() > 0:
 				var new_render_props = {
 					"view_box": view_box,
 					"is_in_root_viewport": is_in_root_viewport,
 					"is_in_clip_path": is_in_clip_path,
-					"cache_id": controller.render_cache_id
+					"cache_id": controller.render_cache_id,
+					"inherited_props": child_inherited_props,
 				}
 				if controller is SVGControllerViewport or controller.attr_mask != SVGValueConstant.NONE or controller.attr_clip_path != SVGValueConstant.NONE:
 					new_render_props.is_in_root_viewport = false

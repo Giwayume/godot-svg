@@ -147,7 +147,7 @@ const GLOBAL_INHERITED_ATTRIBUTE_NAMES = [
 	"stroke_opacity",
 	"stroke_width",
 	"vector_effect",
-	"visibility",
+	# "visibility", # This has been disabled because node tree visibility stacks by default
 ]
 
 const CSS_COLOR_NAMES = {
