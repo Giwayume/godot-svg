@@ -90,7 +90,7 @@ Use in 2D scenes similar to how you would use a *TextureRect*. How the SVG fits 
 | Method Signature | Notes |
 |:-----------------|:------|
 | remove_attribute(name: String) | Removes an attribute with the specified name. |
-| set_attribute(name: String, value: String) | Sets the value of an attribute with the specified name. It is recommended at the moment to pass a string value, equivalent to what you would type in an SVG document. |
+| set_attribute(name: String, value: String) | Sets the value of an attribute with the specified name. It is recommended at the moment to pass a string value, equivalent to what you would type in a SVG document. |
 
 ## Performance Considerations
 
@@ -202,7 +202,7 @@ There is a performance benefit to using basic shapes (`circle`, `ellipse`, `rect
 | title | ![Status](./docs/supported_checkmark.png) Supported | Not rendered |
 | tref | ![Status](./docs/not_supported_x.png) Will Not Support | Deprecated |
 | tspan | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
-| use | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
+| use | ![Status](./docs/supported_checkmark.png) Supported | |
 | view | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | vkern | ![Status](./docs/not_supported_x.png) Will Not Support | Deprecated |
 

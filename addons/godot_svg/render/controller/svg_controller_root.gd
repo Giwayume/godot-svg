@@ -33,6 +33,7 @@ const SVGControllerStop = preload("svg_controller_stop.gd")
 const SVGControllerStyle = preload("svg_controller_style.gd")
 const SVGControllerViewport = preload("svg_controller_viewport.gd")
 const SVGControllerText = preload("svg_controller_text.gd")
+const SVGControllerUse = preload("svg_controller_use.gd")
 
 #-----------------#
 # User properties #
@@ -148,6 +149,7 @@ func _get_controller_class_by_element_name(element_name: String):
 		"style": return SVGControllerStyle
 		"svg": return SVGControllerViewport
 		"text": return SVGControllerText
+		"use": return SVGControllerUse
 	return SVGControllerElement
 
 # Trashes everything and re-generates the node/controller structure.
@@ -184,6 +186,9 @@ func _generate_node_controller_structure(s_parent_node, s_children, s_render_pro
 			"render_props": s_render_props,
 		}
 	]
+	var generation_result = {
+		"top_level_controllers": [],
+	}
 	while generation_stack.size() > 0:
 		var stack_frame = generation_stack.back()
 		var children = stack_frame.children
@@ -213,6 +218,8 @@ func _generate_node_controller_structure(s_parent_node, s_children, s_render_pro
 			var controller = _get_controller_class_by_element_name(child.node_name).new()
 			if stack_frame.parent_node == root_node:
 				root_element_controller = controller
+			if stack_frame.parent_node == s_parent_node:
+				generation_result.top_level_controllers.push_back(controller)
 			controlled_node.node_name = child.node_name
 			controlled_node.controller = controller
 			controller.node_name = child.node_name
@@ -270,6 +277,7 @@ func _generate_node_controller_structure(s_parent_node, s_children, s_render_pro
 		
 		if is_child_stack_completed:
 			generation_stack.pop_back()
+	return generation_result
 
 # Walks back through the element resource tree and assigns properties to controllers
 # matching the CSS selectors from _global_stylesheet
