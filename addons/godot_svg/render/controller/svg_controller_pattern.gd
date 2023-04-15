@@ -40,7 +40,9 @@ func _init():
 	_baking_viewport.name = "baking_viewport"
 
 func _ready():
-	.add_child(_baking_viewport)
+	if controlled_node != null:
+		.add_child(_baking_viewport)
+		controlled_node.hide()
 
 #----------------#
 # Public Methods #

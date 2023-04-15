@@ -242,6 +242,56 @@ static func generate_pattern_server(
 		"controller": pattern_controller,
 		"viewport": viewport,
 		"texture": viewport_texture,
+		"generate_shader_params": {
+			"method": "generate_pattern_shader_params",
+			"params": {
+				"pattern_controller": pattern_controller,
+				"pattern_transform": pattern_controller.attr_pattern_transform
+			}
+		}
+	}
+
+static func generate_pattern_shader_params(
+	reference_controller,
+	params: Dictionary
+) -> Dictionary:
+	var pattern_controller = params.pattern_controller
+	var pattern_transform = params.pattern_transform
+	var inherited_view_box = reference_controller.inherited_view_box
+
+	var pattern_width = pattern_controller.attr_width.get_length(inherited_view_box.size.x)
+	var pattern_height = pattern_controller.attr_height.get_length(inherited_view_box.size.y)
+
+	var uv_position_in_container = Vector2(0.0, 0.0)
+	var uv_size_in_container = Vector2(1.0, 1.0)
+	var uv_transform = Transform2D()
+
+	# USER_SPACE_ON_USE
+	if pattern_controller.attr_pattern_units == SVGValueConstant.USER_SPACE_ON_USE:
+		var bounding_box = reference_controller.get_bounding_box()
+
+		uv_transform = Transform2D().scaled(Vector2(inherited_view_box.size.x / pattern_width, inherited_view_box.size.y / pattern_height))
+
+		uv_transform *= pattern_transform.affine_inverse() * pattern_transform * pattern_transform.affine_inverse()
+		uv_transform.origin = Vector2(
+			(uv_transform.origin.x) / inherited_view_box.size.x,
+			(uv_transform.origin.y) / inherited_view_box.size.y
+		)
+
+		uv_size_in_container = Vector2(
+			bounding_box.size.x / inherited_view_box.size.x,
+			bounding_box.size.y / inherited_view_box.size.y
+		)
+		uv_position_in_container = Vector2(
+			(bounding_box.position.x / inherited_view_box.size.x),
+			(bounding_box.position.y / inherited_view_box.size.y)
+		)
+
+	return {
+		"uv_position_in_container": uv_position_in_container,
+		"uv_size_in_container": uv_size_in_container,
+		"uv_transform_column_1": Vector3(uv_transform.x.x, uv_transform.y.x, uv_transform.origin.x),
+		"uv_transform_column_2": Vector3(uv_transform.x.y, uv_transform.y.y, uv_transform.origin.y)
 	}
 
 static func pow_2_texture_size(size: Vector2):
@@ -323,6 +373,7 @@ static func resolve_paint(reference_controller, attr_paint, server_name: String)
 				
 				# Radial Gradient
 				else:
+					paint.texture_units = null
 					var gradient_texture_param = GradientTexture.new()
 					gradient_texture_param.gradient = gradient
 					
@@ -352,16 +403,16 @@ static func resolve_paint(reference_controller, attr_paint, server_name: String)
 						inherited_view_box
 					)
 				)
-				if controller.attr_pattern_units == SVGValueConstant.USER_SPACE_ON_USE:
-					paint.texture_units = Rect2(
-						0.0,
-						0.0,
-						controller._baking_viewport.size.x,
-						controller._baking_viewport.size.y
-					)
-				else:
-					paint.texture_units = controller.attr_pattern_units
-				paint.texture_uv_transform = controller.attr_pattern_transform
+				# if controller.attr_pattern_units == SVGValueConstant.USER_SPACE_ON_USE:
+				# 	paint.texture_units = Rect2(
+				# 		0.0,
+				# 		0.0,
+				# 		controller._baking_viewport.size.x,
+				# 		controller._baking_viewport.size.y
+				# 	)
+				# else:
+				# 	paint.texture_units = controller.attr_pattern_units
+				# paint.texture_uv_transform = controller.attr_pattern_transform
 				paint.texture = pattern_texture
 		else:
 			free_paint_server_texture(reference_controller, server_name)
@@ -406,6 +457,11 @@ static func apply_shader_params(reference_controller, store_name: String, shape_
 			var shader_params = {}
 			if server_response.generate_shader_params.method == "generate_radial_gradient_shader_params":
 				shader_params = generate_radial_gradient_shader_params(
+					reference_controller,
+					server_response.generate_shader_params.params
+				)
+			elif server_response.generate_shader_params.method == "generate_pattern_shader_params":
+				shader_params = generate_pattern_shader_params(
 					reference_controller,
 					server_response.generate_shader_params.params
 				)

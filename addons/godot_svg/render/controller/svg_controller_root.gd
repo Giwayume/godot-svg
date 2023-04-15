@@ -104,7 +104,6 @@ func _init(root_node: Node):
 
 func _enter_tree():
 	if is_editor_hint and editor_plugin != null:
-		print_debug("enter tree")
 		editor_plugin.connect("svg_resources_reimported", self, "_on_svg_resources_reimported")
 		editor_plugin.connect("editor_viewport_scale_changed", self, "_on_editor_viewport_scale_changed")
 	

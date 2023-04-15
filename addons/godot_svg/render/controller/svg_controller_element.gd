@@ -746,7 +746,7 @@ func _generate_shape_nodes(changed_prop_list: Array = []):
 				pass # TODO - equivalent for 3D?
 			if fill_texture != null:
 				material.set_shader_param("fill_texture", fill_texture)
-			if fill_texture_uv_transform != null:
+			if fill_texture_units != null:
 				_update_shape_material_uv_params(_shape_fill, fill_texture_units, fill_texture_uv_transform, polygon_lists[fill_index])
 			SVGPaintServer.apply_shader_params(self, "fill", _shape_fill)
 			
@@ -791,7 +791,7 @@ func _generate_shape_nodes(changed_prop_list: Array = []):
 				pass # TODO - equivalent for 3D?
 			if stroke_texture != null:
 				material.set_shader_param("fill_texture", stroke_texture)
-			if stroke_texture_uv_transform != null:
+			if stroke_texture_units != null:
 				_update_shape_material_uv_params(_shape_stroke, stroke_texture_units, stroke_texture_uv_transform, polygon_lists[stroke_index])
 			SVGPaintServer.apply_shader_params(self, "stroke", _shape_stroke)
 			

@@ -82,7 +82,7 @@ func _props_applied(changed_props = []):
 	var x = attr_x.get_length(inherited_view_box.size.x)
 	var y = attr_y.get_length(inherited_view_box.size.y)
 
-	controlled_node.transform.origin = Vector2(x, y)
+	_control_frame.rect_position = Vector2(x, y)
 	
 	var texture_width = image_texture.get_width()
 	var texture_height = image_texture.get_height()
