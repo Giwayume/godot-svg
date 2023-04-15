@@ -125,6 +125,105 @@ static func generate_radial_gradient_server(
 		"texture": viewport_texture,
 	}
 
+static func generate_radial_gradient_shader_params(
+	reference_controller,
+	params: Dictionary
+) -> Dictionary:
+	var gradient_controller = params.gradient_controller
+	var gradient_transform = params.gradient_transform
+	var inherited_view_box = reference_controller.inherited_view_box
+
+	var start_center
+	var end_center
+	var start_radius = gradient_controller.attr_fr.get_normalized_length(inherited_view_box.size.x)
+	var end_radius = gradient_controller.attr_r.get_normalized_length(inherited_view_box.size.x)
+	var uv_position_in_container = Vector2(0.0, 0.0)
+	var uv_size_in_container = Vector2(1.0, 1.0)
+	var ellipse_ratio = Vector2(1.0, 1.0)
+
+	var uv_transform = Transform2D()
+
+	# OBJECT_BOUNDING_BOX
+	if gradient_controller.attr_gradient_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
+		start_center = gradient_transform.xform(Vector2(
+			gradient_controller.attr_cx.get_length(1),
+			gradient_controller.attr_cy.get_length(1)
+		))
+		var attr_fx = gradient_controller.attr_cx if gradient_controller.attr_fx is String else gradient_controller.attr_fx
+		var attr_fy = gradient_controller.attr_cy if gradient_controller.attr_fy is String else gradient_controller.attr_fy
+		end_center = gradient_transform.xform(Vector2(
+			attr_fx.get_length(1),
+			attr_fy.get_length(1)
+		))
+		start_radius = gradient_controller.attr_fr.get_length(1)
+		end_radius = gradient_controller.attr_r.get_length(1)
+	
+	# USER_SPACE_ON_USE
+	else:
+		var bounding_box = reference_controller.get_bounding_box()
+
+		ellipse_ratio = Vector2(inherited_view_box.size.y / inherited_view_box.size.x, 1.0)
+
+		uv_transform *= gradient_transform.affine_inverse() * gradient_transform * gradient_transform.affine_inverse()
+		uv_transform.origin = Vector2(
+			(uv_transform.origin.x) / inherited_view_box.size.x,
+			(uv_transform.origin.y) / inherited_view_box.size.y
+		)
+
+		uv_size_in_container = Vector2(
+			bounding_box.size.x / inherited_view_box.size.x,
+			bounding_box.size.y / inherited_view_box.size.y
+		)
+		uv_position_in_container = Vector2(
+			(bounding_box.position.x / inherited_view_box.size.x),
+			(bounding_box.position.y / inherited_view_box.size.y)
+		)
+
+		start_center = Vector2(
+			SVGLengthPercentage.calculate_normalized_length(
+				gradient_controller.attr_cx.get_length(1.0),
+				inherited_view_box.size.x
+			),
+			SVGLengthPercentage.calculate_normalized_length(
+				gradient_controller.attr_cy.get_length(1.0),
+				inherited_view_box.size.y
+			)
+		)
+		var attr_fx = gradient_controller.attr_cx if gradient_controller.attr_fx is String else gradient_controller.attr_fx
+		var attr_fy = gradient_controller.attr_cy if gradient_controller.attr_fy is String else gradient_controller.attr_fy
+		end_center = Vector2(
+			SVGLengthPercentage.calculate_normalized_length(
+				attr_fx.get_length(1.0),
+				inherited_view_box.size.x
+			),
+			SVGLengthPercentage.calculate_normalized_length(
+				attr_fy.get_length(1.0),
+				inherited_view_box.size.y
+			)
+		)
+		start_radius = SVGLengthPercentage.calculate_normalized_length(
+			gradient_controller.attr_fr.get_length(1.0),
+			inherited_view_box.size.x
+		)
+		end_radius = SVGLengthPercentage.calculate_normalized_length(
+			gradient_controller.attr_r.get_length(1.0),
+			inherited_view_box.size.y	
+		)
+
+	return {
+		"gradient_type": 2,
+		"gradient_start_center": start_center,
+		"gradient_start_radius": Vector2(ellipse_ratio.x * start_radius, ellipse_ratio.y * start_radius),
+		"gradient_end_center": end_center,
+		"gradient_end_radius": Vector2(ellipse_ratio.x * end_radius, ellipse_ratio.y * end_radius),
+		"gradient_repeat": params.gradient_repeat,
+		"gradient_texture": params.gradient_texture,
+		"uv_position_in_container": uv_position_in_container,
+		"uv_size_in_container": uv_size_in_container,
+		"uv_transform_column_1": Vector3(uv_transform.x.x, uv_transform.y.x, uv_transform.origin.x),
+		"uv_transform_column_2": Vector3(uv_transform.x.y, uv_transform.y.y, uv_transform.origin.y)
+	}
+
 static func generate_pattern_server(
 	pattern_controller,
 	inherited_view_box: Rect2
@@ -166,6 +265,8 @@ static func resolve_paint(reference_controller, attr_paint, server_name: String)
 			var controller = result.controller
 			if controller == null:
 				paint.color = attr_paint.color
+			
+			# Gradient
 			elif controller.node_name == "linearGradient" or controller.node_name == "radialGradient":
 				controller = controller.resolve_href()
 				var stops = root_controller.get_elements_by_name("stop", controller.element_resource)
@@ -187,6 +288,8 @@ static func resolve_paint(reference_controller, attr_paint, server_name: String)
 					SVGValueConstant.REFLECT: GradientTexture2D.REPEAT_MIRROR,
 				}[controller.attr_spread_method]
 				paint.texture_units = controller.attr_gradient_units
+
+				# Linear Gradient
 				if controller.node_name == "linearGradient":
 					free_paint_server_texture(reference_controller, server_name)
 					gradient_texture = GradientTexture2D.new()
@@ -217,67 +320,30 @@ static func resolve_paint(reference_controller, attr_paint, server_name: String)
 							SVGLengthPercentage.calculate_normalized_length(transformed_fill_to.x, inherited_view_box.size.x, inherited_view_box.position.x),
 							SVGLengthPercentage.calculate_normalized_length(transformed_fill_to.y, inherited_view_box.size.y, inherited_view_box.position.y)
 						)
-				else: # "radialGradient"
-					var start_center
-					var end_center
-					var start_radius = controller.attr_fr.get_normalized_length(inherited_view_box.size.x)
-					var end_radius = controller.attr_r.get_normalized_length(inherited_view_box.size.x)
-					var texture_size = Vector2(64.0, 64.0)
-					if controller.attr_gradient_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
-						var bounding_box = reference_controller.get_bounding_box()
-						texture_size = pow_2_texture_size(Vector2(1.0, 1.0) * min(4096, max(bounding_box.size.x, bounding_box.size.y)))
-						start_center = gradient_transform.xform(Vector2(
-							controller.attr_cx.get_length(1),
-							controller.attr_cy.get_length(1)
-						))
-						var attr_fx = controller.attr_cx if controller.attr_fx is String else controller.attr_fx
-						var attr_fy = controller.attr_cy if controller.attr_fy is String else controller.attr_fy
-						end_center = gradient_transform.xform(Vector2(
-							attr_fx.get_length(1),
-							attr_fy.get_length(1)
-						))
-						start_radius = controller.attr_fr.get_length(1)
-						end_radius = controller.attr_r.get_length(1)
-					else: # USER_SPACE_ON_USE
-						var transformed_start_center = gradient_transform.xform(
-							Vector2(controller.attr_cx.get_length(1), controller.attr_cy.get_length(1))
-						)
-						start_center = Vector2(
-							SVGLengthPercentage.calculate_normalized_length(transformed_start_center.x, inherited_view_box.size.x, inherited_view_box.position.x),
-							SVGLengthPercentage.calculate_normalized_length(transformed_start_center.y, inherited_view_box.size.y, inherited_view_box.position.y)
-						)
-						var attr_fx = controller.attr_cx if controller.attr_fx is String else controller.attr_fx
-						var attr_fy = controller.attr_cy if controller.attr_fy is String else controller.attr_fy
-						var transformed_end_center = gradient_transform.xform(
-							Vector2(attr_fx.get_length(1), attr_fy.get_length(1))
-						)
-						end_center = Vector2(
-							SVGLengthPercentage.calculate_normalized_length(transformed_end_center.x, inherited_view_box.size.x, inherited_view_box.position.x),
-							SVGLengthPercentage.calculate_normalized_length(transformed_end_center.y, inherited_view_box.size.y, inherited_view_box.position.y)
-						)
-						start_radius = controller.attr_fr.get_normalized_length(inherited_view_box.size.x)
-						end_radius = controller.attr_r.get_normalized_length(inherited_view_box.size.x)
-
-						texture_size = inherited_view_box.size
-					
+				
+				# Radial Gradient
+				else:
 					var gradient_texture_param = GradientTexture.new()
 					gradient_texture_param.gradient = gradient
 					
 					gradient_texture = store_paint_server_texture(reference_controller, server_name, {
 						"texture": null,
-						"shader_params": {
-							"gradient_type": 2,
-							"gradient_start_center": start_center,
-							"gradient_start_radius": start_radius,
-							"gradient_end_center": end_center,
-							"gradient_end_radius": end_radius,
-							"gradient_repeat": texture_repeat_mode,
-							"gradient_texture": gradient_texture_param,
+						"generate_shader_params": {
+							"method": "generate_radial_gradient_shader_params",
+							"params": {
+								"gradient_controller": controller,
+								"gradient_transform": gradient_transform,
+								"gradient_repeat": texture_repeat_mode,
+								"gradient_texture": gradient_texture_param
+							}
 						}
 					})
+				
 				paint.texture = gradient_texture
-				if controller._is_href_duplicate:
+				if controller._is_href_duplicate and controller.controlled_node != null:
 					controller.controlled_node.queue_free()
+			
+			# Pattern
 			elif controller.node_name == "pattern":
 				controller = controller.resolve_href()
 				var pattern_texture = store_paint_server_texture(reference_controller, server_name,
@@ -312,9 +378,9 @@ static func store_paint_server_texture(reference_controller, store_name: String,
 		if reference_controller._paint_server_container_node == null:
 			reference_controller._paint_server_container_node = Node2D.new()
 			reference_controller._paint_server_container_node.set_name("PaintServerAssets")
-			reference_controller._add_child_direct(reference_controller._paint_server_container_node)
+			reference_controller.controlled_node.add_child_to_root(reference_controller._paint_server_container_node)
 		if server_response.has("controller"):
-			reference_controller._paint_server_container_node.add_child(server_response.controller)
+			reference_controller._paint_server_container_node.add_child(server_response.controller.controlled_node)
 			if server_response.has("view_box") and server_response.controller.has_method("update_as_user"):
 				server_response.controller.update_as_user(server_response.view_box)
 		else:
@@ -336,9 +402,15 @@ static func apply_shader_params(reference_controller, store_name: String, shape_
 	var needs_reset_params = false
 	if reference_controller._paint_server_textures.has(store_name):
 		var server_response = reference_controller._paint_server_textures[store_name]
-		if server_response.has("shader_params"):
-			for shader_param_name in server_response.shader_params:
-				shape_node.material.set_shader_param(shader_param_name, server_response.shader_params[shader_param_name])
+		if server_response.has("generate_shader_params"):
+			var shader_params = {}
+			if server_response.generate_shader_params.method == "generate_radial_gradient_shader_params":
+				shader_params = generate_radial_gradient_shader_params(
+					reference_controller,
+					server_response.generate_shader_params.params
+				)
+			for shader_param_name in shader_params:
+				shape_node.material.set_shader_param(shader_param_name, shader_params[shader_param_name])
 		else:
 			needs_reset_params = true
 	else:

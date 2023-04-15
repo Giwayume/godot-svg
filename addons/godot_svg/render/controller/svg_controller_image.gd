@@ -79,8 +79,8 @@ func _props_applied(changed_props = []):
 	
 	_image_sprite.texture = image_texture
 	
-	var x = attr_x.get_length(inherited_view_box.size.x, inherited_view_box.position.x)
-	var y = attr_y.get_length(inherited_view_box.size.y, inherited_view_box.position.y)
+	var x = attr_x.get_length(inherited_view_box.size.x)
+	var y = attr_y.get_length(inherited_view_box.size.y)
 
 	controlled_node.transform.origin = Vector2(x, y)
 	

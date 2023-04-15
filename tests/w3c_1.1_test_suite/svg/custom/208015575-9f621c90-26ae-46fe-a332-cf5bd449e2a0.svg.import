@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/208015575-9f621c90-26ae-46fe-a332-cf5bd449e2a0.svg-0c202761fec34ecddd2fa1107807465a.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/custom/208015575-9f621c90-26ae-46fe-a332-cf5bd449e2a0.svg"
+dest_files=[ "res://.import/208015575-9f621c90-26ae-46fe-a332-cf5bd449e2a0.svg-0c202761fec34ecddd2fa1107807465a.gdsvg" ]
+
+[params]
+

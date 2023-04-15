@@ -1,0 +1,32 @@
+[gd_resource type="Shader" format=2]
+
+[resource]
+code = "shader_type spatial;
+
+uniform sampler2D mask;
+uniform sampler2D clip_path;
+
+void fragment() {
+	vec4 diffuse_color = vec4(ALBEDO, ALPHA);
+	
+	// Mask
+	vec4 mask_color = texture(mask, UV).rgba;
+	float mask_grayscale = (0.299 * mask_color.r) + (0.587 * mask_color.g) + (0.114 * mask_color.b);
+	diffuse_color.a *= mask_grayscale;
+
+	// Clip path
+	vec4 clip_path_color = texture(clip_path, UV).rgba;
+	float clip_path_grayscale = (0.299 * clip_path_color.r) + (0.587 * clip_path_color.g) + (0.114 * clip_path_color.b);
+	diffuse_color.a *= clip_path_grayscale;
+	
+	// Limit alpha
+	if (diffuse_color.a < 0.0) {
+		diffuse_color.a = 0.0;
+	} else if (diffuse_color.a > 1.0) {
+		diffuse_color.a = 1.0;
+	}
+	
+	ALBEDO = diffuse_color.rgb;
+	ALPHA = diffuse_color.a;
+}
+"

@@ -3,16 +3,19 @@
 [resource]
 code = "shader_type canvas_item;
 
+const float EPSILON = 0.000001;
 const float GRADIENT_TILING_RATIO = 1.0;
 
 uniform vec4 fill_color = vec4(1.0, 1.0, 1.0, 1.0);
 uniform vec3 uv_transform_column_1 = vec3(1.0, 0.0, 0.0);
 uniform vec3 uv_transform_column_2 = vec3(0.0, 1.0, 0.0);
+uniform vec2 uv_position_in_container = vec2(0.0, 0.0);
+uniform vec2 uv_size_in_container = vec2(1.0, 1.0);
 uniform int gradient_type = 0;
 uniform vec2 gradient_start_center = vec2(0.0, 0.0);
-uniform float gradient_start_radius = 0.0;
+uniform vec2 gradient_start_radius = vec2(0.0, 0.0);
 uniform vec2 gradient_end_center = vec2(0.0, 0.0);
-uniform float gradient_end_radius = 0.0;
+uniform vec2 gradient_end_radius = vec2(0.0, 0.0);
 uniform int gradient_repeat = 0;
 uniform sampler2D fill_texture;
 uniform sampler2D gradient_texture;
@@ -111,13 +114,13 @@ vec4 radial_gradient(vec2 uv) {
 	vec4 color = vec4(1.0, 1.0, 1.0, 1.0);
 	
 	vec2 center = gradient_end_center;
-	vec2 end_point = center + vec2(gradient_end_radius, 0.0);
+	vec2 end_point = center + gradient_end_radius;
 	vec2 focus = gradient_start_center;
 	vec2 coord = uv;
-	float radius = (gradient_end_radius - gradient_start_radius);
-	float start_radius_applied = gradient_start_radius;
-	vec2 texture_size = vec2(1.0, 1.0);
-	float ellipse_ratio = texture_size.y / texture_size.x;
+	float radius = (gradient_end_radius.y - gradient_start_radius.y);
+	float start_radius_applied = gradient_start_radius.y;
+	float ellipse_ratio = 1.0;
+	vec2 container_aspect = vec2(gradient_end_radius.y / gradient_end_radius.x, 1.0);
 	
 	vec2 axis = end_point - center;
 	float l2 = dot(axis, axis);
@@ -147,7 +150,7 @@ vec4 radial_gradient(vec2 uv) {
 		// Gradient is undefined for this coordinate
 	}
 	
-	float grad = (distance(coord, focus) - start_radius_applied) / grad_length * GRADIENT_TILING_RATIO;
+	float grad = (distance(coord * container_aspect, focus * container_aspect) - start_radius_applied) / grad_length * GRADIENT_TILING_RATIO;
 	if (gradient_repeat == 1) { // GradientTexture2D.REPEAT
 		color = sample_gradient(fract(grad));
 	} else if (gradient_repeat == 2) { // GradientTexture2D.REPEAT_MIRROR
@@ -164,13 +167,17 @@ vec4 radial_gradient(vec2 uv) {
 }
 
 void fragment() {
-	mat2 uv_rotation_scale = mat2(
-		uv_transform_column_1.xy,
-		uv_transform_column_2.xy
+	mat3 container_uv_transform = mat3(
+		vec3(uv_transform_column_1.x, uv_transform_column_2.x, 0.0),
+		vec3(uv_transform_column_1.y, uv_transform_column_2.y, 0.0),
+		vec3(uv_transform_column_1.z, uv_transform_column_2.z, 0.0)
 	);
-	vec2 uv_translation = vec2(uv_transform_column_1.z, uv_transform_column_2.z);
+	vec2 container_viewport_uv = vec2(
+		(UV.x * uv_size_in_container.x) + uv_position_in_container.x,
+		(UV.y * uv_size_in_container.y) + uv_position_in_container.y
+	);
 	vec4 gradient_color = vec4(1.0, 1.0, 1.0, 1.0);
-	vec2 transform_applied_uv = (uv_rotation_scale * UV) + uv_translation;
+	vec2 transform_applied_uv = (container_uv_transform * vec3(container_viewport_uv.xy, 1.0)).xy;
 	if (gradient_type == 1) {
 		gradient_color = linear_gradient(transform_applied_uv);
 	} else if (gradient_type == 2) {
@@ -191,5 +198,8 @@ void fragment() {
 		COLOR = antialiased_edge(COLOR.rg, blend_color);
 //		COLOR = antialiased_edge(COLOR.rg, vec4(1.0, 1.0, 1.0, 1.0));
 	}
+	// COLOR.r = transform_applied_uv.x;
+	// COLOR.g = transform_applied_uv.y;
+	// COLOR.b = 0.0;
 }
 "

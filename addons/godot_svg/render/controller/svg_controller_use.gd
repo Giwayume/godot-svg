@@ -40,8 +40,8 @@ func _notification(what):
 
 func _props_applied(changed_props = []):
 	if changed_props.has("x") or changed_props.has("y"):
-		var x = attr_x.get_length(inherited_view_box.size.x, inherited_view_box.position.x)
-		var y = attr_y.get_length(inherited_view_box.size.y, inherited_view_box.position.y)
+		var x = attr_x.get_length(inherited_view_box.size.x)
+		var y = attr_y.get_length(inherited_view_box.size.y)
 		controlled_node.transform.origin = Vector2(x, y)
 	if changed_props.has("href"):
 		if _used_element_controller != null:
@@ -57,8 +57,8 @@ func _props_applied(changed_props = []):
 #------------------#
 
 func _calculate_bounding_box():
-	var x = attr_x.get_length(inherited_view_box.size.x, inherited_view_box.position.x)
-	var y = attr_x.get_length(inherited_view_box.size.y, inherited_view_box.position.y)
+	var x = attr_x.get_length(inherited_view_box.size.x)
+	var y = attr_x.get_length(inherited_view_box.size.y)
 	if _used_element_controller != null:
 		_used_element_controller._calculate_bounding_box()
 		var used_bounding_box = _used_element_controller.get_bounding_box()

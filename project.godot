@@ -25,6 +25,11 @@ _global_script_classes=[ {
 "path": "res://addons/godot_svg/resource/svg_clock_value.gd"
 }, {
 "base": "Reference",
+"class": "SVGCollision",
+"language": "GDScript",
+"path": "res://addons/godot_svg/utility/svg_collision.gd"
+}, {
+"base": "Reference",
 "class": "SVGCubics",
 "language": "GDScript",
 "path": "res://addons/godot_svg/utility/svg_cubics.gd"
@@ -113,6 +118,7 @@ _global_script_class_icons={
 "SVGArcs": "",
 "SVGAttributeParser": "",
 "SVGClockValue": "",
+"SVGCollision": "",
 "SVGCubics": "",
 "SVGDelaunay": "",
 "SVGEarcut": "",
@@ -136,7 +142,12 @@ _global_script_class_icons={
 
 config/name="SVG"
 run/main_scene="res://tests/w3c_1.1_test_suite/empty_scene.tscn"
+run/low_processor_mode=true
 config/icon="res://icon.png"
+
+[display]
+
+window/vsync/use_vsync=false
 
 [editor_plugins]
 

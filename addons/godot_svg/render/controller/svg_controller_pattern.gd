@@ -1,5 +1,8 @@
 extends "svg_controller_element.gd"
 
+const SVGElement2D = preload("../element/2d/svg_element_2d.gd")
+const SVGElement3D = preload("../element/3d/svg_element_3d.gd")
+
 #------------#
 # Attributes #
 #------------#
@@ -35,6 +38,8 @@ func _init():
 	_baking_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
 	_baking_viewport.render_target_v_flip = true
 	_baking_viewport.name = "baking_viewport"
+
+func _ready():
 	.add_child(_baking_viewport)
 
 #----------------#
@@ -54,6 +59,9 @@ func resolve_href():
 		resolved = load(controller_to_copy.get_script().resource_path).new()
 		resolved.root_controller = root_controller
 		resolved._is_href_duplicate = true
+		resolved.root_controller = controller_to_copy.root_controller
+		resolved.controlled_node = SVGElement2D.new() if resolved.root_controller.is_2d else SVGElement3D.new()
+		resolved.controlled_node.controller = resolved
 		resolved.element_resource = controller_to_copy.element_resource
 		resolved.read_attributes_from_element_resource() # TODO - read controller attributes instead?
 		var override_attributes = {}
@@ -151,7 +159,7 @@ func _set_attr_pattern_content_units(pattern_content_units):
 
 func _set_attr_pattern_transform(pattern_transform):
 	pattern_transform = get_style("transform", pattern_transform)
-	attr_pattern_transform = SVGAttributeParser.parse_transform_list(pattern_transform)
+	attr_pattern_transform = SVGAttributeParser.parse_transform_list(pattern_transform, root_controller.is_2d)
 	apply_props("pattern_transform")
 
 func _set_attr_preserve_aspect_ratio(preserve_aspect_ratio):

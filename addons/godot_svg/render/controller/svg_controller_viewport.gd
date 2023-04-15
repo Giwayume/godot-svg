@@ -57,18 +57,20 @@ func _props_applied(changed_props = []):
 	
 	var x = 0
 	if attr_x is SVGLengthPercentage:
-		x = attr_x.get_length(inherited_view_box.size.x, inherited_view_box.position.x)
+		x = attr_x.get_length(inherited_view_box.size.x)
 	
 	var y = 0
 	if attr_y is SVGLengthPercentage:
-		y = attr_y.get_length(inherited_view_box.size.y, inherited_view_box.position.y)
+		y = attr_y.get_length(inherited_view_box.size.y)
 	
-	controlled_node.position = Vector2(x, y)
+	if root_controller.is_2d:
+		controlled_node.position = Vector2(x, y)
+	else:
+		controlled_node.translation = Vector3(x, y, 0.0)
 	if view_box.size.x > 0 and view_box.size.y > 0:
-		controlled_node.scale = Vector2(
-			width / view_box.size.x,
-			height / view_box.size.y
-		)
+		var scale_x = width / view_box.size.x
+		var scale_y = height / view_box.size.y
+		controlled_node.scale = Vector2(scale_x, scale_y) if root_controller.is_2d else Vector3(scale_x, scale_y, 1.0)
 
 #----------------#
 # Public Methods #

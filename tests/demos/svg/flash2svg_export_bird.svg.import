@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/flash2svg_export_bird.svg-1603cb885b3126446638e9d5e2cafb52.gdsvg"
+
+[deps]
+
+source_file="res://tests/demos/svg/flash2svg_export_bird.svg"
+dest_files=[ "res://.import/flash2svg_export_bird.svg-1603cb885b3126446638e9d5e2cafb52.gdsvg" ]
+
+[params]
+

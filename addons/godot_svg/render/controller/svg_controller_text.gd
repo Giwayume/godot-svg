@@ -17,8 +17,8 @@ var attr_text_length = SVGValueConstant.NONE setget _set_attr_text_length
 #------------------#
 
 func _calculate_bounding_box():
-	var x = attr_x.get_length(inherited_view_box.size.x, inherited_view_box.position.x)
-	var y = attr_x.get_length(inherited_view_box.size.y, inherited_view_box.position.y)
+	var x = attr_x.get_length(inherited_view_box.size.x)
+	var y = attr_x.get_length(inherited_view_box.size.y)
 	# TODO 
 	_bounding_box = Rect2(x, y, 0, 0)
 	emit_signal("bounding_box_calculated", _bounding_box)

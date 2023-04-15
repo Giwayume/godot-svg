@@ -37,6 +37,7 @@ func resolve_href():
 			var controller_to_copy = controller.resolve_href()
 			resolved = load(controller_to_copy.get_script().resource_path).new()
 			resolved._is_href_duplicate = true
+			resolved.root_controller = controller_to_copy.root_controller
 			resolved.element_resource = controller_to_copy.element_resource
 			resolved.read_attributes_from_element_resource() # TODO - read controller attributes instead?
 			var override_attributes = {}
@@ -99,7 +100,7 @@ func _set_attr_gradient_units(gradient_units):
 
 func _set_attr_gradient_transform(gradient_transform):
 	gradient_transform = get_style("transform", gradient_transform)
-	attr_gradient_transform = SVGAttributeParser.parse_transform_list(gradient_transform)
+	attr_gradient_transform = SVGAttributeParser.parse_transform_list(gradient_transform, root_controller.is_2d)
 	apply_props("gradient_transform")
 
 func _set_attr_href(href):

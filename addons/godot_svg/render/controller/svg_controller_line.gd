@@ -22,15 +22,15 @@ func _process_polygon():
 		{
 			"command": PathCommand.MOVE_TO,
 			"points": [Vector2(
-				attr_x1.get_length(inherited_view_box.size.x, inherited_view_box.position.x),
-				attr_y1.get_length(inherited_view_box.size.y, inherited_view_box.position.y)
+				attr_x1.get_length(inherited_view_box.size.x),
+				attr_y1.get_length(inherited_view_box.size.y)
 			)]
 		},
 		{
 			"command": PathCommand.LINE_TO,
 			"points": [Vector2(
-				attr_x2.get_length(inherited_view_box.size.x, inherited_view_box.position.x),
-				attr_y2.get_length(inherited_view_box.size.y, inherited_view_box.position.y)
+				attr_x2.get_length(inherited_view_box.size.x),
+				attr_y2.get_length(inherited_view_box.size.y)
 			)]
 		}
 	]
@@ -45,10 +45,10 @@ func _process_polygon():
 #------------------#
 
 func _calculate_bounding_box():
-	var x1 = attr_x1.get_length(inherited_view_box.size.x, inherited_view_box.position.x)
-	var y1 = attr_y1.get_length(inherited_view_box.size.y, inherited_view_box.position.y)
-	var x2 = attr_x2.get_length(inherited_view_box.size.x, inherited_view_box.position.x)
-	var y2 = attr_y2.get_length(inherited_view_box.size.y, inherited_view_box.position.y)
+	var x1 = attr_x1.get_length(inherited_view_box.size.x)
+	var y1 = attr_y1.get_length(inherited_view_box.size.y)
+	var x2 = attr_x2.get_length(inherited_view_box.size.x)
+	var y2 = attr_y2.get_length(inherited_view_box.size.y)
 	var xl = min(x1, x2)
 	var xr = max(x1, x2)
 	var yt = min(y1, y2)

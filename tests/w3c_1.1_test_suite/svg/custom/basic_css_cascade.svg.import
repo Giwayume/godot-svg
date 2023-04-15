@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/basic_css_cascade.svg-8e0de4cc4b4a12f84a164b2e140dd963.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/custom/basic_css_cascade.svg"
+dest_files=[ "res://.import/basic_css_cascade.svg-8e0de4cc4b4a12f84a164b2e140dd963.gdsvg" ]
+
+[params]
+

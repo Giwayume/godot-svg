@@ -54,6 +54,7 @@ static func parse_css_style(style):
 		style_dictionary[current_name] = current_value
 	return style_dictionary
 
+# https://www.w3.org/TR/css-color-4/
 static func parse_css_color(attribute):
 	var color = null
 	var color_strings = attribute.split(" ", false)
@@ -146,6 +147,7 @@ static func parse_css_color(attribute):
 			break
 	return color
 
+# https://www.w3.org/TR/SVG2/types.html#InterfaceSVGNumberList
 static func parse_number_list(number_list_string):
 	var values = []
 	var space_split = number_list_string.split(" ", false)
@@ -155,13 +157,13 @@ static func parse_number_list(number_list_string):
 			values.push_back(value_str.to_float())
 	return values
 
-static func parse_transform_list(transform_attr):
-	var transform = Transform2D()
+static func parse_transform_list(transform_attr, is_2d = true):
+	var transform = Transform2D() if is_2d else Transform()
 	if typeof(transform_attr) != TYPE_STRING:
 		transform = transform_attr
 	else:
 		if SVGValueConstant.NONE == transform_attr:
-			transform = Transform2D()
+			transform = Transform2D() if is_2d else Transform()
 		else:
 			var split = transform_attr.split(")", false)
 			var transform_matrix = Transform()
@@ -177,6 +179,22 @@ static func parse_transform_list(transform_attr):
 							Vector2(values[4], values[5])
 						)
 				elif transform_command.begins_with("rotate("):
+					var values = parse_number_list(transform_command.replace("rotate(", "").rstrip(")"))
+					if values.size() == 1:
+						transform_matrix = transform_matrix.rotated(Vector3(0, 0, 1), deg2rad(values[0]))
+					elif values.size() == 3:
+						transform_matrix.origin -= Vector3(
+							values[1],
+							values[2],
+							0.0
+						)
+						transform_matrix = transform_matrix.rotated(Vector3(0, 0, 1), deg2rad(values[0]))
+						transform_matrix.origin += Vector3(
+							values[1],
+							values[2],
+							0.0
+						)
+				elif transform_command.begins_with("rotate3d("):
 					var values = parse_number_list(transform_command.replace("rotate(", "").rstrip(")"))
 					if values.size() == 1:
 						transform_matrix = transform_matrix.rotated(Vector3(0, 0, 1), deg2rad(values[0]))
@@ -213,7 +231,7 @@ static func parse_transform_list(transform_attr):
 					var values = parse_number_list(transform_command.replace("skewY(", "").rstrip(")"))
 					transform_matrix.basis[3] += transform_matrix.basis[4] * tan(deg2rad(values[0]))
 			
-			transform = Transform2D(transform_matrix)
+			transform = Transform2D(transform_matrix) if is_2d else Transform(transform_matrix)
 	return transform
 
 static func relative_to_absolute_resource_url(relative_url, current_file_path):

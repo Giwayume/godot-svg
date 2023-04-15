@@ -363,3 +363,40 @@ static func segment_intersects_triangle(s0: Vector2, s1: Vector2, t0: Array):
 		Geometry.segment_intersects_segment_2d(s0, s1, t0[1], t0[2]) or
 		Geometry.segment_intersects_segment_2d(s0, s1, t0[0], t0[2])
 	)
+
+static func to_3d_point(point: Vector2, is_2d: bool):
+	if is_2d:
+		return point
+	return Vector3(point.x, point.y, 0.0)
+
+static func to_2d_point(point):
+	return Vector2(point.x, point.y)
+
+
+static func decompose_2d_transform(transform: Transform2D):
+	var r0 = Vector2(transform.x.x, transform.x.y)
+	var r1 = Vector2(transform.y.x, transform.y.y)
+	var kx = r0.length()
+	r0 = r0.normalized()
+	var kz = r0.dot(r1)
+	var ky = (r1 + r0 * -kz).length()
+	var skewX = 0.0
+	if ky != 0.0:
+		skewX = kz / ky
+	return {
+		"translation": transform.origin,
+		"rotation": atan2(transform.x.y, transform.x.x),
+		"scale": Vector2(kx, ky),
+		"skewX": skewX
+	}
+
+static func recompose_2d_transform(decomposed: Dictionary):
+	var transform = Transform2D()
+	transform = transform.rotated(
+		decomposed.rotation
+	)
+	transform.origin += decomposed.translation
+	transform.x.y = tan(atan(transform.x.y) + decomposed.skewX)
+	return transform.scaled(
+		decomposed.scale
+	)

@@ -20,8 +20,8 @@ func _init():
 func _process_polygon():
 	var scale_factor = get_scale_factor()
 	var center = Vector2(
-		attr_cx.get_length(inherited_view_box.size.x, inherited_view_box.position.x),
-		attr_cy.get_length(inherited_view_box.size.y, inherited_view_box.position.y)
+		attr_cx.get_length(inherited_view_box.size.x),
+		attr_cy.get_length(inherited_view_box.size.y)
 	)
 	var radius_x = attr_rx.get_length(inherited_view_box.size.x)
 	var radius_y = attr_ry.get_length(inherited_view_box.size.y)
@@ -128,8 +128,8 @@ func _process_polygon():
 
 func _calculate_bounding_box():
 	var center = Vector2(
-		attr_cx.get_length(inherited_view_box.size.x, inherited_view_box.position.x),
-		attr_cy.get_length(inherited_view_box.size.y, inherited_view_box.position.y)
+		attr_cx.get_length(inherited_view_box.size.x),
+		attr_cy.get_length(inherited_view_box.size.y)
 	)
 	var radius_x = attr_rx.get_length(inherited_view_box.size.x)
 	var radius_y = attr_ry.get_length(inherited_view_box.size.y)

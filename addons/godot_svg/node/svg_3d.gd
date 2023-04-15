@@ -1,5 +1,5 @@
 tool
-extends Node2D
+extends Spatial
 
 #---------#
 # Signals #
@@ -38,7 +38,7 @@ var _disable_render_cache = false
 func _get_property_list():
 	return [
 		{
-			"name": "SVG2D",
+			"name": "SVG3D",
 			"type": TYPE_NIL,
 			"usage": PROPERTY_USAGE_CATEGORY,
 		},
@@ -171,11 +171,6 @@ var _is_ready: bool = false
 func _init():
 	_initialize_controller()
 
-func _notification(what):
-	if what == NOTIFICATION_PREDELETE:
-		if is_instance_valid(controller):
-			controller._predelete()
-
 func _ready():
 	_is_ready = true
 
@@ -214,7 +209,6 @@ func _initialize_controller():
 	
 	if old_controller != null:
 		old_controller._exit_tree()
-		old_controller._predelete()
 
 #----------------#
 # Editor Methods #

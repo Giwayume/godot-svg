@@ -22,8 +22,8 @@ func _init():
 
 func _process_polygon():
 	var position = Vector2(
-		attr_x.get_length(inherited_view_box.size.x, inherited_view_box.position.x),
-		attr_y.get_length(inherited_view_box.size.y, inherited_view_box.position.y)
+		attr_x.get_length(inherited_view_box.size.x),
+		attr_y.get_length(inherited_view_box.size.y)
 	)
 	
 	var width = 0
@@ -146,10 +146,9 @@ func _process_polygon():
 
 func _calculate_bounding_box():
 	var position = Vector2(
-		attr_x.get_length(inherited_view_box.size.x, inherited_view_box.position.x),
-		attr_y.get_length(inherited_view_box.size.y, inherited_view_box.position.y)
+		attr_x.get_length(inherited_view_box.size.x),
+		attr_y.get_length(inherited_view_box.size.y)
 	)
-	
 	var width = 0
 	if attr_width is SVGLengthPercentage:
 		width = attr_width.get_length(inherited_view_box.size.x)

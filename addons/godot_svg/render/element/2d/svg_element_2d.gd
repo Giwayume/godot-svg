@@ -61,7 +61,7 @@ func set_attribute(name: String, value):
 	if attr_name in controller:
 		controller[attr_name] = value
 
-func set_attibutes(attributes_definition: Dictionary):
+func set_attributes(attributes_definition: Dictionary):
 	for name in attributes_definition:
 		var attr_name = "attr_" + name
 		if attr_name in controller:

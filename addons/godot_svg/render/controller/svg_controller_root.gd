@@ -104,6 +104,7 @@ func _init(root_node: Node):
 
 func _enter_tree():
 	if is_editor_hint and editor_plugin != null:
+		print_debug("enter tree")
 		editor_plugin.connect("svg_resources_reimported", self, "_on_svg_resources_reimported")
 		editor_plugin.connect("editor_viewport_scale_changed", self, "_on_editor_viewport_scale_changed")
 	
@@ -122,6 +123,13 @@ func _process(_delta):
 		if not new_viewport_scale.is_equal_approx(last_known_viewport_scale):
 			emit_signal("viewport_scale_changed", new_viewport_scale)
 		last_known_viewport_scale = new_viewport_scale
+
+func _predelete():
+	if is_instance_valid(editor_plugin):
+		if editor_plugin.is_connected("svg_resources_reimported", self, "_on_svg_resources_reimported"):
+			editor_plugin.disconnect("svg_resources_reimported", self, "_on_svg_resources_reimported")
+		if editor_plugin.is_connected("editor_viewport_scale_changed", self, "_on_editor_viewport_scale_changed"):
+			editor_plugin.disconnect("editor_viewport_scale_changed", self, "_on_editor_viewport_scale_changed")
 
 #------------------#
 # Internal Methods #
@@ -174,7 +182,9 @@ func _generate_from_scratch_deferred():
 		if _global_stylesheet.size() > 0:
 			_apply_stylesheet_recursive([svg.viewport])
 		emit_signal("node_structure_generated")
-	root_node.update()
+	
+	if is_2d:
+		root_node.update()
 
 # Recursively generate the node/controller structure.
 func _generate_node_controller_structure(s_parent_node, s_children, s_render_props = {}):
@@ -183,6 +193,7 @@ func _generate_node_controller_structure(s_parent_node, s_children, s_render_pro
 			"children": s_children,
 			"child_evaluate_index": 0,
 			"parent_node": s_parent_node,
+			"parent_viewport_controller": null,
 			"render_props": s_render_props,
 		}
 	]
@@ -226,6 +237,7 @@ func _generate_node_controller_structure(s_parent_node, s_children, s_render_pro
 			controller.controlled_node = controlled_node
 			controller.root_controller = self
 			controller.parent_controller = parent_controller
+			controller.parent_viewport_controller = stack_frame.parent_viewport_controller
 			controller.element_resource = child
 			controller.node_text = child.text
 			controller.is_in_root_viewport = is_in_root_viewport
@@ -261,6 +273,9 @@ func _generate_node_controller_structure(s_parent_node, s_children, s_render_pro
 					"cache_id": controller.render_cache_id,
 					"inherited_props": child_inherited_props,
 				}
+				var new_parent_viewport_controller = stack_frame.parent_viewport_controller
+				if controller is SVGControllerViewport:
+					new_parent_viewport_controller = controller
 				if controller is SVGControllerViewport or controller.attr_mask != SVGValueConstant.NONE or controller.attr_clip_path != SVGValueConstant.NONE:
 					new_render_props.is_in_root_viewport = false
 				if controller is SVGControllerClipPath:
@@ -270,6 +285,7 @@ func _generate_node_controller_structure(s_parent_node, s_children, s_render_pro
 					"children": child.children,
 					"child_evaluate_index": 0,
 					"parent_node": controlled_node,
+					"parent_viewport_controller": new_parent_viewport_controller,
 					"render_props": new_render_props,
 				})
 				is_child_stack_completed = false
@@ -349,6 +365,7 @@ func _on_svg_resources_reimported(resource_names):
 	if svg != null:
 		if svg.resource_path in resource_names:
 			_set_svg(svg)
+			generate_from_scratch()
 
 # Path solve and triangulate in a thread (start the process)
 func _queue_process_polygon(polygon_definition: Dictionary):

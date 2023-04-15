@@ -194,8 +194,7 @@ func _process_polygon():
 #------------------#
 
 func _calculate_bounding_box():
-	# TODO
-	_bounding_box = Rect2(0, 0, 0, 0)
+	# TODO - currently only calculated during render.
 	emit_signal("bounding_box_calculated", _bounding_box)
 
 #-------------------#

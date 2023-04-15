@@ -11,7 +11,8 @@ signal distribute_inherited_properties(inherited_props)
 #-----------#
 
 const PathCommand = SVGValueConstant.PathCommand
-const SVGRenderBakedShader = preload("../shader/svg_render_baked_shader.tres")
+const SVGRenderBakedShader2D = preload("../shader/svg_render_baked_shader_2d.tres")
+const SVGRenderBakedShader3D = preload("../shader/svg_render_baked_shader_3d.tres")
 const SVGRenderFillShaderGles2 = preload("../shader/svg_render_fill_shader_gles2.tres")
 const SVGRenderFillShaderGles3 = preload("../shader/svg_render_fill_shader_gles3.tres")
 var SVGRenderFillShader = SVGRenderFillShaderGles2 if OS.get_current_video_driver() == OS.VIDEO_DRIVER_GLES2 else SVGRenderFillShaderGles3
@@ -34,6 +35,7 @@ var node_text: String = ""
 var render_cache_id: String = ""
 var root_controller = null # SVGControllerRoot instance
 var parent_controller = null setget _set_parent_controller # SVGControllerElement instance or null
+var parent_viewport_controller = null setget _set_parent_viewport_controller # SVGControllerViewport of viewport that affects current view_box
 
 var global_default_property_values = {
 	"id": null,
@@ -359,7 +361,7 @@ func _set_attr_tabindex(tabindex):
 
 func _set_attr_transform(new_transform):
 	new_transform = get_style("transform", new_transform)
-	attr_transform = SVGAttributeParser.parse_transform_list(new_transform)
+	attr_transform = SVGAttributeParser.parse_transform_list(new_transform, root_controller.is_2d)
 	controlled_node.transform = attr_transform
 	apply_props("transform")
 
@@ -380,7 +382,7 @@ func _set_controlled_node(new_controlled_node):
 
 func _set_element_resource(new_element_resource):
 	element_resource = new_element_resource
-	if element_resource != null:
+	if controlled_node != null and element_resource != null:
 		controlled_node.set_name(element_resource.node_name)
 
 func _set_parent_controller(new_parent_controller):
@@ -390,6 +392,9 @@ func _set_parent_controller(new_parent_controller):
 		old_parent_controller.disconnect("distribute_inherited_properties", self, "_on_inherited_properties_updated")
 	if parent_controller != null:
 		parent_controller.connect("distribute_inherited_properties", self, "_on_inherited_properties_updated")
+
+func _set_parent_viewport_controller(new_parent_viewport_controller):
+	parent_viewport_controller = new_parent_viewport_controller
 
 #---------------------#
 # Internal properties #
@@ -411,6 +416,7 @@ var _rerender_prop_cache = {} # Cache for certain computed values, such as fill 
 var _shape_fills = [] # List of MeshInstance2D nodes representing the fill of the path
 var _shape_strokes = [] # List of MeshInstance2D nodes representing the stroke of the path
 var _view_box_clip_container = null # Control node used to visibly clip children to view box rectangle for <svg> node.
+var _view_box_transform_container = null # Control node used to translate the x/y position of children nodes inside a view box.
 
 #-----------#
 # Lifecycle #
@@ -437,7 +443,8 @@ func _ready():
 	
 	if not is_renderable:
 		controlled_node.hide()
-		controlled_node.modulate = Color(1, 1, 1, 0)
+		if root_controller.is_2d:
+			controlled_node.modulate = Color(1, 1, 1, 0)
 	
 	if root_controller != null:
 		# Pull processed polygon from render cache, if applicable
@@ -448,6 +455,18 @@ func _ready():
 			root_controller.svg.render_cache.has("process_polygon") and
 			root_controller.svg.render_cache.process_polygon.has(render_cache_id)
 		):
+			var processed_polygon = root_controller.svg.render_cache.process_polygon[render_cache_id]
+			if processed_polygon != null and processed_polygon.has("interior_vertices"):
+				if root_controller.is_2d and not processed_polygon.interior_vertices is PoolVector2Array:
+					processed_polygon.interior_vertices = _convert_render_cache_vertices_to_vector2(processed_polygon.interior_vertices)
+					processed_polygon.quadratic_vertices = _convert_render_cache_vertices_to_vector2(processed_polygon.quadratic_vertices)
+					processed_polygon.cubic_vertices = _convert_render_cache_vertices_to_vector2(processed_polygon.cubic_vertices)
+					processed_polygon.antialias_edge_vertices = _convert_render_cache_vertices_to_vector2(processed_polygon.antialias_edge_vertices)
+				elif not root_controller.is_2d and not processed_polygon.interior_vertices is PoolVector3Array:
+					processed_polygon.interior_vertices = _convert_render_cache_vertices_to_vector3(processed_polygon.interior_vertices)
+					processed_polygon.quadratic_vertices = _convert_render_cache_vertices_to_vector3(processed_polygon.quadratic_vertices)
+					processed_polygon.cubic_vertices = _convert_render_cache_vertices_to_vector3(processed_polygon.cubic_vertices)
+					processed_polygon.antialias_edge_vertices = _convert_render_cache_vertices_to_vector3(processed_polygon.antialias_edge_vertices)
 			_rerender_prop_cache["processed_polygon"] = root_controller.svg.render_cache.process_polygon[render_cache_id]
 		
 		# Handle viewport scale change callbacks
@@ -494,7 +513,8 @@ func _apply_props_deferred():
 	var apply_props_notify_list = _apply_props_notify_list
 	_apply_props_notify_list = []
 	_props_applied(apply_props_notify_list)
-	controlled_node.update()
+	if root_controller.is_2d and controlled_node != null:
+		controlled_node.update()
 
 # The controller for specific shape should override this to provide an efficient implementation
 func _calculate_bounding_box():
@@ -517,11 +537,37 @@ func _canvas_group_opacity_mask_updated():
 				_baking_viewport.canvas_transform.origin += (-bounding_box.position) * scale_factor
 				_baking_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
 				
-				_baked_sprite.position = bounding_box.position
-				_baked_sprite.scale = Vector2(1.0, 1.0) / scale_factor
+				if root_controller.is_2d:
+					_baked_sprite.position = bounding_box.position
+				else:
+					_baked_sprite.translation = bounding_box.position
+				if root_controller.is_2d:
+					_baked_sprite.scale = Vector2(1.0, 1.0) / scale_factor
+				else:
+					_baked_sprite.scale = Vector3(1.0, 1.0, 1.0) / scale_factor
 				_baked_sprite.texture = null # Force sprite to resize
 				_baked_sprite.texture = _baking_viewport.get_texture()
 		_baked_sprite.self_modulate = Color(1, 1, 1, attr_opacity.get_length(1))
+
+func _convert_render_cache_vertices_to_vector3(array: PoolVector2Array) -> PoolVector3Array:
+	var new_array = PoolVector3Array()
+	var size = array.size()
+	new_array.resize(size)
+	var i = 0
+	for vector in array:
+		new_array[i] = SVGMath.to_3d_point(vector, false)
+		i += 1
+	return new_array
+
+func _convert_render_cache_vertices_to_vector2(array: PoolVector3Array) -> PoolVector2Array:
+	var new_array = PoolVector2Array()
+	var size = array.size()
+	new_array.resize(size)
+	var i = 0
+	for vector in array:
+		new_array[i] = SVGMath.to_2d_point(vector)
+		i += 1
+	return new_array
 
 # Accepts a triangulation result from SVGTriangulation.simplify_fill_path()
 # and generates a MeshInstance2D from it.
@@ -617,7 +663,10 @@ func _generate_shape_nodes(changed_prop_list: Array = []):
 		return
 	
 	if not is_canvas_group:
-		controlled_node.modulate = Color(1, 1, 1, attr_opacity.get_length(1))
+		if root_controller.is_2d:
+			controlled_node.modulate = Color(1, 1, 1, attr_opacity.get_length(1))
+		else:
+			pass # TODO - can group opacity be implemented in 3D?
 	
 	var fill_rule = attr_fill_rule
 	if is_in_clip_path:
@@ -675,23 +724,29 @@ func _generate_shape_nodes(changed_prop_list: Array = []):
 		_shape_fills = SVGHelper.array_slice(_shape_fills, 0, polygon_lists.size())
 		# Create new
 		for point_list_index in range(_shape_fills.size(), polygon_lists.size()):
-			var shape = MeshInstance2D.new()
+			var shape = MeshInstance2D.new() if root_controller.is_2d else MeshInstance.new()
 			add_child(shape)
 			_shape_fills.push_back(shape)
 		
 		var fill_index = 0
 		for _shape_fill in _shape_fills:
+			var material = _shape_fill.material if root_controller.is_2d else _shape_fill.material_override
 			if fill_index < polygon_lists.size():
 				_shape_fill.mesh = _create_mesh_from_triangulation(polygon_lists[fill_index])
-				_shape_fill.material = ShaderMaterial.new()
-				_shape_fill.material.shader = SVGRenderFillShader if root_controller.antialiased else SVGRenderFillShaderGles2
-			_shape_fill.material.set_shader_param("fill_color", fill_color)
-			_shape_fill.self_modulate = Color(1, 1, 1, max(0, min(1, attr_fill_opacity.get_length(1))))
-			if (
-				fill_texture != null and
-				fill_texture_units != null
-			):
-				_shape_fill.material.set_shader_param("fill_texture", fill_texture)
+				material = ShaderMaterial.new()
+				material.shader = SVGRenderFillShader if root_controller.antialiased else SVGRenderFillShaderGles2
+				if root_controller.is_2d:
+					_shape_fill.material = material
+				else:
+					_shape_fill.material_override = material
+			material.set_shader_param("fill_color", fill_color)
+			if root_controller.is_2d:
+				_shape_fill.self_modulate = Color(1, 1, 1, max(0, min(1, attr_fill_opacity.get_length(1))))
+			else:
+				pass # TODO - equivalent for 3D?
+			if fill_texture != null:
+				material.set_shader_param("fill_texture", fill_texture)
+			if fill_texture_uv_transform != null:
 				_update_shape_material_uv_params(_shape_fill, fill_texture_units, fill_texture_uv_transform, polygon_lists[fill_index])
 			SVGPaintServer.apply_shader_params(self, "fill", _shape_fill)
 			
@@ -712,34 +767,40 @@ func _generate_shape_nodes(changed_prop_list: Array = []):
 		_shape_strokes = SVGHelper.array_slice(_shape_strokes, 0, polygon_lists.size())
 		# Create new
 		for stroke_list_index in range(_shape_strokes.size(), polygon_lists.size()):
-			var shape = MeshInstance2D.new()
+			var shape = MeshInstance2D.new() if root_controller.is_2d else MeshInstance.new()
 			add_child(shape)
 			_shape_strokes.push_back(shape)
 		
 		var stroke_index = 0
 		for _shape_stroke in _shape_strokes:
+			var material = _shape_stroke.material if root_controller.is_2d else _shape_stroke.material_override
 			if stroke_index < polygon_lists.size():
 				_shape_stroke.mesh = _create_mesh_from_triangulation(polygon_lists[stroke_index])
-				_shape_stroke.material = ShaderMaterial.new()
-				_shape_stroke.material.shader = SVGRenderFillShader if root_controller.antialiased else SVGRenderFillShaderGles2
+				material = ShaderMaterial.new()
+				material.shader = SVGRenderFillShader if root_controller.antialiased else SVGRenderFillShaderGles2
+				if root_controller.is_2d:
+					_shape_stroke.material = material
+				else:
+					_shape_stroke.material_override = material
 			else:
 				_shape_stroke.mesh = null
-			_shape_stroke.material.set_shader_param("fill_color", stroke_color)
-			_shape_stroke.self_modulate = Color(1, 1, 1, max(0, min(1, attr_stroke_opacity.get_length(1))))
-			
-			if (
-				stroke_texture != null and
-				stroke_texture_units != null
-			):
-				_shape_stroke.material.set_shader_param("fill_texture", stroke_texture)
+			material.set_shader_param("fill_color", stroke_color)
+			if root_controller.is_2d:
+				_shape_stroke.self_modulate = Color(1, 1, 1, max(0, min(1, attr_stroke_opacity.get_length(1))))
+			else:
+				pass # TODO - equivalent for 3D?
+			if stroke_texture != null:
+				material.set_shader_param("fill_texture", stroke_texture)
+			if stroke_texture_uv_transform != null:
 				_update_shape_material_uv_params(_shape_stroke, stroke_texture_units, stroke_texture_uv_transform, polygon_lists[stroke_index])
 			SVGPaintServer.apply_shader_params(self, "stroke", _shape_stroke)
 			
-			var applied_stroke_width = stroke_width * scale_factor.x
-			if applied_stroke_width < 1:
-				_shape_stroke.modulate = Color(1, 1, 1, applied_stroke_width)
-			else:
-				_shape_stroke.modulate = Color(1, 1, 1, 1)
+			if root_controller.is_2d:
+				var applied_stroke_width = stroke_width * scale_factor.x
+				if applied_stroke_width < 1:
+					_shape_stroke.modulate = Color(1, 1, 1, applied_stroke_width)
+				else:
+					_shape_stroke.modulate = Color(1, 1, 1, 1)
 		
 			_shape_stroke.show()
 			stroke_index += 1
@@ -825,7 +886,8 @@ func _process_simplified_polygon():
 				simplified_fill,
 				simplified_holes[simplified_fill_index],
 				simplified_fill_clockwise_checks[simplified_fill_index],
-				root_controller.triangulation_method
+				root_controller.triangulation_method,
+				root_controller.is_2d
 			)
 			if (
 				fill_triangulation.interior_vertices.size() > 0 or
@@ -911,15 +973,22 @@ func _reorganize_baking_containers():
 		if _child_container != _baking_viewport:
 			var bounding_box = get_stroked_bounding_box()
 			if _baked_sprite == null:
-				_baked_sprite = Sprite.new()
-				_baked_sprite.centered = false
-				_baked_sprite.material = ShaderMaterial.new()
-				_baked_sprite.material.shader = SVGRenderBakedShader
-				_baked_sprite.position = bounding_box.position
+				if root_controller.is_2d:
+					_baked_sprite = Sprite.new()
+					_baked_sprite.centered = false
+					_baked_sprite.material = ShaderMaterial.new()
+					_baked_sprite.material.shader = SVGRenderBakedShader2D
+					_baked_sprite.position = bounding_box.position
+				else:
+					_baked_sprite = Sprite3D.new()
+					_baked_sprite.centered = false
+					_baked_sprite.material_override = ShaderMaterial.new()
+					_baked_sprite.material_override.shader = SVGRenderBakedShader3D
+					_baked_sprite.translation = bounding_box.position
 				call_deferred("_add_baked_sprite_as_child")
 			if _baking_viewport == null:
 				_baking_viewport = Viewport.new()
-				_baking_viewport.usage = Viewport.USAGE_2D_NO_SAMPLING
+				_baking_viewport.usage = Viewport.USAGE_2D_NO_SAMPLING if root_controller.is_2d else Viewport.USAGE_3D_NO_EFFECTS
 				_baking_viewport.transparent_bg = true
 				_baking_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
 				_baking_viewport.render_target_v_flip = true
@@ -928,7 +997,10 @@ func _reorganize_baking_containers():
 				call_deferred("_add_baking_viewport_as_child", bounding_box)
 			_swap_child_container(_baking_viewport)
 	elif is_clip_children_to_view_box:
-		if _child_container != _view_box_clip_container:
+		if _child_container != _view_box_transform_container:
+			var view_box = inherited_view_box
+			if "attr_view_box" in self and self.attr_view_box is Rect2:
+				view_box = self.attr_view_box
 			if _baked_sprite != null:
 				_baked_sprite.queue_free()
 				_baked_sprite = null
@@ -936,15 +1008,24 @@ func _reorganize_baking_containers():
 				_baking_viewport.queue_free()
 				_baking_viewport = null
 			if _view_box_clip_container == null:
-				var view_box = inherited_view_box
-				if "attr_view_box" in self and self.attr_view_box is Rect2:
-					view_box = self.attr_view_box
-				_view_box_clip_container = Control.new()
-				_view_box_clip_container.rect_position = Vector2()
-				_view_box_clip_container.rect_size = view_box.size
-				_view_box_clip_container.rect_clip_content = true
+				_view_box_clip_container = Control.new() if root_controller.is_2d else Spatial.new()
+				if root_controller.is_2d:
+					_view_box_clip_container.rect_position = Vector2()
+					_view_box_clip_container.rect_size = view_box.size
+					_view_box_clip_container.rect_clip_content = true
+				else:
+					pass # TODO - can we even clip in 3D?
 				controlled_node.add_child_to_root(_view_box_clip_container)
-			_swap_child_container(_view_box_clip_container)
+				_view_box_clip_container.name = node_name + "_viewbox_clip"
+			if _view_box_transform_container == null:
+				_view_box_transform_container = Node2D.new() if root_controller.is_2d else Spatial.new()
+				if root_controller.is_2d:
+					_view_box_transform_container.position = -view_box.position
+				else:
+					pass # TODO - which way are we orienting 3D nodes?
+				_view_box_clip_container.add_child(_view_box_transform_container)
+				_view_box_transform_container.name = node_name + "_viewbox_transform"	
+			_swap_child_container(_view_box_transform_container)
 	else:
 		if _child_container != controlled_node:
 			_swap_child_container(controlled_node)
@@ -957,7 +1038,9 @@ func _reorganize_baking_containers():
 			if _view_box_clip_container != null:
 				_view_box_clip_container.queue_free()
 				_view_box_clip_container = null
-
+			if _view_box_transform_container != null:
+				_view_box_transform_container.queue_free()
+				_view_box_transform_container = null
 
 # Used to switch between the node used to host a child nodes,
 # Such as when enabling/disabling baked raster rendering to a viewport
@@ -979,21 +1062,31 @@ func _swap_child_container(new_container):
 	_child_list = swapped_child_list
 	_child_container = new_container
 
+
 # Applies shader params to a MeshInstance2D for passing a UV coordinate transformation matrix
 func _update_shape_material_uv_params(shape_node, texture_units, texture_uv_transform, processed_polygon):
 	var uv_transform_scale = Vector2(1.0, 1.0)
 	var uv_transform_origin = Vector2(0.0, 0.0)
 	var transform = Transform2D()
-	if texture_units is Rect2:
+	if texture_units == null:
+		pass
+	elif texture_units is Rect2:
 		transform.origin = texture_units.position * (Vector2(1.0, 1.0) / processed_polygon.bounding_box.size) * uv_transform_scale
 		transform = transform.scaled(processed_polygon.bounding_box.size / texture_units.size)
 		texture_uv_transform.origin *= (Vector2(1.0, 1.0) / processed_polygon.bounding_box.size) * uv_transform_scale
+		transform *= texture_uv_transform
 	elif texture_units == SVGValueConstant.USER_SPACE_ON_USE:
-		transform.origin = (processed_polygon.bounding_box.position - inherited_view_box.position) / inherited_view_box.size
-		transform = transform.scaled(processed_polygon.bounding_box.size / inherited_view_box.size)
-	transform *= texture_uv_transform
-	shape_node.material.set_shader_param("uv_transform_column_1", Vector3(transform.x.x, transform.y.x, transform.origin.x))
-	shape_node.material.set_shader_param("uv_transform_column_2", Vector3(transform.x.y, transform.y.y, transform.origin.y))
+		var ellipse_ratio = Vector2(1.0, 1.0)
+		if processed_polygon.bounding_box.size.x > processed_polygon.bounding_box.size.y:
+			ellipse_ratio = Vector2(1.0, processed_polygon.bounding_box.size.y / processed_polygon.bounding_box.size.x)
+		else:
+			ellipse_ratio = Vector2(processed_polygon.bounding_box.size.x / processed_polygon.bounding_box.size.y, 1.0)
+
+		texture_uv_transform.origin *= ellipse_ratio / processed_polygon.bounding_box.size
+		transform *= texture_uv_transform.affine_inverse() * texture_uv_transform * texture_uv_transform.affine_inverse()
+	var material = shape_node.material if root_controller.is_2d else shape_node.material_override
+	# material.set_shader_param("uv_transform_column_1", Vector3(transform.x.x, transform.y.x, transform.origin.x))
+	# material.set_shader_param("uv_transform_column_2", Vector3(transform.x.y, transform.y.y, transform.origin.y))
 
 #------------------#
 # Signal callbacks #
@@ -1012,10 +1105,12 @@ func _on_inherited_properties_updated(inherited_props: Dictionary):
 
 func _on_visibility_changed():
 	if controlled_node.visible:
-		controlled_node.update()
+		if root_controller.is_2d:
+			controlled_node.update()
 
 func _on_viewport_scale_changed(new_viewport_scale):
-	controlled_node.update()
+	if root_controller.is_2d:
+		controlled_node.update()
 
 #----------------#
 # Public methods #
@@ -1047,14 +1142,17 @@ func get_root_scale_factor():
 		return controlled_node.global_scale * root_controller.fixed_scaling_ratio
 
 func get_scale_factor():
-	if (root_controller == null or root_controller.fixed_scaling_ratio == 0) and not is_in_root_viewport:
-		var viewport = controlled_node.get_viewport()
-		if viewport != null:
-			return viewport.canvas_transform.get_scale()
+	if root_controller.is_2d:
+		if (root_controller == null or root_controller.fixed_scaling_ratio == 0) and not is_in_root_viewport:
+			var viewport = controlled_node.get_viewport()
+			if viewport != null:
+				return viewport.canvas_transform.get_scale()
+			else:
+				return Vector2(1, 1)
 		else:
-			return Vector2(1, 1)
+			return get_root_scale_factor()
 	else:
-		return get_root_scale_factor()
+		return Vector3(1, 1, 1)
 
 func get_stroked_bounding_box():
 	var stroke_width = get_visible_stroke_width()
@@ -1129,3 +1227,9 @@ func set_applied_stylesheet_style(applied_stylesheet_style):
 			if "attr_" + attr_name in self:
 				self["attr_" + attr_name] = self["attr_" + attr_name]
 				apply_props(attr_name)
+
+func set_attributes(attributes_definition: Dictionary):
+	for name in attributes_definition:
+		var attr_name = "attr_" + name
+		if attr_name in self:
+			self[attr_name] = attributes_definition[name]

@@ -19,8 +19,8 @@ func _init():
 func _process_polygon():
 	var scale_factor = get_scale_factor()
 	var center = Vector2(
-		attr_cx.get_length(inherited_view_box.size.x, inherited_view_box.position.x),
-		attr_cy.get_length(inherited_view_box.size.y, inherited_view_box.position.y)
+		attr_cx.get_length(inherited_view_box.size.x),
+		attr_cy.get_length(inherited_view_box.size.y)
 	)
 	var radius = attr_r.get_length(inherited_view_box.size.x)
 	var circumference = 2 * PI * radius
@@ -125,8 +125,8 @@ func _process_polygon():
 
 func _calculate_bounding_box():
 	var center = Vector2(
-		attr_cx.get_length(inherited_view_box.size.x, inherited_view_box.position.x),
-		attr_cy.get_length(inherited_view_box.size.y, inherited_view_box.position.y)
+		attr_cx.get_length(inherited_view_box.size.x),
+		attr_cy.get_length(inherited_view_box.size.y)
 	)
 	var radius = attr_r.get_length(inherited_view_box.size.x)
 	_bounding_box = Rect2(

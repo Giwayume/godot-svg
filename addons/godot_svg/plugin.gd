@@ -29,6 +29,10 @@ func _enter_tree():
 	if ResourceLoader.exists("res://addons/godot_svg/node/svg_2d.png"):
 		svg_2d_icon = load("res://addons/godot_svg/node/svg_2d.png")
 	add_custom_type("SVG2D", "Node2D", preload("./node/svg_2d.gd"), svg_2d_icon)
+	# var svg_3d_icon = null
+	# if ResourceLoader.exists("res://addons/godot_svg/node/svg_3d.png"):
+	# 	svg_3d_icon = load("res://addons/godot_svg/node/svg_3d.png")
+	# add_custom_type("SVG3D", "Spatial", preload("./node/svg_3d.gd"), svg_3d_icon)
 	var svg_rect_icon = null
 	if ResourceLoader.exists("res://addons/godot_svg/node/svg_rect.png"):
 		svg_rect_icon = load("res://addons/godot_svg/node/svg_rect.png")
@@ -52,6 +56,7 @@ func _print_rec(node, level = 0):
 func _exit_tree():
 	remove_import_plugin(svg_import_plugin)
 	remove_custom_type("SVG2D")
+	# remove_custom_type("SVG3D")
 	remove_custom_type("SVGRect")
 	
 	get_editor_interface().get_resource_filesystem().disconnect("resources_reimported", self, "_on_resources_reimported")
