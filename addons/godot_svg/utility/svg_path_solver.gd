@@ -1,8 +1,8 @@
 class_name SVGPathSolver
 
-const PATH_SEGMENTATION_MIN = 5
-const PATH_SEGMENTATION_MAX = 1024
-const PATH_SEGMENTATION_SEGMENT_SIZE = 5.0
+const PATH_SEGMENTATION_MIN = 5 # minimum number of segments to break paths into (based on pixel resolution) for collision checking
+const PATH_SEGMENTATION_MAX = 1024 # maximum number of segments to break paths into (based on pixel resolution) for collision checking
+const PATH_SEGMENTATION_SEGMENT_SIZE = 5.0 # Minimum pixel length of a segment, representing collision for a curve
 const PathCommand = SVGValueConstant.PathCommand
 
 enum FillRule {

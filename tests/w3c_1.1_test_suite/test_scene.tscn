@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=2]
+[gd_scene load_steps=8 format=2]
 
 [ext_resource path="res://addons/godot_svg/node/svg_2d.gd" type="Script" id=1]
 [ext_resource path="res://tests/_test_scene_control.gd" type="Script" id=2]
@@ -6,6 +6,7 @@
 [ext_resource path="res://tests/w3c_1.1_test_suite/svg/pservers/pservers-grad-03-b.svg" type="Resource" id=4]
 [ext_resource path="res://tests/w3c_1.1_test_suite/svg/pservers/pservers-grad-02-b.svg" type="Resource" id=5]
 [ext_resource path="res://tests/w3c_1.1_test_suite/svg/custom/firefox_logo_2019.svg" type="Resource" id=6]
+[ext_resource path="res://tests/w3c_1.1_test_suite/svg/custom/color_interpolation_gradient_pure.svg" type="Resource" id=7]
 
 [node name="SVGTestScene" type="Node2D"]
 script = ExtResource( 2 )
@@ -18,7 +19,19 @@ current = true
 margin_right = 1066.0
 margin_bottom = 622.0
 
-[node name="SVG2D2" type="Node2D" parent="."]
+[node name="FirefoxSVG" type="Node2D" parent="."]
+position = Vector2( 486, 366 )
+scale = Vector2( 2, 2 )
+script = ExtResource( 1 )
+svg = ExtResource( 6 )
+fixed_scaling_ratio = 0
+antialiased = true
+triangulation_method = 0
+assume_no_self_intersections = false
+assume_no_holes = false
+disable_render_cache = false
+
+[node name="Gradient06SVG" type="Node2D" parent="."]
 script = ExtResource( 1 )
 svg = ExtResource( 3 )
 fixed_scaling_ratio = 0
@@ -28,7 +41,7 @@ assume_no_self_intersections = false
 assume_no_holes = false
 disable_render_cache = true
 
-[node name="SVG2D" type="Node2D" parent="."]
+[node name="PatternSVG" type="Node2D" parent="."]
 position = Vector2( 479, 1 )
 script = ExtResource( 1 )
 svg = ExtResource( 4 )
@@ -39,7 +52,7 @@ assume_no_self_intersections = false
 assume_no_holes = false
 disable_render_cache = false
 
-[node name="SVG2D3" type="Node2D" parent="."]
+[node name="Gradient02SVG" type="Node2D" parent="."]
 position = Vector2( 0, 362 )
 script = ExtResource( 1 )
 svg = ExtResource( 5 )
@@ -50,11 +63,11 @@ assume_no_self_intersections = false
 assume_no_holes = false
 disable_render_cache = false
 
-[node name="SVG2D4" type="Node2D" parent="."]
-position = Vector2( 486, 366 )
-scale = Vector2( 2, 2 )
+[node name="ColorInterpolationSVG" type="Node2D" parent="."]
+position = Vector2( 676, 361 )
+scale = Vector2( 0.6, 0.6 )
 script = ExtResource( 1 )
-svg = ExtResource( 6 )
+svg = ExtResource( 7 )
 fixed_scaling_ratio = 0
 antialiased = true
 triangulation_method = 0

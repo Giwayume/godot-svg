@@ -107,7 +107,22 @@ vec4 antialiased_edge(vec2 uv, vec4 color) {
 }
 
 vec4 linear_gradient(vec2 uv) {
-	return vec4(1.0, 1.0, 1.0, 1.0);
+	vec4 color = vec4(1.0, 1.0, 1.0, 1.0);
+	vec2 bearing = gradient_end_center - gradient_start_center;
+	float grad = dot(uv.xy - gradient_start_center, bearing) / dot(bearing, bearing);
+	if (gradient_repeat == 1) { // GradientTexture2D.REPEAT
+		color = sample_gradient(fract(grad));
+	} else if (gradient_repeat == 2) { // GradientTexture2D.REPEAT_MIRROR
+		bool is_mirror = mod(grad, 2.0) < 1.0;
+		if (is_mirror) {
+			color = sample_gradient(fract(grad));
+		} else {
+			color = sample_gradient(1.0 - fract(grad));
+		}
+	} else { // GradientTexture2D.REPEAT_NONE
+		color = sample_gradient(grad);
+	}
+	return color;
 }
 
 vec4 radial_gradient(vec2 uv) {
@@ -120,7 +135,7 @@ vec4 radial_gradient(vec2 uv) {
 	float radius = (gradient_end_radius.y - gradient_start_radius.y);
 	float start_radius_applied = gradient_start_radius.y;
 	float ellipse_ratio = 1.0;
-	vec2 container_aspect = vec2(gradient_end_radius.y / gradient_end_radius.x, 1.0);
+	vec2 container_aspect = vec2(1.0, gradient_end_radius.x / gradient_end_radius.y);
 	
 	vec2 axis = end_point - center;
 	float l2 = dot(axis, axis);
@@ -160,7 +175,7 @@ vec4 radial_gradient(vec2 uv) {
 		} else {
 			color = sample_gradient(1.0 - fract(grad));
 		}
-	} else {  // GradientTexture2D.REPEAT_NONE
+	} else { // GradientTexture2D.REPEAT_NONE
 		color = sample_gradient(grad);
 	}
 	return color;

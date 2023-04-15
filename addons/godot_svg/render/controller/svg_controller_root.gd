@@ -208,6 +208,7 @@ func _generate_node_controller_structure(s_parent_node, s_children, s_render_pro
 		var is_in_root_viewport = false
 		var is_in_clip_path = false
 		var inherited_props = {}
+		var is_cacheable = true
 		if not render_props.has("cache_id"):
 			render_props.cache_id = "0"
 		if render_props.has("view_box"):
@@ -218,7 +219,9 @@ func _generate_node_controller_structure(s_parent_node, s_children, s_render_pro
 			is_in_clip_path = render_props.is_in_clip_path
 		if render_props.has("inherited_props"):
 			inherited_props = render_props.inherited_props
-		
+		if render_props.has("is_cacheable"):
+			is_cacheable = render_props.is_cacheable
+	
 		var parent_controller = stack_frame.parent_node.controller if "controller" in stack_frame.parent_node and stack_frame.parent_node.controller is SVGControllerElement else null
 		
 		var is_child_stack_completed = true
@@ -242,6 +245,8 @@ func _generate_node_controller_structure(s_parent_node, s_children, s_render_pro
 			controller.is_in_root_viewport = is_in_root_viewport
 			controller.is_in_clip_path = is_in_clip_path
 			controller.render_cache_id = render_props.cache_id + "." + str(child_index)
+			if not is_cacheable:
+				controller.is_cacheable = false
 			if view_box == null:
 				controller.is_root_element = true
 			var assigned_attribute_names = controller.read_attributes_from_element_resource()
@@ -271,6 +276,7 @@ func _generate_node_controller_structure(s_parent_node, s_children, s_render_pro
 					"is_in_clip_path": is_in_clip_path,
 					"cache_id": controller.render_cache_id,
 					"inherited_props": child_inherited_props,
+					"is_cacheable": is_cacheable,
 				}
 				var new_parent_viewport_controller = stack_frame.parent_viewport_controller
 				if controller is SVGControllerViewport:

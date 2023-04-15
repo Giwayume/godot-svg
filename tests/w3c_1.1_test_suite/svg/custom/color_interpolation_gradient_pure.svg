@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="600" height="400" viewBox="0 0 600 400">
+
+  <defs>
+    <linearGradient id="gradientDefault" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="red"/>
+      <stop offset="1" stop-color="blue"/>
+    </linearGradient>
+    <linearGradient id="gradientSRGB" gradientUnits="objectBoundingBox" color-interpolation="sRGB">
+      <stop offset="0" stop-color="red"/>
+      <stop offset="1" stop-color="blue"/>
+    </linearGradient>
+    <linearGradient id="gradientLinearRGB" gradientUnits="objectBoundingBox" color-interpolation="linearRGB">
+      <stop offset="0" stop-color="red"/>
+      <stop offset="1" stop-color="blue"/>
+    </linearGradient>
+    <radialGradient id="rgradientDefault" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="red"/>
+      <stop offset="1" stop-color="blue"/>
+    </radialGradient>
+    <radialGradient id="rgradientSRGB" gradientUnits="objectBoundingBox" color-interpolation="sRGB">
+      <stop offset="0" stop-color="red"/>
+      <stop offset="1" stop-color="blue"/>
+    </radialGradient>
+    <radialGradient id="rgradientLinearRGB" gradientUnits="objectBoundingBox" color-interpolation="linearRGB">
+      <stop offset="0" stop-color="red"/>
+      <stop offset="1" stop-color="blue"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="600" height="400" fill="gray"/>
+  <rect x="50" y="10" width="500" height="40" fill="url(#gradientDefault)"/>
+  <rect x="50" y="70" width="500" height="40" fill="url(#gradientSRGB)"/>
+  <rect x="50" y="130" width="500" height="40" fill="url(#gradientLinearRGB)"/>
+  <rect x="50" y="200" width="150" height="150" fill="url(#rgradientDefault)"/>
+  <rect x="225" y="200" width="150" height="150" fill="url(#rgradientSRGB)"/>
+  <rect x="400" y="200" width="150" height="150" fill="url(#rgradientLinearRGB)"/>
+
+
+</svg>

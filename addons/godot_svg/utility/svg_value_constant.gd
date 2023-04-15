@@ -61,6 +61,9 @@ const SPLINE = "spline"
 const REPLACE = "replace"
 const SUM = "sum"
 
+const SRGB = "sRGB"
+const LINEAR_RGB = "linearRGB"
+
 enum PathCommand {
 	MOVE_TO,
 	LINE_TO,

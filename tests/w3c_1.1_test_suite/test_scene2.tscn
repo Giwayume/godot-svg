@@ -1,0 +1,26 @@
+[gd_scene load_steps=4 format=2]
+
+[ext_resource path="res://addons/godot_svg/node/svg_2d.gd" type="Script" id=1]
+[ext_resource path="res://tests/_test_scene_control.gd" type="Script" id=2]
+[ext_resource path="res://tests/w3c_1.1_test_suite/svg/custom/circle_with_stroke.svg" type="Resource" id=3]
+
+[node name="SVGTestScene" type="Node2D"]
+script = ExtResource( 2 )
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2( 511, 299 )
+current = true
+
+[node name="ColorRect" type="ColorRect" parent="."]
+margin_right = 1066.0
+margin_bottom = 622.0
+
+[node name="OutlineSVG" type="Node2D" parent="."]
+script = ExtResource( 1 )
+svg = ExtResource( 3 )
+fixed_scaling_ratio = 0
+antialiased = true
+triangulation_method = 0
+assume_no_self_intersections = false
+assume_no_holes = false
+disable_render_cache = true

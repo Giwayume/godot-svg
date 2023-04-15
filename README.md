@@ -236,7 +236,7 @@ There is a performance benefit to using basic shapes (`circle`, `ellipse`, `rect
 | clip-path | ![Status](./docs/supported_checkmark.png) Supported | Currently supported at the SVG1.1 spec |
 | clip-rule | ![Status](./docs/supported_checkmark.png) Supported | Currently supported at the SVG1.1 spec |
 | color | ![Status](./docs/partial_support_exclamation.png) Partial Support | Not fully tested |
-| color-interpolation | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
+| color-interpolation | ![Status](./docs/partial_support_exclamation.png) Partial Support | Linear interpolation is implemented on gradients. |
 | color-rendering | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | cursor | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |
 | display | ![Status](./docs/partial_support_exclamation.png) Not Yet Supported | |

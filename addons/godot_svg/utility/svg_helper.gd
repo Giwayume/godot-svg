@@ -63,3 +63,19 @@ static func get_point_list_bounds(points):
 		if point.y > bottom:
 			bottom = point.y
 	return Rect2(left, top, right - left, bottom - top)
+
+static func merge_bounding_boxes(bounding_boxes):
+	var left = INF
+	var right = -INF
+	var top = INF
+	var bottom = -INF
+	for bounding_box in bounding_boxes:
+		if bounding_box.position.x < left:
+			left = bounding_box.position.x
+		if bounding_box.position.x + bounding_box.size.x > right:
+			right = bounding_box.position.x + bounding_box.size.x
+		if bounding_box.position.y < top:
+			top = bounding_box.position.y
+		if bounding_box.position.y + bounding_box.size.y > bottom:
+			bottom = bounding_box.position.y + bounding_box.size.y
+	return Rect2(left, top, right - left, bottom - top)

@@ -4,125 +4,166 @@ const radial_gradient_shader = preload("../render/shader/svg_paint_radial_gradie
 const ELLIPSE_RATIO = 1.0
 const TILING = 1.0
 
-# Generates a radial gradient texture immediately on the CPU (blocks the main thread, slow)
-# First four arguments are defined in a range of 0-1 relative to texture_size
-static func generate_radial_gradient(
-	gradient: Gradient,
-	start_center: Vector2,
-	start_radius: float,
-	end_center: Vector2,
-	end_radius: float,
-	texture_size: Vector2,
-	repeat: int = 0
-) -> ImageTexture:
-	var width = int(texture_size.x)
-	var height = int(texture_size.y)
-	var data = PoolByteArray()
-	
-	var center = end_center * texture_size
-	var end_point = center + Vector2(end_radius * texture_size.x, 0.0)
-	var focus = start_center * texture_size
-	var axis = end_point - center
-	var l2 = axis.dot(axis)
-	var diff = focus - center
-	var radius = (end_radius - start_radius) * texture_size.x
-	var start_radius_applied = start_radius * texture_size.x
-	
-	for y in range(0, height):
-		for x in range(0, width):
-			var coord = Vector2(x, y)
-			
-			# Apply ellipse modifier
-			if l2 != 0.0:
-				var d = (coord - center).dot(axis) / l2
-				var proj = center + d * axis
-				coord = proj - (proj - coord) * ELLIPSE_RATIO
-				
-				var d2 = (focus - center).dot(axis) / l2
-				var proj2 = center + d2 * axis
-				focus = proj2 - (proj2 - focus) * ELLIPSE_RATIO
-			
-			# Apply focus modifier
-			var grad_length = 1.0
-			var ray_dir = (coord - focus).normalized()
-			var a = ray_dir.dot(ray_dir)
-			var b = 2.0 * ray_dir.dot(diff)
-			var c = diff.dot(diff) - (radius * radius)
-			var disc = (b * b) - (4.0 * a * c)
-			if disc >= 0.0 and a != 0:
-				var t = (-b + sqrt(abs(disc))) / (2.0 * a)
-				var projection = focus + ray_dir * t
-				grad_length = projection.distance_to(focus)
-			else:
-				pass # Gradient is undefined for this coordinate
-			
-			# Output
-			var grad = (coord.distance_to(focus) - start_radius_applied) / (grad_length * TILING)
-			var col
-			if repeat == GradientTexture2D.REPEAT:
-				col = gradient.interpolate(fposmod(grad, 1.0))
-			elif repeat == GradientTexture2D.REPEAT_MIRROR:
-				var is_mirror = fposmod(grad, 2.0) < 1.0
-				if is_mirror:
-					col = gradient.interpolate(fposmod(grad, 1.0))
-				else:
-					col = gradient.interpolate(1.0 - fposmod(grad, 1.0))
-			else: # GradientTexture2D.REPEAT_NONE
-				col = gradient.interpolate(grad)
-			
-			data.push_back(int(col.r * 255))
-			data.push_back(int(col.g * 255))
-			data.push_back(int(col.b * 255))
-			data.push_back(int(col.a * 255))
-			
-	var image = Image.new()
-	image.create_from_data(width, height, false, Image.FORMAT_RGBA8, data)
-	var texture = ImageTexture.new()
-	texture.create_from_image(image)
-	
-	return texture
+static func srgb_channel_to_linear_srgb_channel(value):
+    if value < 0.04045: return float(value) / 12.92
+    return pow((float(value) + 0.055) / 1.055, 2.4)
 
-# Generates a radial gradient on the GPU by using a viewport with a viewport texture.
-# Since this does not happen immediately, the shape may be invisible for a bit at first.
-static func generate_radial_gradient_server(
+static func linear_srgb_channel_to_srgb_channel(value):
+    if value <= 0: return 0.0
+    if value >= 1: return 1.0
+    if value < 0.0031308: return (float(value) * 12.92)
+    return (pow(float(value), 1 / 2.4) * 1.055 - 0.055)
+
+static func srgb_to_linear_srgb(color):
+	return Color(
+		srgb_channel_to_linear_srgb_channel(color.r),
+		srgb_channel_to_linear_srgb_channel(color.g),
+		srgb_channel_to_linear_srgb_channel(color.b),
+		color.a
+	)
+
+static func linear_srgb_to_srgb(color):
+	return Color(
+		linear_srgb_channel_to_srgb_channel(color.r),
+		linear_srgb_channel_to_srgb_channel(color.g),
+		linear_srgb_channel_to_srgb_channel(color.b),
+		color.a
+	)
+
+static func generate_gradient_texture_1d(
 	gradient: Gradient,
-	start_center: Vector2,
-	start_radius: float,
-	end_center: Vector2,
-	end_radius: float,
-	texture_size: Vector2,
-	repeat: int = 0
+	color_interpolation: String,
+	texture_repeat_mode: int,
+	width: int = 2048
+) -> ImageTexture:
+	var gradient_image = Image.new()
+	var data = PoolByteArray()
+	var offset_count = gradient.offsets.size()
+	var current_offset_index = -1
+	var current_offset = 0
+	var next_offset_index = 0
+	if offset_count > 1:
+		next_offset_index = current_offset_index + 1
+	var next_offset = gradient.offsets[next_offset_index]
+	var current_color = gradient.colors[0]
+	var next_color = gradient.colors[next_offset_index]
+	var color = Color()
+	if color_interpolation == SVGValueConstant.LINEAR_RGB:
+		current_color = srgb_to_linear_srgb(current_color)
+		next_color = srgb_to_linear_srgb(next_color)
+	for i in range(0, width):
+		var pixel_offset = float(i) / float(width)
+		if current_offset == next_offset:
+			color = current_color
+		else:
+			color = current_color.linear_interpolate(next_color, (pixel_offset - current_offset) / (next_offset - current_offset))
+		if color_interpolation == SVGValueConstant.LINEAR_RGB:
+			color = linear_srgb_to_srgb(color)
+		data.push_back(int(color.r * 255))
+		data.push_back(int(color.g * 255))
+		data.push_back(int(color.b * 255))
+		data.push_back(int(color.a * 255))
+		if pixel_offset > next_offset and current_offset_index < offset_count - 1:
+			current_offset_index += 1
+			if current_offset_index < offset_count - 1:
+				next_offset_index = current_offset_index + 1
+			current_offset = gradient.offsets[current_offset_index]
+			next_offset = gradient.offsets[next_offset_index]
+			current_color = gradient.colors[current_offset_index]
+			next_color = gradient.colors[next_offset_index]
+			if color_interpolation == SVGValueConstant.LINEAR_RGB:
+				current_color = srgb_to_linear_srgb(current_color)
+				next_color = srgb_to_linear_srgb(next_color)
+
+	gradient_image.create_from_data(width, 1, false, Image.FORMAT_RGBA8, data)
+	var gradient_texture = ImageTexture.new()
+	var flags = Texture.FLAG_MIPMAPS | Texture.FLAG_FILTER
+	if texture_repeat_mode == GradientTexture2D.REPEAT:
+		flags |= Texture.FLAG_REPEAT
+	elif texture_repeat_mode == GradientTexture2D.REPEAT_MIRROR:
+		flags |= Texture.FLAG_REPEAT | Texture.FLAG_MIRRORED_REPEAT
+	gradient_texture.create_from_image(gradient_image, flags)
+	return gradient_texture
+
+static func generate_linear_gradient_shader_params(
+	reference_controller,
+	params: Dictionary
 ) -> Dictionary:
-	var gradient_texture = GradientTexture.new()
-	gradient_texture.gradient = gradient
+	var gradient_controller = params.gradient_controller
+	var gradient_transform = params.gradient_transform
+	var inherited_view_box = reference_controller.inherited_view_box
+
+	var start_center
+	var end_center
+	var uv_position_in_container = Vector2(0.0, 0.0)
+	var uv_size_in_container = Vector2(1.0, 1.0)
+	var ellipse_ratio = Vector2(1.0, 1.0)
+
+	var uv_transform = Transform2D()
+
+	# OBJECT_BOUNDING_BOX
+	if gradient_controller.attr_gradient_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
+		start_center = gradient_transform.xform(Vector2(
+			gradient_controller.attr_x1.get_length(1),
+			gradient_controller.attr_y1.get_length(1)
+		))
+		end_center = gradient_transform.xform(Vector2(
+			gradient_controller.attr_x2.get_length(1),
+			gradient_controller.attr_y2.get_length(1)
+		))
 	
-	var viewport = Viewport.new()
-	viewport.size = texture_size
-	viewport.render_target_v_flip = true
-	viewport.hdr = false
-	viewport.usage = Viewport.USAGE_2D_NO_SAMPLING
-	viewport.transparent_bg = true
-	var gradient_rect = ColorRect.new()
-	gradient_rect.rect_position = Vector2()
-	gradient_rect.rect_size = texture_size
-	gradient_rect.material = ShaderMaterial.new()
-	gradient_rect.material.shader = radial_gradient_shader
-	gradient_rect.material.set_shader_param("gradient", gradient_texture)
-	gradient_rect.material.set_shader_param("start_center", start_center)
-	gradient_rect.material.set_shader_param("start_radius", start_radius)
-	gradient_rect.material.set_shader_param("end_center", end_center)
-	gradient_rect.material.set_shader_param("end_radius", end_radius)
-	gradient_rect.material.set_shader_param("texture_size", texture_size)
-	gradient_rect.material.set_shader_param("repeat", repeat)
-	viewport.add_child(gradient_rect)
-	viewport.update_worlds()
-	viewport.render_target_update_mode = Viewport.UPDATE_ONCE
-	var viewport_texture = viewport.get_texture()
-	viewport_texture.flags = Texture.FLAGS_DEFAULT
+	# USER_SPACE_ON_USE
+	else:
+		var bounding_box = reference_controller.get_bounding_box()
+
+		ellipse_ratio = Vector2(inherited_view_box.size.y / inherited_view_box.size.x, 1.0)
+
+		uv_transform *= gradient_transform.affine_inverse() * gradient_transform * gradient_transform.affine_inverse()
+		uv_transform.origin = Vector2(
+			(uv_transform.origin.x) / inherited_view_box.size.x,
+			(uv_transform.origin.y) / inherited_view_box.size.y
+		)
+
+		uv_size_in_container = Vector2(
+			bounding_box.size.x / inherited_view_box.size.x,
+			bounding_box.size.y / inherited_view_box.size.y
+		)
+		uv_position_in_container = Vector2(
+			(bounding_box.position.x / inherited_view_box.size.x),
+			(bounding_box.position.y / inherited_view_box.size.y)
+		)
+
+		start_center = Vector2(
+			SVGLengthPercentage.calculate_normalized_length(
+				gradient_controller.attr_x1.get_length(inherited_view_box.size.x),
+				inherited_view_box.size.x
+			),
+			SVGLengthPercentage.calculate_normalized_length(
+				gradient_controller.attr_y1.get_length(inherited_view_box.size.y),
+				inherited_view_box.size.y
+			)
+		)
+		end_center = Vector2(
+			SVGLengthPercentage.calculate_normalized_length(
+				gradient_controller.attr_x2.get_length(inherited_view_box.size.x),
+				inherited_view_box.size.x
+			),
+			SVGLengthPercentage.calculate_normalized_length(
+				gradient_controller.attr_y2.get_length(inherited_view_box.size.y),
+				inherited_view_box.size.y
+			)
+		)
+
 	return {
-		"texture_rect": gradient_rect,
-		"viewport": viewport,
-		"texture": viewport_texture,
+		"gradient_type": 1,
+		"gradient_start_center": start_center,
+		"gradient_end_center": end_center,
+		"gradient_repeat": params.gradient_repeat,
+		"gradient_texture": params.gradient_texture,
+		"uv_position_in_container": uv_position_in_container,
+		"uv_size_in_container": uv_size_in_container,
+		"uv_transform_column_1": Vector3(uv_transform.x.x, uv_transform.y.x, uv_transform.origin.x),
+		"uv_transform_column_2": Vector3(uv_transform.x.y, uv_transform.y.y, uv_transform.origin.y)
 	}
 
 static func generate_radial_gradient_shader_params(
@@ -181,11 +222,11 @@ static func generate_radial_gradient_shader_params(
 
 		start_center = Vector2(
 			SVGLengthPercentage.calculate_normalized_length(
-				gradient_controller.attr_cx.get_length(1.0),
+				gradient_controller.attr_cx.get_length(inherited_view_box.size.x),
 				inherited_view_box.size.x
 			),
 			SVGLengthPercentage.calculate_normalized_length(
-				gradient_controller.attr_cy.get_length(1.0),
+				gradient_controller.attr_cy.get_length(inherited_view_box.size.y),
 				inherited_view_box.size.y
 			)
 		)
@@ -193,21 +234,21 @@ static func generate_radial_gradient_shader_params(
 		var attr_fy = gradient_controller.attr_cy if gradient_controller.attr_fy is String else gradient_controller.attr_fy
 		end_center = Vector2(
 			SVGLengthPercentage.calculate_normalized_length(
-				attr_fx.get_length(1.0),
+				attr_fx.get_length(inherited_view_box.size.x),
 				inherited_view_box.size.x
 			),
 			SVGLengthPercentage.calculate_normalized_length(
-				attr_fy.get_length(1.0),
+				attr_fy.get_length(inherited_view_box.size.y),
 				inherited_view_box.size.y
 			)
 		)
 		start_radius = SVGLengthPercentage.calculate_normalized_length(
-			gradient_controller.attr_fr.get_length(1.0),
+			gradient_controller.attr_fr.get_length(inherited_view_box.size.x),
 			inherited_view_box.size.x
 		)
 		end_radius = SVGLengthPercentage.calculate_normalized_length(
-			gradient_controller.attr_r.get_length(1.0),
-			inherited_view_box.size.y	
+			gradient_controller.attr_r.get_length(inherited_view_box.size.y),
+			inherited_view_box.size.x
 		)
 
 	return {
@@ -309,13 +350,14 @@ static func resolve_paint(reference_controller, attr_paint, server_name: String)
 		"texture_units": null,
 		"texture_uv_transform": Transform2D(),
 	}
+
 	if attr_paint is SVGPaint:
 		if attr_paint.url != null:
 			var result = root_controller.resolve_url(attr_paint.url)
 			var controller = result.controller
 			if controller == null:
 				paint.color = attr_paint.color
-			
+						
 			# Gradient
 			elif controller.node_name == "linearGradient" or controller.node_name == "radialGradient":
 				controller = controller.resolve_href()
@@ -338,44 +380,69 @@ static func resolve_paint(reference_controller, attr_paint, server_name: String)
 					SVGValueConstant.REFLECT: GradientTexture2D.REPEAT_MIRROR,
 				}[controller.attr_spread_method]
 				paint.texture_units = controller.attr_gradient_units
+				var color_interpolation = controller.attr_color_interpolation
+				if color_interpolation == SVGValueConstant.AUTO:
+					color_interpolation = SVGValueConstant.SRGB
 
 				# Linear Gradient
 				if controller.node_name == "linearGradient":
-					free_paint_server_texture(reference_controller, server_name)
-					gradient_texture = GradientTexture2D.new()
-					gradient_texture.gradient = gradient
-					gradient_texture.fill = GradientTexture2D.FILL_LINEAR
-					gradient_texture.repeat = texture_repeat_mode
-					if controller.attr_gradient_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
-						gradient_texture.fill_from = gradient_transform.xform(Vector2(
-							controller.attr_x1.get_length(1),
-							controller.attr_y1.get_length(1)
-						))
-						gradient_texture.fill_to = gradient_transform.xform(Vector2(
-							controller.attr_x2.get_length(1),
-							controller.attr_y2.get_length(1)
-						))
-					else: # USER_SPACE_ON_USE
-						var transformed_fill_from = gradient_transform.xform(
-							Vector2(controller.attr_x1.get_length(1), controller.attr_y1.get_length(1))
-						)
-						gradient_texture.fill_from = Vector2(
-							SVGLengthPercentage.calculate_normalized_length(transformed_fill_from.x, inherited_view_box.size.x, inherited_view_box.position.x),
-							SVGLengthPercentage.calculate_normalized_length(transformed_fill_from.y, inherited_view_box.size.y, inherited_view_box.position.y)
-						)
-						var transformed_fill_to = gradient_transform.xform(
-							Vector2(controller.attr_x2.get_length(1), controller.attr_y2.get_length(1))
-						)
-						gradient_texture.fill_to = Vector2(
-							SVGLengthPercentage.calculate_normalized_length(transformed_fill_to.x, inherited_view_box.size.x, inherited_view_box.position.x),
-							SVGLengthPercentage.calculate_normalized_length(transformed_fill_to.y, inherited_view_box.size.y, inherited_view_box.position.y)
-						)
+					# free_paint_server_texture(reference_controller, server_name)
+					# gradient_texture = GradientTexture2D.new()
+					# gradient_texture.gradient = gradient
+					# gradient_texture.fill = GradientTexture2D.FILL_LINEAR
+					# gradient_texture.repeat = texture_repeat_mode
+					# if controller.attr_gradient_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
+					# 	gradient_texture.fill_from = gradient_transform.xform(Vector2(
+					# 		controller.attr_x1.get_length(1),
+					# 		controller.attr_y1.get_length(1)
+					# 	))
+					# 	gradient_texture.fill_to = gradient_transform.xform(Vector2(
+					# 		controller.attr_x2.get_length(1),
+					# 		controller.attr_y2.get_length(1)
+					# 	))
+					# else: # USER_SPACE_ON_USE
+					# 	var transformed_fill_from = gradient_transform.xform(
+					# 		Vector2(controller.attr_x1.get_length(1), controller.attr_y1.get_length(1))
+					# 	)
+					# 	gradient_texture.fill_from = Vector2(
+					# 		SVGLengthPercentage.calculate_normalized_length(transformed_fill_from.x, inherited_view_box.size.x, inherited_view_box.position.x),
+					# 		SVGLengthPercentage.calculate_normalized_length(transformed_fill_from.y, inherited_view_box.size.y, inherited_view_box.position.y)
+					# 	)
+					# 	var transformed_fill_to = gradient_transform.xform(
+					# 		Vector2(controller.attr_x2.get_length(1), controller.attr_y2.get_length(1))
+					# 	)
+					# 	gradient_texture.fill_to = Vector2(
+					# 		SVGLengthPercentage.calculate_normalized_length(transformed_fill_to.x, inherited_view_box.size.x, inherited_view_box.position.x),
+					# 		SVGLengthPercentage.calculate_normalized_length(transformed_fill_to.y, inherited_view_box.size.y, inherited_view_box.position.y)
+					# 	)
+					paint.texture_units = null
+					var gradient_texture_1d = generate_gradient_texture_1d(
+						gradient,
+						color_interpolation,
+						texture_repeat_mode
+					)
+
+					gradient_texture = store_paint_server_texture(reference_controller, server_name, {
+						"texture": null,
+						"generate_shader_params": {
+							"method": "generate_linear_gradient_shader_params",
+							"params": {
+								"gradient_controller": controller,
+								"gradient_transform": gradient_transform,
+								"gradient_repeat": texture_repeat_mode,
+								"gradient_texture": gradient_texture_1d
+							}
+						}
+					})
 				
 				# Radial Gradient
 				else:
 					paint.texture_units = null
-					var gradient_texture_param = GradientTexture.new()
-					gradient_texture_param.gradient = gradient
+					var gradient_texture_1d = generate_gradient_texture_1d(
+						gradient,
+						color_interpolation,
+						texture_repeat_mode
+					)
 					
 					gradient_texture = store_paint_server_texture(reference_controller, server_name, {
 						"texture": null,
@@ -385,7 +452,7 @@ static func resolve_paint(reference_controller, attr_paint, server_name: String)
 								"gradient_controller": controller,
 								"gradient_transform": gradient_transform,
 								"gradient_repeat": texture_repeat_mode,
-								"gradient_texture": gradient_texture_param
+								"gradient_texture": gradient_texture_1d
 							}
 						}
 					})
@@ -455,7 +522,12 @@ static func apply_shader_params(reference_controller, store_name: String, shape_
 		var server_response = reference_controller._paint_server_textures[store_name]
 		if server_response.has("generate_shader_params"):
 			var shader_params = {}
-			if server_response.generate_shader_params.method == "generate_radial_gradient_shader_params":
+			if server_response.generate_shader_params.method == "generate_linear_gradient_shader_params":
+				shader_params = generate_linear_gradient_shader_params(
+					reference_controller,
+					server_response.generate_shader_params.params
+				)
+			elif server_response.generate_shader_params.method == "generate_radial_gradient_shader_params":
 				shader_params = generate_radial_gradient_shader_params(
 					reference_controller,
 					server_response.generate_shader_params.params

@@ -24,6 +24,7 @@ var SVGRenderFillShader = SVGRenderFillShaderGles2 if OS.get_current_video_drive
 var controlled_node: Node setget _set_controlled_node # Node2D or Spatial controlled by this script
 var element_resource = null setget _set_element_resource # SVGResourceElement instance
 var inherited_view_box: Rect2 = Rect2(0, 0, 0, 0)
+var is_cacheable: bool = true
 var is_canvas_group: bool = false # Used for svg <g> tags, where opacity impacts entire group together
 var is_clip_children_to_view_box: bool # Uses control's rect_clip to limit visibility outside view box
 var is_in_root_viewport: bool = false
@@ -49,7 +50,7 @@ var global_default_property_values = {
 	"clip_path": SVGValueConstant.NONE,
 	"clip_rule": SVGValueConstant.NON_ZERO,
 	"color": null,
-	"color_interpolation": null,
+	"color_interpolation": SVGValueConstant.AUTO,
 	"color_rendering": null,
 	"cursor": null,
 	"display": "inline",
@@ -450,6 +451,7 @@ func _ready():
 		# Pull processed polygon from render cache, if applicable
 		if (
 			not root_controller.disable_render_cache and
+			is_cacheable and
 			root_controller.svg != null and
 			root_controller.svg.render_cache != null and
 			root_controller.svg.render_cache.has("process_polygon") and
@@ -467,7 +469,7 @@ func _ready():
 					processed_polygon.quadratic_vertices = _convert_render_cache_vertices_to_vector3(processed_polygon.quadratic_vertices)
 					processed_polygon.cubic_vertices = _convert_render_cache_vertices_to_vector3(processed_polygon.cubic_vertices)
 					processed_polygon.antialias_edge_vertices = _convert_render_cache_vertices_to_vector3(processed_polygon.antialias_edge_vertices)
-			_rerender_prop_cache["processed_polygon"] = root_controller.svg.render_cache.process_polygon[render_cache_id]
+			_rerender_prop_cache["processed_polygon"] = processed_polygon
 		
 		# Handle viewport scale change callbacks
 		root_controller.connect("viewport_scale_changed", self, "_on_viewport_scale_changed")
@@ -680,7 +682,7 @@ func _generate_shape_nodes(changed_prop_list: Array = []):
 	var processed_polygon = null
 	if will_fill or will_stroke:
 		
-		if _rerender_prop_cache.has("processed_polygon"):
+		if is_cacheable and _rerender_prop_cache.has("processed_polygon"):
 			processed_polygon = _rerender_prop_cache["processed_polygon"]
 		else:
 			if root_controller.is_editor_hint:
@@ -713,7 +715,6 @@ func _generate_shape_nodes(changed_prop_list: Array = []):
 			stroke_texture_uv_transform = stroke_paint.texture_uv_transform
 	
 	if will_fill:
-		var bounding_box = get_bounding_box()
 		var polygon_lists = processed_polygon.fill
 		
 		# Remove unused
@@ -727,6 +728,13 @@ func _generate_shape_nodes(changed_prop_list: Array = []):
 			var shape = MeshInstance2D.new() if root_controller.is_2d else MeshInstance.new()
 			add_child(shape)
 			_shape_fills.push_back(shape)
+		
+		if _bounding_box.size == Vector2.ZERO:
+			var bounding_boxes = []
+			for polygon_list in polygon_lists:
+				if (polygon_list.has("bounding_box")):
+					bounding_boxes.push_back(polygon_list.bounding_box)
+			_bounding_box = SVGHelper.merge_bounding_boxes(bounding_boxes)
 		
 		var fill_index = 0
 		for _shape_fill in _shape_fills:
@@ -905,7 +913,7 @@ func _process_simplified_polygon():
 		_rerender_prop_cache.erase("stroke")
 		_rerender_prop_cache.erase("fill")
 		is_recalculate_paint = true
-	_bounding_box = Rect2(bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top)
+	var bounding_box = Rect2(bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top)
 	if is_recalculate_paint:
 		needs_refill = true
 		needs_restroke = true
@@ -955,6 +963,7 @@ func _process_simplified_polygon():
 		"needs_refill": needs_refill,
 		"stroke": triangulated_strokes,
 		"needs_restroke": needs_restroke,
+		"bounding_box": bounding_box
 	}
 
 # The root_controller will call this with the result from _process_simplified_polygon from a thread

@@ -265,11 +265,18 @@ static func intersect_inside_path_corner(previous_points, current_points):
 			2: previous_shape = SVGPathSolver.PathSegment.new(previous_points[0], previous_points[1])
 			3: previous_shape = SVGPathSolver.PathQuadraticBezier.new(previous_points[0], previous_points[1], previous_points[2])
 			4: previous_shape = SVGPathSolver.PathCubicBezier.new(previous_points[0], previous_points[1], previous_points[2], previous_points[3])
+			_: previous_shape = SVGPathSolver.PathCubicBezier.new(
+				previous_points[previous_points.size() - 4],
+				previous_points[previous_points.size() - 3],
+				previous_points[previous_points.size() - 2],
+				previous_points[previous_points.size() - 1]
+			)
 		var current_shape = null
 		match current_points.size():
 			2: current_shape = SVGPathSolver.PathSegment.new(current_points[0], current_points[1])
 			3: current_shape = SVGPathSolver.PathQuadraticBezier.new(current_points[0], current_points[1], current_points[2])
 			4: current_shape = SVGPathSolver.PathCubicBezier.new(current_points[0], current_points[1], current_points[2], current_points[3])
+			_: current_shape = SVGPathSolver.PathCubicBezier.new(current_points[0], current_points[1], current_points[2], current_points[3])
 		var intersections = previous_shape.intersect_with(current_shape)
 		if intersections.size() > 0:
 			var winning_intersection = null
@@ -877,6 +884,7 @@ static func adaptive_offset_curve(curve_points, offset, recursion_count = 0):
 			var return_splits = []
 			return_splits.append_array(adaptive_offset_curve([curve_split[0], curve_split[1], curve_split[2], curve_split[3]], offset, recursion_count + 1))
 			return_splits.append_array(adaptive_offset_curve([curve_split[3], curve_split[4], curve_split[5], curve_split[6]], offset, recursion_count + 1))
+			return return_splits
 	return [segment1[1], segment1[2], segment2[0], segment2[1]]
 
 # Outlines a path with specified width and other line join attributes.

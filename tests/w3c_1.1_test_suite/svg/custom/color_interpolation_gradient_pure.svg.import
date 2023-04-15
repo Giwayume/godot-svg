@@ -1,0 +1,13 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+path="res://.import/color_interpolation_gradient_pure.svg-24483e3ea8996dd022a10fd2f4c525ac.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/custom/color_interpolation_gradient_pure.svg"
+dest_files=[ "res://.import/color_interpolation_gradient_pure.svg-24483e3ea8996dd022a10fd2f4c525ac.gdsvg" ]
+
+[params]
+

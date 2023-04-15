@@ -41,7 +41,7 @@ func _init():
 
 func _ready():
 	if controlled_node != null:
-		.add_child(_baking_viewport)
+		controlled_node.add_child(_baking_viewport)
 		controlled_node.hide()
 
 #----------------#
@@ -73,7 +73,16 @@ func resolve_href():
 				override_attributes[attribute_name] = self.get("attr_" + attribute_name)
 		if override_attributes.size() > 0:
 			resolved.set_attributes(override_attributes)
-		resolved.root_controller._generate_node_controller_structure(resolved._baking_viewport, resolved.element_resource.children)
+		resolved.root_controller._generate_node_controller_structure(
+			resolved._baking_viewport,
+			resolved.element_resource.children,
+			{
+				"view_box": inherited_view_box,
+				"cache_id": render_cache_id,
+				"is_in_root_viewport": is_in_root_viewport,
+				"is_in_clip_path": is_in_clip_path,
+			}
+		)
 	return resolved
 
 func update_as_user(user_view_box):
@@ -103,8 +112,8 @@ func update_as_user(user_view_box):
 		content_reference_x = x
 		content_reference_y = y
 	var scale_factor = Vector2(
-		width / content_reference_width,
-		height / content_reference_height
+		width / max(0.000000001, content_reference_width),
+		height / max(0.000000001, content_reference_height)
 	)
 	_baking_viewport.size = Vector2(width, height)
 	_baking_viewport.canvas_transform = Transform2D().scaled(scale_factor)
