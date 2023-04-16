@@ -2,12 +2,13 @@
 
 importer="giwayume.godotsvg"
 type="Resource"
-path="res://.import/struct-frag-04-t.svg-50acd8f0ae18c6cf537dd094f50190db.gdsvg"
+uid="uid://bckjrgekig2xv"
+path="res://.godot/imported/struct-frag-04-t.svg-50acd8f0ae18c6cf537dd094f50190db.gdsvg"
 
 [deps]
 
 source_file="res://tests/w3c_1.1_test_suite/svg/struct/struct-frag-04-t.svg"
-dest_files=[ "res://.import/struct-frag-04-t.svg-50acd8f0ae18c6cf537dd094f50190db.gdsvg" ]
+dest_files=["res://.godot/imported/struct-frag-04-t.svg-50acd8f0ae18c6cf537dd094f50190db.gdsvg"]
 
 [params]
 

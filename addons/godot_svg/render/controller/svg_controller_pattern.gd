@@ -7,23 +7,23 @@ const SVGElement3D = preload("../element/3d/svg_element_3d.gd")
 # Attributes #
 #------------#
 
-var attr_x = SVGLengthPercentage.new("0") setget _set_attr_x
-var attr_y = SVGLengthPercentage.new("0") setget _set_attr_y
-var attr_width = SVGLengthPercentage.new("0") setget _set_attr_width
-var attr_height = SVGLengthPercentage.new("0") setget _set_attr_height
-var attr_href = SVGValueConstant.NONE setget _set_attr_href
-var attr_xlink_href = SVGValueConstant.NONE setget _set_attr_xlink_href
-var attr_pattern_units = SVGValueConstant.OBJECT_BOUNDING_BOX setget _set_attr_pattern_units
-var attr_pattern_content_units = SVGValueConstant.USER_SPACE_ON_USE setget _set_attr_pattern_content_units
-var attr_pattern_transform = Transform2D() setget _set_attr_pattern_transform
+var attr_x = SVGLengthPercentage.new("0"): set = _set_attr_x
+var attr_y = SVGLengthPercentage.new("0"): set = _set_attr_y
+var attr_width = SVGLengthPercentage.new("0"): set = _set_attr_width
+var attr_height = SVGLengthPercentage.new("0"): set = _set_attr_height
+var attr_href = SVGValueConstant.NONE: set = _set_attr_href
+var attr_xlink_href = SVGValueConstant.NONE: set = _set_attr_xlink_href
+var attr_pattern_units = SVGValueConstant.OBJECT_BOUNDING_BOX: set = _set_attr_pattern_units
+var attr_pattern_content_units = SVGValueConstant.USER_SPACE_ON_USE: set = _set_attr_pattern_content_units
+var attr_pattern_transform = Transform2D(): set = _set_attr_pattern_transform
 var attr_preserve_aspect_ratio = {
 	"align": {
 		"x": SVGValueConstant.MID,
 		"y": SVGValueConstant.MID,
 	},
 	"meet_or_slice": SVGValueConstant.MEET,
-} setget _set_attr_preserve_aspect_ratio
-var attr_view_box = SVGValueConstant.NONE setget _set_attr_view_box
+}: set = _set_attr_preserve_aspect_ratio
+var attr_view_box = SVGValueConstant.NONE: set = _set_attr_view_box
 
 #-----------#
 # Lifecycle #
@@ -32,11 +32,9 @@ var attr_view_box = SVGValueConstant.NONE setget _set_attr_view_box
 func _init():
 	node_name = "pattern"
 	is_renderable = false
-	_baking_viewport = Viewport.new()
-	_baking_viewport.usage = Viewport.USAGE_2D_NO_SAMPLING
+	_baking_viewport = SubViewport.new()
 	_baking_viewport.transparent_bg = true
-	_baking_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
-	_baking_viewport.render_target_v_flip = true
+	_baking_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 	_baking_viewport.name = "baking_viewport"
 
 func _ready():
@@ -119,7 +117,7 @@ func update_as_user(user_view_box):
 	_baking_viewport.canvas_transform = Transform2D().scaled(scale_factor)
 	_baking_viewport.canvas_transform.origin += (-Vector2(content_reference_x, content_reference_y)) * scale_factor
 	_baking_viewport.update_worlds()
-	_baking_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
+	_baking_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 #-------------------#
 # Getters / Setters #

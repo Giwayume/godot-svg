@@ -4,19 +4,19 @@ extends "svg_controller_element.gd"
 # Attributes #
 #------------#
 
-var attr_x = SVGLengthPercentage.new("0") setget _set_attr_x
-var attr_y = SVGLengthPercentage.new("0") setget _set_attr_y
-var attr_width = SVGValueConstant.AUTO setget _set_attr_width
-var attr_height = SVGValueConstant.AUTO setget _set_attr_height
-var attr_href = SVGValueConstant.NONE setget _set_attr_href
-var attr_xlink_href = SVGValueConstant.NONE setget _set_attr_xlink_href
+var attr_x = SVGLengthPercentage.new("0"): set = _set_attr_x
+var attr_y = SVGLengthPercentage.new("0"): set = _set_attr_y
+var attr_width = SVGValueConstant.AUTO: set = _set_attr_width
+var attr_height = SVGValueConstant.AUTO: set = _set_attr_height
+var attr_href = SVGValueConstant.NONE: set = _set_attr_href
+var attr_xlink_href = SVGValueConstant.NONE: set = _set_attr_xlink_href
 var attr_preserve_aspect_ratio = {
 	"align": {
 		"x": SVGValueConstant.MID,
 		"y": SVGValueConstant.MID,
 	},
 	"meet_or_slice": SVGValueConstant.MEET,
-} setget _set_attr_preserve_aspect_ratio
+}: set = _set_attr_preserve_aspect_ratio
 var attr_crossorigin = ""
 
 #--------------------#
@@ -34,7 +34,7 @@ func _init():
 	node_name = "image"
 
 func _notification(what):
-	._notification(what)
+	super._notification(what)
 	if what == NOTIFICATION_PREDELETE:
 		if _control_frame != null:
 			if is_instance_valid(_control_frame):
@@ -46,7 +46,7 @@ func _notification(what):
 			_image_sprite = null
 
 func _props_applied(changed_props = []):
-	._props_applied(changed_props)
+	super._props_applied(changed_props)
 	
 	if attr_visibility == SVGValueConstant.VISIBLE and attr_href != SVGValueConstant.NONE:
 		controlled_node.show()
@@ -56,11 +56,11 @@ func _props_applied(changed_props = []):
 	
 	if _control_frame == null:
 		_control_frame = Control.new()
-		_control_frame.rect_clip_content = true
+		_control_frame.clip_contents = true
 		_control_frame.name = "ImageClipFrame"
 		add_child(_control_frame)
 	if _image_sprite == null:
-		_image_sprite = Sprite.new()
+		_image_sprite = Sprite2D.new()
 		_image_sprite.centered = false
 		_image_sprite.name = "Image"
 		_control_frame.add_child(_image_sprite)
@@ -82,7 +82,7 @@ func _props_applied(changed_props = []):
 	var x = attr_x.get_length(inherited_view_box.size.x)
 	var y = attr_y.get_length(inherited_view_box.size.y)
 
-	_control_frame.rect_position = Vector2(x, y)
+	_control_frame.position = Vector2(x, y)
 	
 	var texture_width = image_texture.get_width()
 	var texture_height = image_texture.get_height()
@@ -103,7 +103,7 @@ func _props_applied(changed_props = []):
 		controlled_node.hide()
 		return
 	
-	_control_frame.rect_size = Vector2(width, height)
+	_control_frame.size = Vector2(width, height)
 	
 	if typeof(attr_preserve_aspect_ratio) == TYPE_STRING:
 		if attr_preserve_aspect_ratio == SVGValueConstant.NONE:

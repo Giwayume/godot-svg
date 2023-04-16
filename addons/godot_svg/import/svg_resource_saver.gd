@@ -1,30 +1,29 @@
-tool
+@tool
 extends ResourceFormatSaver
 class_name SVGResourceFormatSaver
 
 const SVGResource = preload("../resource/svg_resource.gd")
 
-func get_recognized_extensions(resource: Resource) -> PoolStringArray:
-	return PoolStringArray(["gdsvg"])
+func _get_recognized_extensions(resource: Resource) -> PackedStringArray:
+	return PackedStringArray(["gdsvg"])
 
-func recognize(resource: Resource) -> bool:
+func _recognize(resource: Resource) -> bool:
 	resource = resource as SVGResource
 	if resource:
 		return true
 	return false
 
-func save(path: String, resource: Resource, flags: int) -> int:
-	
+func _save(resource: Resource, path: String, flags: int) -> Error:
 	# Save the XML string
-	var file: File = File.new()
-	var error = file.open(path, File.WRITE)
+	var file = FileAccess.open(path, FileAccess.WRITE)
+	var error = file.get_error()
 	if error != OK:
 		printerr('Can\'t write file: "%s"! code: %d.' % [path, error])
 		return error
 	file.store_string(
-		JSON.print({
+		JSON.stringify({
 			"xml": resource.xml,
-			"render_cache": var2str(resource.render_cache)
+			"render_cache": var_to_str(resource.render_cache)
 		})
 	)
 	file.close()

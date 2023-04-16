@@ -5,29 +5,29 @@ extends "svg_controller_element.gd"
 #------------#
 
 # Animation timing attributes
-var attr_begin = [SVGClockValue.new("0s")] setget _set_attr_begin
-var attr_dur = SVGValueConstant.INDEFINITE setget _set_attr_dur
-var attr_end = [] setget _set_attr_end
-var attr_min = SVGClockValue.new("0") setget _set_attr_min
-var attr_max = null setget _set_attr_max
-var attr_restart = SVGValueConstant.ALWAYS setget _set_attr_restart
-var attr_repeat_count = null setget _set_attr_repeat_count
-var attr_repeat_dur = null setget _set_attr_repeat_dur
+var attr_begin = [SVGClockValue.new("0s")]: set = _set_attr_begin
+var attr_dur = SVGValueConstant.INDEFINITE: set = _set_attr_dur
+var attr_end = []: set = _set_attr_end
+var attr_min = SVGClockValue.new("0"): set = _set_attr_min
+var attr_max = null: set = _set_attr_max
+var attr_restart = SVGValueConstant.ALWAYS: set = _set_attr_restart
+var attr_repeat_count = null: set = _set_attr_repeat_count
+var attr_repeat_dur = null: set = _set_attr_repeat_dur
 # var attr_fill is overloaded
 
 # Animation value attributes
-var attr_calc_mode = SVGValueConstant.LINEAR setget _set_attr_calc_mode
-var attr_values = [] setget _set_attr_values
-var attr_key_times = [] setget _set_attr_key_times
-var attr_key_splines = [] setget _set_attr_key_splines
-var attr_from = null setget _set_attr_from
-var attr_to = null setget _set_attr_to
-var attr_by = null setget _set_attr_by
+var attr_calc_mode = SVGValueConstant.LINEAR: set = _set_attr_calc_mode
+var attr_values = []: set = _set_attr_values
+var attr_key_times = []: set = _set_attr_key_times
+var attr_key_splines = []: set = _set_attr_key_splines
+var attr_from = null: set = _set_attr_from
+var attr_to = null: set = _set_attr_to
+var attr_by = null: set = _set_attr_by
 
 # Other animation attributes
-var attr_attribute_name = null setget _set_attr_attribute_name
-var attr_additive = SVGValueConstant.REPLACE setget _set_attr_additive
-var attr_accumulate = SVGValueConstant.NONE setget _set_attr_accumulate
+var attr_attribute_name = null: set = _set_attr_attribute_name
+var attr_additive = SVGValueConstant.REPLACE: set = _set_attr_additive
+var attr_accumulate = SVGValueConstant.NONE: set = _set_attr_accumulate
 
 #-----------#
 # Lifecycle #

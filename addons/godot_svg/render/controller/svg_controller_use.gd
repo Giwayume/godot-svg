@@ -11,18 +11,18 @@ const SVGElement3D = preload("../element/3d/svg_element_3d.gd")
 # Attributes #
 #------------#
 
-var attr_href = SVGValueConstant.NONE setget _set_attr_href
-var attr_xlink_href = SVGValueConstant.NONE setget _set_attr_xlink_href
-var attr_x = SVGLengthPercentage.new("0") setget _set_attr_x
-var attr_y = SVGLengthPercentage.new("0") setget _set_attr_y
-var attr_width = SVGLengthPercentage.new("0") setget _set_attr_width
-var attr_height = SVGLengthPercentage.new("0") setget _set_attr_height
+var attr_href = SVGValueConstant.NONE: set = _set_attr_href
+var attr_xlink_href = SVGValueConstant.NONE: set = _set_attr_xlink_href
+var attr_x = SVGLengthPercentage.new("0"): set = _set_attr_x
+var attr_y = SVGLengthPercentage.new("0"): set = _set_attr_y
+var attr_width = SVGLengthPercentage.new("0"): set = _set_attr_width
+var attr_height = SVGLengthPercentage.new("0"): set = _set_attr_height
 
 #---------------------#
 # Internal Properties #
 #---------------------#
 
-var _used_element_controller = null # Reference to the controller of the currently used element
+var _used_element_controller = null # RefCounted to the controller of the currently used element
 
 #-----------#
 # Lifecycle #
@@ -32,7 +32,7 @@ func _init():
 	node_name = "use"
 
 func _notification(what):
-	._notification(what)
+	super._notification(what)
 	if what == NOTIFICATION_PREDELETE:
 		if _used_element_controller != null:
 			if is_instance_valid(_used_element_controller.controlled_node):
@@ -50,7 +50,7 @@ func _props_applied(changed_props = []):
 		_used_element_controller = resolve_href()
 		if _used_element_controller != null:
 			root_controller._generate_node_controller_structure(controlled_node, _used_element_controller.element_resource.children)
-	._props_applied(changed_props)
+	super._props_applied(changed_props)
 
 #------------------#
 # Internal Methods #

@@ -1,10 +1,10 @@
 extends Resource
 class_name SVGResourceElement
 
-export(String) var node_name = ""
-export(String) var text = ""
-export(Dictionary) var attributes = {}
-export(Array, Resource) var children = []
+@export var node_name: String = ""
+@export var text: String = ""
+@export var attributes: Dictionary = {}
+@export var children: Array = [] # (Array, Resource)
 
 func get_class():
 	return "SVGResourceElement"

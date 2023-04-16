@@ -4,9 +4,9 @@ extends "svg_controller_element.gd"
 # Attributes #
 #------------#
 
-var attr_offset = SVGLengthPercentage.new("0") setget _set_attr_offset
-var attr_stop_color = Color(0, 0, 0, 1) setget _set_attr_stop_color
-var attr_stop_opacity = 1 setget _set_attr_stop_opacity
+var attr_offset = SVGLengthPercentage.new("0"): set = _set_attr_offset
+var attr_stop_color = Color(0, 0, 0, 1): set = _set_attr_stop_color
+var attr_stop_opacity = 1: set = _set_attr_stop_opacity
 
 #-----------#
 # Lifecycle #

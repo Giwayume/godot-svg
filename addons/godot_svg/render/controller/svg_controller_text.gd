@@ -4,13 +4,13 @@ extends "svg_controller_element.gd"
 # Attributes #
 #------------#
 
-var attr_x = SVGLengthPercentage.new("0") setget _set_attr_x
-var attr_y = SVGLengthPercentage.new("0") setget _set_attr_y
-var attr_dx = SVGValueConstant.NONE setget _set_attr_dx
-var attr_dy = SVGValueConstant.NONE setget _set_attr_dy
-var attr_rotate = SVGValueConstant.NONE setget _set_attr_rotate
-var attr_length_adjust = SVGValueConstant.SPACING setget _set_attr_length_adjust
-var attr_text_length = SVGValueConstant.NONE setget _set_attr_text_length
+var attr_x = SVGLengthPercentage.new("0"): set = _set_attr_x
+var attr_y = SVGLengthPercentage.new("0"): set = _set_attr_y
+var attr_dx = SVGValueConstant.NONE: set = _set_attr_dx
+var attr_dy = SVGValueConstant.NONE: set = _set_attr_dy
+var attr_rotate = SVGValueConstant.NONE: set = _set_attr_rotate
+var attr_length_adjust = SVGValueConstant.SPACING: set = _set_attr_length_adjust
+var attr_text_length = SVGValueConstant.NONE: set = _set_attr_text_length
 
 #------------------#
 # Internal Methods #

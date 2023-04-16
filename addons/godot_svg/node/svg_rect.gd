@@ -1,4 +1,4 @@
-tool
+@tool
 extends Control
 
 #-----------#
@@ -12,13 +12,13 @@ const SVG2D = preload("svg_2d.gd")
 # User Properties #
 #-----------------#
 
-var svg = null setget _set_svg, _get_svg
-var fixed_scaling_ratio = 0 setget _set_fixed_scaling_ratio, _get_fixed_scaling_ratio
-var antialiased = true setget _set_antialiased, _get_antialiased
-var triangulation_method = TriangulationMethod.DELAUNAY setget _set_triangulation_method, _get_triangulation_method
-var assume_no_self_intersections = false setget _set_assume_no_self_intersections, _get_assume_no_self_intersections
-var assume_no_holes = false setget _set_assume_no_holes, _get_assume_no_holes
-var disable_render_cache = false setget _set_disable_render_cache, _get_disable_render_cache
+var svg = null: get = _get_svg, set = _set_svg
+var fixed_scaling_ratio = 0: get = _get_fixed_scaling_ratio, set = _set_fixed_scaling_ratio
+var antialiased = true: get = _get_antialiased, set = _set_antialiased
+var triangulation_method = TriangulationMethod.DELAUNAY: get = _get_triangulation_method, set = _set_triangulation_method
+var assume_no_self_intersections = false: get = _get_assume_no_self_intersections, set = _set_assume_no_self_intersections
+var assume_no_holes = false: get = _get_assume_no_holes, set = _set_assume_no_holes
+var disable_render_cache = false: get = _get_disable_render_cache, set = _set_disable_render_cache
 
 var _svg = null
 var _fixed_scaling_ratio = 0
@@ -43,7 +43,7 @@ func _get_property_list():
 		},
 		{
 			"name": "fixed_scaling_ratio",
-			"type": TYPE_REAL,
+			"type": TYPE_FLOAT,
 		},
 		{
 			"name": "antialiased",
@@ -78,7 +78,7 @@ func _set_svg(svg):
 	if _svg_2d != null:
 		_svg_2d.svg = svg
 	_queue_size_svg()
-	update_configuration_warning()
+	update_configuration_warnings()
 
 func _get_svg():
 	return _svg
@@ -95,7 +95,7 @@ func _set_antialiased(antialiased):
 	_antialiased = antialiased
 	if _svg_2d != null:
 		_svg_2d.antialiased = antialiased
-		update_configuration_warning()
+		update_configuration_warnings()
 
 func _get_antialiased():
 	return _antialiased
@@ -136,7 +136,7 @@ func _get_disable_render_cache():
 # Internal Properties #
 #---------------------#
 
-var is_gles2 = OS.get_current_video_driver() == OS.VIDEO_DRIVER_GLES2
+var is_gles2 = false # OS.get_current_video_driver() == OS.VIDEO_DRIVER_GLES2
 
 var _svg_2d = null
 var _is_size_svg_queued = false
@@ -146,10 +146,10 @@ var _is_size_svg_queued = false
 #-----------#
 
 func _init():
-	rect_clip_content = true
+	clip_contents = true
 	_svg_2d = SVG2D.new()
-	_svg_2d.connect("controllers_created", self, "_size_svg")
-	.add_child(_svg_2d)
+	_svg_2d.connect("controllers_created", Callable(self, "_size_svg"))
+	super.add_child(_svg_2d)
 	_svg_2d.svg = _svg
 	_svg_2d.fixed_scaling_ratio = _fixed_scaling_ratio
 	_svg_2d.antialiased = _antialiased
@@ -181,8 +181,8 @@ func _size_svg():
 			if typeof(viewport_controller.attr_preserve_aspect_ratio) == TYPE_STRING:
 				if viewport_controller.attr_preserve_aspect_ratio == SVGValueConstant.NONE:
 					_svg_2d.scale = Vector2(
-						rect_size.x / view_box.size.x,
-						rect_size.y / view_box.size.y
+						size.x / view_box.size.x,
+						size.y / view_box.size.y
 					)
 			else:
 				var x_align_ratio = 0.0
@@ -196,38 +196,38 @@ func _size_svg():
 				elif viewport_controller.attr_preserve_aspect_ratio.align.y == SVGValueConstant.MAX:
 					y_align_ratio = 1.0
 				if viewport_controller.attr_preserve_aspect_ratio.meet_or_slice == SVGValueConstant.SLICE:
-					if (view_box.size.x / view_box.size.y) > (rect_size.x / rect_size.y):
-						var scale_y = rect_size.y / view_box.size.y
+					if (view_box.size.x / view_box.size.y) > (size.x / size.y):
+						var scale_y = size.y / view_box.size.y
 						_svg_2d.scale = Vector2(
 							scale_y,
 							scale_y
 						)
-						var leftover_space = rect_size.x - (view_box.size.x * _svg_2d.scale.x)
+						var leftover_space = size.x - (view_box.size.x * _svg_2d.scale.x)
 						_svg_2d.position = Vector2(x_align_ratio * leftover_space, 0.0)
 					else:
-						var scale_x = rect_size.x / view_box.size.x
+						var scale_x = size.x / view_box.size.x
 						_svg_2d.scale = Vector2(
 							scale_x,
 							scale_x
 						)
-						var leftover_space = rect_size.y - (view_box.size.y * _svg_2d.scale.y)
+						var leftover_space = size.y - (view_box.size.y * _svg_2d.scale.y)
 						_svg_2d.position = Vector2(0.0, y_align_ratio * leftover_space)
 				else: # MEET
-					if (view_box.size.x / view_box.size.y) > (rect_size.x / rect_size.y):
-						var scale_x = rect_size.x / view_box.size.x
+					if (view_box.size.x / view_box.size.y) > (size.x / size.y):
+						var scale_x = size.x / view_box.size.x
 						_svg_2d.scale = Vector2(
 							scale_x,
 							scale_x
 						)
-						var leftover_space = rect_size.y - (view_box.size.y * _svg_2d.scale.y)
+						var leftover_space = size.y - (view_box.size.y * _svg_2d.scale.y)
 						_svg_2d.position = Vector2(0.0, y_align_ratio * leftover_space)
 					else:
-						var scale_y = rect_size.y / view_box.size.y
+						var scale_y = size.y / view_box.size.y
 						_svg_2d.scale = Vector2(
 							scale_y,
 							scale_y
 						)
-						var leftover_space = rect_size.x - (view_box.size.x * _svg_2d.scale.x)
+						var leftover_space = size.x - (view_box.size.x * _svg_2d.scale.x)
 						_svg_2d.position = Vector2(x_align_ratio * leftover_space, 0.0)
 						
 
@@ -236,8 +236,8 @@ func _size_svg():
 #--------#
 
 func _get_configuration_warning():
-	if _svg is Texture:
-		return "You added an SVG file that is imported as \"Texture\". In the Import tab, choose \"Import As: SVG\" instead!"
+	if _svg is Texture2D:
+		return "You added an SVG file that is imported as \"Texture2D\". In the Import tab, choose \"Import As: SVG\" instead!"
 	elif _svg != null and not _svg is SVGResource:
 		return "You must import your SVG file as \"GodotSVG\" in the import settings!"
 	elif is_gles2 and _antialiased:
@@ -254,5 +254,5 @@ func get_element_by_id(id: String):
 func get_elements_by_name(name: String):
 	return _svg_2d.get_elements_by_name(name)
 
-func load_svg_from_buffer(buffer: PoolByteArray):
+func load_svg_from_buffer(buffer: PackedByteArray):
 	return _svg_2d.load_svg_from_buffer(buffer)

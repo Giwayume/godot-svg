@@ -1,4 +1,4 @@
-tool
+@tool
 extends Node2D
 
 #---------#
@@ -19,13 +19,13 @@ const TriangulationMethod = SVGValueConstant.TriangulationMethod
 # User properties #
 #-----------------#
 
-var svg = null setget _set_svg, _get_svg
-var fixed_scaling_ratio = 0 setget _set_fixed_scaling_ratio, _get_fixed_scaling_ratio
-var antialiased = true setget _set_antialiased, _get_antialiased
-var triangulation_method = TriangulationMethod.DELAUNAY setget _set_triangulation_method, _get_triangulation_method
-var assume_no_self_intersections = false setget _set_assume_no_self_intersections, _get_assume_no_self_intersections
-var assume_no_holes = false setget _set_assume_no_holes, _get_assume_no_holes
-var disable_render_cache = false setget _set_disable_render_cache, _get_disable_render_cache
+var svg = null: get = _get_svg, set = _set_svg
+var fixed_scaling_ratio = 0: get = _get_fixed_scaling_ratio, set = _set_fixed_scaling_ratio
+var antialiased = true: get = _get_antialiased, set = _set_antialiased
+var triangulation_method = TriangulationMethod.DELAUNAY: get = _get_triangulation_method, set = _set_triangulation_method
+var assume_no_self_intersections = false: get = _get_assume_no_self_intersections, set = _set_assume_no_self_intersections
+var assume_no_holes = false: get = _get_assume_no_holes, set = _set_assume_no_holes
+var disable_render_cache = false: get = _get_disable_render_cache, set = _set_disable_render_cache
 
 var _svg = null
 var _fixed_scaling_ratio = 0
@@ -50,7 +50,7 @@ func _get_property_list():
 		},
 		{
 			"name": "fixed_scaling_ratio",
-			"type": TYPE_REAL,
+			"type": TYPE_FLOAT,
 		},
 		{
 			"name": "antialiased",
@@ -84,7 +84,7 @@ func _set_svg(svg):
 	_svg = svg
 	controller.svg = svg
 	controller.generate_from_scratch()
-	update_configuration_warning()
+	update_configuration_warnings()
 
 func _get_svg():
 	return _svg
@@ -102,7 +102,7 @@ func _set_antialiased(antialiased):
 	if _antialiased != antialiased:
 		_antialiased = antialiased
 		controller.antialiased = antialiased
-		update_configuration_warning()
+		update_configuration_warnings()
 
 func _get_antialiased():
 	return _antialiased
@@ -181,16 +181,16 @@ func _ready():
 
 func _enter_tree():
 	if controller.is_editor_hint:
-		_editor_plugin = get_node("/root/EditorNode/GodotSVGEditorPlugin")
+		_editor_plugin = get_tree().get_root().find_child("GodotSVGEditorPlugin", true, false)
 		controller.editor_plugin = _editor_plugin
-		_editor_plugin.connect("svg_plugin_scripts_changed", self, "_on_svg_plugin_scripts_changed")
+		_editor_plugin.connect("svg_plugin_scripts_changed", Callable(self, "_on_svg_plugin_scripts_changed"))
 	controller._enter_tree()
 
 func _exit_tree():
 	controller._exit_tree()
 	
 	if _editor_plugin != null:
-		_editor_plugin.disconnect("svg_plugin_scripts_changed", self, "_on_svg_plugin_scripts_changed")
+		_editor_plugin.disconnect("svg_plugin_scripts_changed", Callable(self, "_on_svg_plugin_scripts_changed"))
 
 #func _process(delta):
 #	if controller != null and controller.has_method("_process"):
@@ -222,8 +222,8 @@ func _initialize_controller():
 
 func _get_configuration_warning():
 	if controller != null:
-		if controller.svg is Texture:
-			return "You added an SVG file that is imported as \"Texture\". In the Import tab, choose \"Import As: SVG\" instead!"
+		if controller.svg is Texture2D:
+			return "You added an SVG file that is imported as \"Texture2D\". In the Import tab, choose \"Import As: SVG\" instead!"
 		elif controller.svg != null and not controller.svg is SVGResource:
 			return "You must import your SVG file as \"SVG\" in the import settings!"
 		elif controller.is_gles2 and controller.antialiased:
@@ -254,5 +254,5 @@ func get_element_by_id(id: String):
 func get_elements_by_name(name: String):
 	return controller.get_elements_by_name(name)
 
-func load_svg_from_buffer(buffer: PoolByteArray):
+func load_svg_from_buffer(buffer: PackedByteArray):
 	return controller.load_svg_from_buffer(buffer)

@@ -58,7 +58,7 @@ static func parse_css_style(style):
 static func parse_css_color(attribute):
 	var color = null
 	var color_strings = attribute.split(" ", false)
-	color_strings.invert()
+	color_strings.reverse()
 	for color_string in color_strings:
 		var hex_color_regex = RegEx.new()
 		hex_color_regex.compile("^#[0-9abcdefABCDEF]{3,8}$")
@@ -158,15 +158,15 @@ static func parse_number_list(number_list_string):
 	return values
 
 static func parse_transform_list(transform_attr, is_2d = true):
-	var transform = Transform2D() if is_2d else Transform()
+	var transform = Transform2D() if is_2d else Transform3D()
 	if typeof(transform_attr) != TYPE_STRING:
 		transform = transform_attr
 	else:
 		if SVGValueConstant.NONE == transform_attr:
-			transform = Transform2D() if is_2d else Transform()
+			transform = Transform2D() if is_2d else Transform3D()
 		else:
 			var split = transform_attr.split(")", false)
-			var transform_matrix = Transform()
+			var transform_matrix = Transform3D()
 			for command_index in range(split.size() - 1, -1, -1):
 				var transform_command = split[command_index]
 				transform_command = transform_command.strip_edges()
@@ -181,14 +181,14 @@ static func parse_transform_list(transform_attr, is_2d = true):
 				elif transform_command.begins_with("rotate("):
 					var values = parse_number_list(transform_command.replace("rotate(", "").rstrip(")"))
 					if values.size() == 1:
-						transform_matrix = transform_matrix.rotated(Vector3(0, 0, 1), deg2rad(values[0]))
+						transform_matrix = transform_matrix.rotated(Vector3(0, 0, 1), deg_to_rad(values[0]))
 					elif values.size() == 3:
 						transform_matrix.origin -= Vector3(
 							values[1],
 							values[2],
 							0.0
 						)
-						transform_matrix = transform_matrix.rotated(Vector3(0, 0, 1), deg2rad(values[0]))
+						transform_matrix = transform_matrix.rotated(Vector3(0, 0, 1), deg_to_rad(values[0]))
 						transform_matrix.origin += Vector3(
 							values[1],
 							values[2],
@@ -197,11 +197,11 @@ static func parse_transform_list(transform_attr, is_2d = true):
 				elif transform_command.begins_with("rotate3d("):
 					var values = parse_number_list(transform_command.replace("rotate(", "").rstrip(")"))
 					if values.size() == 1:
-						transform_matrix = transform_matrix.rotated(Vector3(0, 0, 1), deg2rad(values[0]))
+						transform_matrix = transform_matrix.rotated(Vector3(0, 0, 1), deg_to_rad(values[0]))
 					elif values.size() == 3:
-						transform_matrix = transform_matrix.rotated(Vector3(1, 0, 0), deg2rad(values[0]))
-						transform_matrix = transform_matrix.rotated(Vector3(0, 1, 0), deg2rad(values[1]))
-						transform_matrix = transform_matrix.rotated(Vector3(0, 0, 1), deg2rad(values[2]))
+						transform_matrix = transform_matrix.rotated(Vector3(1, 0, 0), deg_to_rad(values[0]))
+						transform_matrix = transform_matrix.rotated(Vector3(0, 1, 0), deg_to_rad(values[1]))
+						transform_matrix = transform_matrix.rotated(Vector3(0, 0, 1), deg_to_rad(values[2]))
 				elif transform_command.begins_with("translate("):
 					var values = parse_number_list(transform_command.replace("translate(", "").rstrip(")"))
 					if values.size() >= 2:
@@ -226,12 +226,12 @@ static func parse_transform_list(transform_attr, is_2d = true):
 						))
 				elif transform_command.begins_with("skewX("):
 					var values = parse_number_list(transform_command.replace("skewX(", "").rstrip(")"))
-					transform_matrix.basis[1] += transform_matrix.basis[0] * tan(deg2rad(values[0]))
+					transform_matrix.basis[1] += transform_matrix.basis[0] * tan(deg_to_rad(values[0]))
 				elif transform_command.begins_with("skewY("):
 					var values = parse_number_list(transform_command.replace("skewY(", "").rstrip(")"))
-					transform_matrix.basis[3] += transform_matrix.basis[4] * tan(deg2rad(values[0]))
+					transform_matrix.basis[3] += transform_matrix.basis[4] * tan(deg_to_rad(values[0]))
 			
-			transform = Transform2D(transform_matrix) if is_2d else Transform(transform_matrix)
+			transform = Transform2D(transform_matrix) if is_2d else Transform3D(transform_matrix)
 	return transform
 
 static func relative_to_absolute_resource_url(relative_url, current_file_path):

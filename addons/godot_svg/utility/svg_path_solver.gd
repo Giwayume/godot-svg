@@ -55,7 +55,7 @@ class PathShape:
 			for j in range(0, other_segment_range):
 				var b0 = other_shape.segments[j]
 				var b1 = other_shape.segments[j + 1]
-				var intersection = Geometry.segment_intersects_segment_2d(a0, a1, b0, b1)
+				var intersection = Geometry2D.segment_intersects_segment(a0, a1, b0, b1)
 				if (
 					intersection != null and
 					((is_include_self_start_point and i == 0) or not intersection.is_equal_approx(a0)) and
@@ -85,7 +85,7 @@ class PathShape:
 				intersections[i].self_t == self_t and
 				intersections[i].other_t == other_t
 			):
-				intersections.remove(i)
+				intersections.remove_at(i)
 				break
 	
 	func find_self_intersections():
@@ -97,7 +97,7 @@ class PathShape:
 			for j in range(i + 1, self_segment_range):
 				var b0 = segments[j]
 				var b1 = segments[j + 1]
-				var intersection = Geometry.segment_intersects_segment_2d(a0, a1, b0, b1)
+				var intersection = Geometry2D.segment_intersects_segment(a0, a1, b0, b1)
 				if intersection != null and not intersection.is_equal_approx(a0) and not intersection.is_equal_approx(b0):
 					var new_intersection = {
 						"point": intersection,
@@ -184,7 +184,7 @@ class PathSegment extends PathShape:
 		return [p0, p1]
 	
 	func to_string():
-		return "segment(" + JSON.print(to_array()) + ")"
+		return "segment(" + JSON.stringify(to_array()) + ")"
 	
 	func get_inside_check_point(rotation_direction):
 		return (
@@ -259,7 +259,7 @@ class PathQuadraticBezier extends PathShape:
 		return [p0, p1, p2]
 	
 	func to_string():
-		return "quadratic(" + JSON.print(to_array()) + ")"
+		return "quadratic(" + JSON.stringify(to_array()) + ")"
 	
 	func get_inside_check_point(rotation_direction):
 		var inside_point = (
@@ -340,7 +340,7 @@ class PathCubicBezier extends PathShape:
 		return [p0, p1, p2, p3]
 	
 	func to_string():
-		return "cubic(" + JSON.print(to_array()) + ")"
+		return "cubic(" + JSON.stringify(to_array()) + ")"
 	
 	func get_inside_check_point(rotation_direction):
 		return (
@@ -822,7 +822,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 	
 	# Remove intersections that we have identified above to ignore.
 	intersection_indices_to_remove.sort()
-	intersection_indices_to_remove.invert()
+	intersection_indices_to_remove.reverse()
 	for index_to_remove in intersection_indices_to_remove:
 		var intersection_to_remove = intersections[index_to_remove]
 		for self_i in range(0, intersection_to_remove.intersected_shape_indices.size()):
@@ -837,7 +837,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 						self_shape_t,
 						other_shape_t
 					)
-		intersections.remove(index_to_remove)
+		intersections.remove_at(index_to_remove)
 	
 	# These arrays no longer needed.
 	intersection_indices_to_remove.clear()
@@ -1104,7 +1104,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 			is_insideness_even = true if even_votes >= 2 else false
 			is_insideness_non_zero = true if non_zero_votes >= 2 else false
 			
-		hit_shape_order.sort_custom(HitShapeUtility, "sort_hit_shape_order")
+		hit_shape_order.sort_custom(Callable(HitShapeUtility, "sort_hit_shape_order"))
 		hit_shape_order.pop_front()
 		
 		var is_filled = false

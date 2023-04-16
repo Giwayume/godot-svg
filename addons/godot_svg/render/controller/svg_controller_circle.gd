@@ -4,10 +4,10 @@ extends "svg_controller_element.gd"
 # Attributes #
 #------------#
 
-var attr_cx = SVGLengthPercentage.new("0") setget _set_attr_cx
-var attr_cy = SVGLengthPercentage.new("0") setget _set_attr_cy
-var attr_r = SVGLengthPercentage.new("0") setget _set_attr_r
-var attr_path_length = SVGValueConstant.NONE setget _set_attr_path_length
+var attr_cx = SVGLengthPercentage.new("0"): set = _set_attr_cx
+var attr_cy = SVGLengthPercentage.new("0"): set = _set_attr_cy
+var attr_r = SVGLengthPercentage.new("0"): set = _set_attr_r
+var attr_path_length = SVGValueConstant.NONE: set = _set_attr_path_length
 
 #-----------#
 # Lifecycle #

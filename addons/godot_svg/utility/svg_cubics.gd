@@ -29,7 +29,7 @@ class Matrix:
 	
 	func set_row(index, values):
 		if values is Matrix:
-			values = Matrix.rows[0]
+			values = values.rows[0]
 		if index < rows.size():
 			for i in values.size():
 				if i < rows[i].size():
@@ -55,7 +55,7 @@ class Matrix:
 	
 	func set_column(index, values):
 		if values is Matrix:
-			values = Matrix.rows[0]
+			values = values.rows[0]
 		for i in values.size():
 			if i < rows.size() and index < rows[i].size():
 				rows[i][index] = values[i]
@@ -77,7 +77,7 @@ class Matrix:
 		return rows[0].size()
 	
 	func set_diagonal(values):
-		for i in range(0, rows.count()):
+		for i in range(0, rows.size()):
 			rows[i][i] = values[i]
 		return self
 	
@@ -209,8 +209,8 @@ static func H(d: Array, t: float, s: float):
 	)
 
 static func evaluate_control_points(control_points: Array, is_2d: bool = true):
-	var vertices = PoolVector2Array() if is_2d else PoolVector3Array()
-	var implicit_coordinates = PoolVector3Array()
+	var vertices = PackedVector2Array() if is_2d else PackedVector3Array()
+	var implicit_coordinates = PackedVector3Array()
 	
 	var B = Matrix.new([
 		[0.0, 0.0, 1.0],

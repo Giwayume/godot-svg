@@ -1,8 +1,8 @@
 extends Resource
 class_name SVGPaint
 
-export(Color) var color = null
-export(String) var url = null
+var color = null # Color
+var url = null # String
 
 func _init(attribute: String):
 	if attribute.begins_with("url(") and attribute.ends_with(")"):

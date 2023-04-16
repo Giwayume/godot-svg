@@ -4,9 +4,9 @@ extends "svg_controller_element.gd"
 # Attributes #
 #------------#
 
-var attr_type = "text/css" setget _set_attr_type
-var attr_media = "all" setget _set_attr_media
-var attr_title = "none" setget _set_attr_title
+var attr_type = "text/css": set = _set_attr_type
+var attr_media = "all": set = _set_attr_media
+var attr_title = "none": set = _set_attr_title
 
 #-----------#
 # Lifecycle #
@@ -70,9 +70,9 @@ func get_stylesheet():
 								element_selector.id = element_rule.replace("#", "")
 								selector_weight += 100
 							elif element_rule.begins_with("."):
-								if element_selector.class == null:
-									element_selector.class = []
-								element_selector.class.push_back(element_rule.replace(".", ""))
+								if element_selector["class"] == null:
+									element_selector["class"] = []
+								element_selector["class"].push_back(element_rule.replace(".", ""))
 								selector_weight += 10
 							elif element_rule.begins_with(":"):
 								# TODO?

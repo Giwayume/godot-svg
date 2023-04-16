@@ -39,13 +39,13 @@ const SVGControllerUse = preload("svg_controller_use.gd")
 # User properties #
 #-----------------#
 
-var svg = null setget _set_svg
-var fixed_scaling_ratio = 0 setget _set_fixed_scaling_ratio
-var antialiased = true setget _set_antialiased
-var triangulation_method = TriangulationMethod.DELAUNAY setget _set_triangulation_method
-var assume_no_self_intersections = false setget _set_assume_no_self_intersections
-var assume_no_holes = false setget _set_assume_no_holes
-var disable_render_cache = false setget _set_disable_render_cache
+var svg = null: set = _set_svg
+var fixed_scaling_ratio = 0: set = _set_fixed_scaling_ratio
+var antialiased = true: set = _set_antialiased
+var triangulation_method = TriangulationMethod.DELAUNAY: set = _set_triangulation_method
+var assume_no_self_intersections = false: set = _set_assume_no_self_intersections
+var assume_no_holes = false: set = _set_assume_no_holes
+var disable_render_cache = false: set = _set_disable_render_cache
 
 func _set_svg(new_svg):
 	svg = new_svg
@@ -74,7 +74,7 @@ func _set_disable_render_cache(new_disable_render_cache):
 
 var editor_plugin = null # plugin.gd instance
 var is_editor_hint = false
-var is_gles2 = OS.get_current_video_driver() == OS.VIDEO_DRIVER_GLES2
+var is_gles2 = false # OS.get_current_video_driver() == OS.VIDEO_DRIVER_GLES2
 var is_2d = true
 var last_known_viewport_scale = Vector2(0.0, 0.0)
 var root_node = null # SVG2D, SVG3D, or SVGRect node
@@ -104,8 +104,8 @@ func _init(root_node: Node):
 
 func _enter_tree():
 	if is_editor_hint and editor_plugin != null:
-		editor_plugin.connect("svg_resources_reimported", self, "_on_svg_resources_reimported")
-		editor_plugin.connect("editor_viewport_scale_changed", self, "_on_editor_viewport_scale_changed")
+		editor_plugin.connect("svg_resources_reimported", Callable(self, "_on_svg_resources_reimported"))
+		editor_plugin.connect("editor_viewport_scale_changed", Callable(self, "_on_editor_viewport_scale_changed"))
 	
 	if last_known_viewport_scale.is_equal_approx(Vector2(0.0, 0.0)):
 		last_known_viewport_scale = root_node.get_viewport().canvas_transform.get_scale()
@@ -113,8 +113,8 @@ func _enter_tree():
 
 func _exit_tree():
 	if is_editor_hint and editor_plugin != null:
-		editor_plugin.disconnect("svg_resources_reimported", self, "_on_svg_resources_reimported")
-		editor_plugin.disconnect("editor_viewport_scale_changed", self, "_on_editor_viewport_scale_changed")
+		editor_plugin.disconnect("svg_resources_reimported", Callable(self, "_on_svg_resources_reimported"))
+		editor_plugin.disconnect("editor_viewport_scale_changed", Callable(self, "_on_editor_viewport_scale_changed"))
 
 func _process(_delta):
 	if not is_editor_hint and fixed_scaling_ratio == 0:
@@ -125,10 +125,10 @@ func _process(_delta):
 
 func _predelete():
 	if is_instance_valid(editor_plugin):
-		if editor_plugin.is_connected("svg_resources_reimported", self, "_on_svg_resources_reimported"):
-			editor_plugin.disconnect("svg_resources_reimported", self, "_on_svg_resources_reimported")
-		if editor_plugin.is_connected("editor_viewport_scale_changed", self, "_on_editor_viewport_scale_changed"):
-			editor_plugin.disconnect("editor_viewport_scale_changed", self, "_on_editor_viewport_scale_changed")
+		if editor_plugin.is_connected("svg_resources_reimported", Callable(self, "_on_svg_resources_reimported")):
+			editor_plugin.disconnect("svg_resources_reimported", Callable(self, "_on_svg_resources_reimported"))
+		if editor_plugin.is_connected("editor_viewport_scale_changed", Callable(self, "_on_editor_viewport_scale_changed")):
+			editor_plugin.disconnect("editor_viewport_scale_changed", Callable(self, "_on_editor_viewport_scale_changed"))
 
 #------------------#
 # Internal Methods #
@@ -183,7 +183,7 @@ func _generate_from_scratch_deferred():
 		emit_signal("node_structure_generated")
 	
 	if is_2d:
-		root_node.update()
+		root_node.queue_redraw()
 
 # Recursively generate the node/controller structure.
 func _generate_node_controller_structure(s_parent_node, s_children, s_render_props = {}):
@@ -333,9 +333,9 @@ func _apply_stylesheet_recursive(children, rule_state = null):
 							if element_selector.id != controller.attr_id:
 								is_all_matching = false
 								continue
-						if element_selector.class != null:
+						if element_selector["class"] != null:
 							var controller_classes = controller.attr_class.split(" ", false)
-							for classname in element_selector.class:
+							for classname in element_selector["class"]:
 								if not controller_classes.has(classname):
 									is_all_matching = false
 									continue
@@ -394,10 +394,10 @@ func _queue_process_polygon(polygon_definition: Dictionary):
 	# Start thread
 	if need_to_create_thread:
 		_process_polygon_thread = Thread.new()
-		_process_polygon_thread.start(self, "_process_polygon_thread", null, Thread.PRIORITY_LOW)
+		_process_polygon_thread.start(Callable(self, "_process_polygon_thread_method").bind(null), Thread.PRIORITY_LOW)
 
 # Path solve and triangulate in a thread (thread main logic)
-func _process_polygon_thread(_userdata):
+func _process_polygon_thread_method(_userdata):
 	var has_polygons_to_process = false
 	_polygons_to_process_mutex.lock()
 	has_polygons_to_process = _polygons_to_process.size() > 0
@@ -426,7 +426,7 @@ func _process_polygon_thread_end():
 		_process_polygon_thread = null
 	if _polygons_to_process.size() > 0:
 		_process_polygon_thread = Thread.new()
-		_process_polygon_thread.start(self, "_process_polygon_thread", null, Thread.PRIORITY_LOW)
+		_process_polygon_thread.start(Callable(self, "_process_polygon_thread").bind(null), Thread.PRIORITY_LOW)
 	else:
 		call_deferred("_process_polygon_end_notify")
 
@@ -503,7 +503,7 @@ func generate_from_scratch():
 		call_deferred("_generate_from_scratch_deferred")
 
 # Loads a SVG from a UTF8-encoded string buffer that contains the contents of the SVG document.
-func load_svg_from_buffer(buffer: PoolByteArray):
+func load_svg_from_buffer(buffer: PackedByteArray):
 	var svg_resource = SVGResource.new()
 	svg_resource = SVGResourceFormatLoader.new().load_svg_resource_from_buffer(svg_resource, buffer)
 	svg = svg_resource

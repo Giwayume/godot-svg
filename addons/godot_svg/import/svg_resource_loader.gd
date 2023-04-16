@@ -1,24 +1,24 @@
-tool
+@tool
 extends ResourceFormatLoader
 class_name SVGResourceFormatLoader
 
 const SVGResource = preload("../resource/svg_resource.gd")
 
-func get_recognized_extensions() -> PoolStringArray:
-	return PoolStringArray(["gdsvg"])
+func _get_recognized_extensions() -> PackedStringArray:
+	return PackedStringArray(["gdsvg"])
 
-func get_resource_type(path: String) -> String:
+func _get_resource_type(path: String) -> String:
 	var ext = path.get_extension().to_lower()
 	if ext == "gdsvg":
 		return "Resource"
 	return ""
 
-func handles_type(typename: String) -> bool:
+func _handles_type(typename: StringName) -> bool:
 	return ClassDB.is_parent_class(typename, "Resource")
 
-func load(path: String, original_path: String):
-	var file: File = File.new()
-	var error = file.open(path, File.READ)
+func _load(path: String, original_path: String, use_sub_threads: bool, cache_mode: int):
+	var file = FileAccess.open(path, FileAccess.READ)
+	var error = file.get_error()
 	if error != OK:
 		return error
 	
@@ -29,23 +29,25 @@ func load(path: String, original_path: String):
 	var xml_buffer = null
 	var render_cache = null
 	if file_text.begins_with("{"):
-		var parse_result = JSON.parse(file_text)
-		if parse_result.error == OK:
-			if parse_result.result.has("xml"):
-				xml_string = parse_result.result.xml
-			if parse_result.result.has("render_cache"):
-				render_cache = parse_result.result.render_cache
+		var test_json_conv = JSON.new()
+		var test_json_conv_error = test_json_conv.parse(file_text)
+		if test_json_conv_error == OK:
+			var parse_result = test_json_conv.data
+			if parse_result.has("xml"):
+				xml_string = parse_result.xml
+			if parse_result.has("render_cache"):
+				render_cache = parse_result.render_cache
 	else:
 		xml_string = file_text
 	
 	var svg_resource = SVGResource.new()
 	svg_resource.xml = xml_string
-	svg_resource.render_cache = null if render_cache == null else str2var(render_cache)
+	svg_resource.render_cache = null if render_cache == null else str_to_var(render_cache)
 	svg_resource.imported_path = path
 	
-	return load_svg_resource_from_buffer(svg_resource, xml_string.to_utf8())
+	return load_svg_resource_from_buffer(svg_resource, xml_string.to_utf8_buffer())
 
-func load_svg_resource_from_buffer(svg_resource, xml_string_buffer: PoolByteArray):
+func load_svg_resource_from_buffer(svg_resource, xml_string_buffer: PackedByteArray):
 	var parent_stack = [{
 		"resource": svg_resource,
 		"global_attributes": {},

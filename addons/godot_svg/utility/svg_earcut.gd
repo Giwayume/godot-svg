@@ -200,7 +200,7 @@ static func eliminate_holes(data, hole_indices, outer_node, is_outer_clockwise):
 			list.steiner = true
 		queue.push_back(get_leftmost(list))
 	
-	queue.sort_custom(Sorting, "compare_x")
+	queue.sort_custom(Callable(Sorting, "compare_x"))
 	
 	for i in range(0, queue.size()):
 		outer_node = eliminate_hole(queue[i], outer_node)
@@ -364,7 +364,7 @@ static func is_ear_hashed(ear, min_x, min_y, inv_size):
 
 static func intersects(p1, q1, p2, q2):
 	if p1 and q1 and p2 and q2:
-		return Geometry.segment_intersects_segment_2d(
+		return Geometry2D.segment_intersects_segment(
 			Vector2(p1.x, p1.y),
 			Vector2(p2.x, p2.y),
 			Vector2(q1.x, q1.y),

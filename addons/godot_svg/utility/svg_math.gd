@@ -26,9 +26,9 @@ static func split_bezier(points: Array, t0: float):
 # p0 - start, p1 - control, p2 - end, t - timestamp from 0 to 1
 # Excellent explanation here https://gamedev.stackexchange.com/questions/157642/moving-a-2d-object-along-circular-arc-between-two-points
 static func quadratic_bezier_at(p0: Vector2, p1: Vector2, p2: Vector2, t: float):
-	var q0 = p0.linear_interpolate(p1, t)
-	var q1 = p1.linear_interpolate(p2, t)
-	var r = q0.linear_interpolate(q1, t)
+	var q0 = p0.lerp(p1, t)
+	var q1 = p1.lerp(p2, t)
+	var r = q0.lerp(q1, t)
 	return r
 
 # Gets the length of the quadratic bezier curve
@@ -359,9 +359,9 @@ static func triangle_area(t):
 static func segment_intersects_triangle(s0: Vector2, s1: Vector2, t0: Array):
 	# TODO - doesn't account for segment inside of triangle
 	return (
-		Geometry.segment_intersects_segment_2d(s0, s1, t0[0], t0[1]) or
-		Geometry.segment_intersects_segment_2d(s0, s1, t0[1], t0[2]) or
-		Geometry.segment_intersects_segment_2d(s0, s1, t0[0], t0[2])
+		Geometry2D.segment_intersects_segment(s0, s1, t0[0], t0[1]) or
+		Geometry2D.segment_intersects_segment(s0, s1, t0[1], t0[2]) or
+		Geometry2D.segment_intersects_segment(s0, s1, t0[0], t0[2])
 	)
 
 static func to_3d_point(point: Vector2, is_2d: bool):
@@ -384,7 +384,7 @@ static func decompose_2d_transform(transform: Transform2D):
 	if ky != 0.0:
 		skewX = kz / ky
 	return {
-		"translation": transform.origin,
+		"position": transform.origin,
 		"rotation": atan2(transform.x.y, transform.x.x),
 		"scale": Vector2(kx, ky),
 		"skewX": skewX
@@ -395,7 +395,7 @@ static func recompose_2d_transform(decomposed: Dictionary):
 	transform = transform.rotated(
 		decomposed.rotation
 	)
-	transform.origin += decomposed.translation
+	transform.origin += decomposed.position
 	transform.x.y = tan(atan(transform.x.y) + decomposed.skewX)
 	return transform.scaled(
 		decomposed.scale

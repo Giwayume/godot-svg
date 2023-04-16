@@ -292,19 +292,19 @@ class RobustPredicates:
 		return hindex
 
 	static func orient2dadapt(ax, ay, bx, by, cx, cy, detsum):
-		var B = PoolRealArray()
+		var B = PackedFloat32Array()
 		for i in range(0, 4):
 			B.append(0)
-		var C1 = PoolRealArray()
+		var C1 = PackedFloat32Array()
 		for i in range(0, 8):
 			C1.append(0)
-		var C2 = PoolRealArray()
+		var C2 = PackedFloat32Array()
 		for i in range(0, 12):
 			C2.append(0)
-		var D = PoolRealArray()
+		var D = PackedFloat32Array()
 		for i in range(0, 16):
 			D.append(0)
-		var u = PoolRealArray()
+		var u = PackedFloat32Array()
 		for i in range(0, 4):
 			u.append(0)
 
@@ -385,82 +385,82 @@ class RobustPredicates:
 		return finlen
 
 	static func incircleadapt(ax, ay, bx, by, cx, cy, dx, dy, permanent):
-		var bc = PoolRealArray()
+		var bc = PackedFloat32Array()
 		for i in range(0, 4):
 			bc.append(0)
-		var ca = PoolRealArray()
+		var ca = PackedFloat32Array()
 		for i in range(0, 4):
 			ca.append(0)
-		var ab = PoolRealArray()
+		var ab = PackedFloat32Array()
 		for i in range(0, 4):
 			ab.append(0)
-		var aa = PoolRealArray()
+		var aa = PackedFloat32Array()
 		for i in range(0, 4):
 			aa.append(0)
-		var bb = PoolRealArray()
+		var bb = PackedFloat32Array()
 		for i in range(0, 4):
 			bb.append(0)
-		var cc = PoolRealArray()
+		var cc = PackedFloat32Array()
 		for i in range(0, 4):
 			cc.append(0)
-		var u = PoolRealArray()
+		var u = PackedFloat32Array()
 		for i in range(0, 4):
 			u.append(0)
-		var v = PoolRealArray()
+		var v = PackedFloat32Array()
 		for i in range(0, 4):
 			v.append(0)
-		var axtbc = PoolRealArray()
+		var axtbc = PackedFloat32Array()
 		for i in range(0, 8):
 			axtbc.append(0)
-		var aytbc = PoolRealArray()
+		var aytbc = PackedFloat32Array()
 		for i in range(0, 8):
 			aytbc.append(0)
-		var bxtca = PoolRealArray()
+		var bxtca = PackedFloat32Array()
 		for i in range(0, 8):
 			bxtca.append(0)
-		var bytca = PoolRealArray()
+		var bytca = PackedFloat32Array()
 		for i in range(0, 8):
 			bytca.append(0)
-		var cxtab = PoolRealArray()
+		var cxtab = PackedFloat32Array()
 		for i in range(0, 8):
 			cxtab.append(0)
-		var cytab = PoolRealArray()
+		var cytab = PackedFloat32Array()
 		for i in range(0, 8):
 			cytab.append(0)
-		var abt = PoolRealArray()
+		var abt = PackedFloat32Array()
 		for i in range(0, 8):
 			abt.append(0)
-		var bct = PoolRealArray()
+		var bct = PackedFloat32Array()
 		for i in range(0, 8):
 			bct.append(0)
-		var cat = PoolRealArray()
+		var cat = PackedFloat32Array()
 		for i in range(0, 8):
 			cat.append(0)
-		var abtt = PoolRealArray()
+		var abtt = PackedFloat32Array()
 		for i in range(0, 4):
 			abtt.append(0)
-		var bctt = PoolRealArray()
+		var bctt = PackedFloat32Array()
 		for i in range(0, 4):
 			bctt.append(0)
-		var catt = PoolRealArray()
+		var catt = PackedFloat32Array()
 		for i in range(0, 4):
 			catt.append(0)
 		
-		var _8 = PoolRealArray()
+		var _8 = PackedFloat32Array()
 		_8.resize(8)
-		var _16 = PoolRealArray()
+		var _16 = PackedFloat32Array()
 		_16.resize(16)
-		var _16b = PoolRealArray()
+		var _16b = PackedFloat32Array()
 		_16b.resize(16)
-		var _16c = PoolRealArray()
+		var _16c = PackedFloat32Array()
 		_16c.resize(16)
-		var _32 = PoolRealArray()
+		var _32 = PackedFloat32Array()
 		_32.resize(32)
-		var _32b = PoolRealArray()
+		var _32b = PackedFloat32Array()
 		_32b.resize(32)
-		var _48 = PoolRealArray()
+		var _48 = PackedFloat32Array()
 		_48.resize(48)
-		var _64 = PoolRealArray()
+		var _64 = PackedFloat32Array()
 		_64.resize(64)
 		
 		var fin = Array()
@@ -773,10 +773,10 @@ class RobustPredicates:
 # 
 # The original library code has been modified to fit the goals of this project.
 
-const EDGE_STACK = PoolIntArray()
 const WHILE_LOOP_MAX_ITERATIONS = 1000
 
 class Delaunator:
+	var _edge_stack = PackedInt32Array()
 	var coords
 	var _triangles
 	var _halfedges
@@ -798,7 +798,7 @@ class Delaunator:
 
 	static func from(points: Array):
 		var n = points.size()
-		var coords = PoolRealArray()
+		var coords = PackedFloat32Array()
 		coords.resize(n * 2)
 
 		for i in range(0, n):
@@ -808,8 +808,8 @@ class Delaunator:
 
 		return Delaunator.new(coords)
 
-	func _init(coords: PoolRealArray):
-		EDGE_STACK.resize(512)
+	func _init(coords: PackedFloat32Array):
+		_edge_stack.resize(512)
 		var n = coords.size() >> 1
 
 		self.coords = coords
@@ -817,30 +817,30 @@ class Delaunator:
 
 		# arrays that will store the triangulation graph
 		var max_triangles = max(2 * n - 5, 0)
-		_triangles = PoolIntArray()
+		_triangles = PackedInt32Array()
 		_triangles.resize(max_triangles * 3)
-		_halfedges = PoolIntArray()
+		_halfedges = PackedInt32Array()
 		_halfedges.resize(max_triangles * 3)
 
 		# temporary arrays for tracking the edges of the advancing convex hull
 		_hash_size = ceil(sqrt(n))
-		_hull_prev = PoolIntArray() # edge to prev edge
+		_hull_prev = PackedInt32Array() # edge to prev edge
 		for i in range(0, n):
 			_hull_prev.append(0)
-		_hull_next = PoolIntArray() # edge to next edge
+		_hull_next = PackedInt32Array() # edge to next edge
 		for i in range(0, n):
 			_hull_next.append(0)
-		_hull_tri = PoolIntArray() # edge to adjacent triangle
+		_hull_tri = PackedInt32Array() # edge to adjacent triangle
 		for i in range(0, n):
 			_hull_tri.append(0)
-		_hull_hash = PoolIntArray() # angular edge hash
+		_hull_hash = PackedInt32Array() # angular edge hash
 		for i in range(0, _hash_size):
 			_hull_hash.append(-1)
 
 		# temporary arrays for sorting points
-		_ids = PoolIntArray()
+		_ids = PackedInt32Array()
 		_ids.resize(n)
-		_dists = PoolRealArray()
+		_dists = PackedFloat32Array()
 		_dists.resize(n)
 
 		update()
@@ -930,8 +930,8 @@ class Delaunator:
 			_ids_qs = Array(_ids)
 			_dists_qs = Array(_dists)
 			quicksort(_ids_qs, _dists_qs, 0, n - 1)
-			_ids = PoolIntArray(_ids_qs)
-			var hull = PoolIntArray()
+			_ids = PackedInt32Array(_ids_qs)
+			var hull = PackedInt32Array()
 			hull.resize(n)
 			var j = 0
 			var d0 = -INF
@@ -942,8 +942,8 @@ class Delaunator:
 					j += 1
 					d0 = _dists[id]
 			hull = hull.resize(j)
-			triangles = PoolIntArray()
-			halfedges = PoolIntArray()
+			triangles = PackedInt32Array()
+			halfedges = PackedInt32Array()
 			return
 
 		# swap the order of the seed points for counter-clockwise orientation
@@ -969,7 +969,7 @@ class Delaunator:
 		_ids_qs = Array(_ids)
 		_dists_qs = Array(_dists)
 		quicksort(_ids_qs, _dists_qs, 0, n - 1)
-		_ids = PoolIntArray(_ids_qs)
+		_ids = PackedInt32Array(_ids_qs)
 		
 		# set up the seed triangle as the starting hull
 		_hull_start = i0
@@ -1099,7 +1099,7 @@ class Delaunator:
 			_hull_hash[_hash_key(x, y)] = i
 			_hull_hash[_hash_key(coords[2 * e], coords[2 * e + 1])] = e
 			
-		hull = PoolIntArray()
+		hull = PackedInt32Array()
 		hull.resize(hull_size)
 		var e = _hull_start
 		for i in range(0, hull_size):
@@ -1107,10 +1107,10 @@ class Delaunator:
 			e = _hull_next[e]
 
 		# trim typed triangle mesh arrays
-		triangles = PoolIntArray()
+		triangles = PackedInt32Array()
 		for i in range(0, triangles_len):
 			triangles.append(_triangles[i])
-		halfedges = PoolIntArray()
+		halfedges = PackedInt32Array()
 		for i in range(0, triangles_len):
 			halfedges.append(_halfedges[i])
 		
@@ -1154,7 +1154,7 @@ class Delaunator:
 				if i == 0:
 					break
 				i -= 1
-				a = EDGE_STACK[i]
+				a = _edge_stack[i]
 				continue
 
 			var b0 = b - b % 3
@@ -1201,15 +1201,15 @@ class Delaunator:
 				var br = b0 + (b + 1) % 3
 
 				# don't worry about hitting the cap: it can only happen on extremely degenerate input
-				if i < EDGE_STACK.size():
-					EDGE_STACK[i] = br
+				if i < _edge_stack.size():
+					_edge_stack[i] = br
 					i += 1
 			
 			else:
 				if i == 0:
 					break
 				i -= 1
-				a = EDGE_STACK[i]
+				a = _edge_stack[i]
 
 		return ar
 	
@@ -1395,7 +1395,7 @@ class Constrainautor:
 	
 	const U32NIL = pow(2, 31) - 1 # Max value of a Uint32Array: use as a sentinel for not yet defined 
 	var del: Delaunator
-	var vert_map: PoolIntArray
+	var vert_map: PackedInt32Array
 	var flips: BitSet
 	var consd: BitSet
 
@@ -1415,7 +1415,7 @@ class Constrainautor:
 		var num_edges = del.triangles.size()
 		
 		# Map every vertex id to the right-most edge that points to that vertex.
-		vert_map = PoolIntArray()
+		vert_map = PackedInt32Array()
 		for i in range(0, num_points):
 			vert_map.append(U32NIL)
 		# Keep track of edges flipped while constraining
@@ -1857,7 +1857,7 @@ class Constrainautor:
 			return false
 		if p1 == p3 or p1 == p4 or p2 == p3 or p2 == p4:
 			return false
-		var intersection = Geometry.segment_intersects_segment_2d(
+		var intersection = Geometry2D.segment_intersects_segment(
 			Vector2(del.coords[p1 * 2], del.coords[p1 * 2 + 1]),
 			Vector2(del.coords[p2 * 2], del.coords[p2 * 2 + 1]),
 			Vector2(del.coords[p3 * 2], del.coords[p3 * 2 + 1]),
@@ -1933,7 +1933,7 @@ static func delaunay_polygon_2d(points: Array, hole_indices = []):
 		constrainautor.constrain_one(edge[0], edge[1])
 	
 	# Calculate fill rule per triangle
-	var triangles = PoolIntArray()
+	var triangles = PackedInt32Array()
 	var coords = delaunay.coords
 	var _triangles = delaunay.triangles
 	var n = coords.size() >> 1
@@ -1943,13 +1943,13 @@ static func delaunay_polygon_2d(points: Array, hole_indices = []):
 		if hole_indices.find(i + 1) == -1:
 			var pos_a = Vector2(coords[i * 2], coords[i * 2 + 1])
 			var pos_b = Vector2(coords[(i + 1) * 2], coords[(i + 1) * 2 + 1])
-			var segment = PoolVector2Array([
+			var segment = PackedVector2Array([
 				pos_a,
 				pos_b,
 				Vector2(min(pos_a.x, pos_b.x), max(pos_a.x, pos_b.x))
 			])
 			all_collision_segments.push_back(segment)
-	all_collision_segments.sort_custom(DelaunaySorting, "sort_x")
+	all_collision_segments.sort_custom(Callable(DelaunaySorting, "sort_x"))
 	
 	for i in range(0, _triangles.size(), 3):
 		var is_fill = true
@@ -1971,7 +1971,7 @@ static func delaunay_polygon_2d(points: Array, hole_indices = []):
 				check_point.x,
 				min(segment_start.y, segment_end.y) - 1
 			)
-			if Geometry.segment_intersects_segment_2d(check_point, check_end_point, segment_start, segment_end):
+			if Geometry2D.segment_intersects_segment(check_point, check_end_point, segment_start, segment_end):
 				if segment_start.x < segment_end.x:
 					insideness += 1
 				else:

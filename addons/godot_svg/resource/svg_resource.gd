@@ -1,10 +1,10 @@
 extends Resource
 class_name SVGResource
 
-export(Resource) var viewport = null setget _set_viewport
-export(String, MULTILINE) var xml = null setget _set_xml
-export(Dictionary) var render_cache = null setget _set_render_cache
-export(String) var imported_path = null setget _set_imported_path
+@export var viewport: Resource: set = _set_viewport
+@export var xml: String: set = _set_xml
+@export var render_cache: Dictionary: set = _set_render_cache
+@export var imported_path: String: set = _set_imported_path
 
 var node_name = "root"
 

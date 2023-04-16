@@ -4,12 +4,12 @@ extends "svg_controller_element.gd"
 # Attributes #
 #------------#
 
-var attr_height = SVGLengthPercentage.new("120%") setget _set_attr_height
-var attr_mask_content_units = SVGValueConstant.USER_SPACE_ON_USE setget _set_attr_mask_content_units
-var attr_mask_units = SVGValueConstant.OBJECT_BOUNDING_BOX setget _set_attr_mask_units
-var attr_x = SVGLengthPercentage.new("-10%") setget _set_attr_x
-var attr_y = SVGLengthPercentage.new("-10%") setget _set_attr_y
-var attr_width = SVGLengthPercentage.new("120%") setget _set_attr_width
+var attr_height = SVGLengthPercentage.new("120%"): set = _set_attr_height
+var attr_mask_content_units = SVGValueConstant.USER_SPACE_ON_USE: set = _set_attr_mask_content_units
+var attr_mask_units = SVGValueConstant.OBJECT_BOUNDING_BOX: set = _set_attr_mask_units
+var attr_x = SVGLengthPercentage.new("-10%"): set = _set_attr_x
+var attr_y = SVGLengthPercentage.new("-10%"): set = _set_attr_y
+var attr_width = SVGLengthPercentage.new("120%"): set = _set_attr_width
 
 #---------------------#
 # Internal Properties #
@@ -28,15 +28,13 @@ var _current_mask_tick_count = 0
 func _init():
 	node_name = "mask"
 	is_renderable = false
-	_mask_viewport = Viewport.new()
-	_mask_viewport.usage = Viewport.USAGE_2D_NO_SAMPLING
-	_mask_viewport.render_target_update_mode = Viewport.UPDATE_DISABLED
-	_mask_viewport.render_target_v_flip = true
+	_mask_viewport = SubViewport.new()
+	_mask_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	_mask_viewport.name = "mask_viewport"
 	_mask_background = ColorRect.new()
 	_mask_background.color = Color(0, 0, 0, 1)
 	_mask_viewport.add_child(_mask_background)
-	.add_child(_mask_viewport)
+	super.add_child(_mask_viewport)
 
 func _process(_delta):
 	if _current_mask_update_target != null:
@@ -55,14 +53,14 @@ func _on_mask_draw_deferred():
 		_current_mask_tick_count = 0
 		_prepare_viewport_for_draw()
 	else:
-		_mask_viewport.render_target_update_mode = Viewport.UPDATE_DISABLED
+		_mask_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 		_current_mask_update_target = null
 
 func _prepare_viewport_for_draw():
 	if _mask_viewport != null:
 		if _current_mask_update_target != null:
 			var scale_factor = _current_mask_update_target.get_root_scale_factor()
-			_mask_viewport.render_target_update_mode = Viewport.UPDATE_ONCE
+			_mask_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 			
 			var target_bounding_box = _current_mask_update_target.get_stroked_bounding_box()
 			var mask_content_relative_size = target_bounding_box.size
@@ -88,11 +86,11 @@ func _prepare_viewport_for_draw():
 			_mask_viewport.canvas_transform = Transform2D().scaled(transform_scale)
 			_mask_viewport.canvas_transform.origin = transform_origin
 
-			_mask_background.rect_position = -_mask_viewport.canvas_transform.origin / scale_factor
+			_mask_background.position = -_mask_viewport.canvas_transform.origin / scale_factor
 			if attr_mask_content_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
-				_mask_background.rect_size = _mask_viewport.size * _mask_viewport.canvas_transform.get_scale()
+				_mask_background.size = _mask_viewport.size * _mask_viewport.canvas_transform.get_scale()
 			else:
-				_mask_background.rect_size = mask_content_unit_bounding_box.size
+				_mask_background.size = mask_content_unit_bounding_box.size
 			_update_view_box_recursive(mask_content_unit_bounding_box, element_resource)
 			
 
@@ -103,7 +101,7 @@ func _update_view_box_recursive(new_view_box, parent = null):
 			if controller.node_name != "viewport":
 				controller.inherited_view_box = new_view_box
 				_update_view_box_recursive(new_view_box, child)
-			controller.update()
+			controller.queue_redraw()
 
 #----------------#
 # Public Methods #

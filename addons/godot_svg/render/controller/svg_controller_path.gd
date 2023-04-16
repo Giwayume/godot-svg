@@ -10,8 +10,8 @@ const PathCoordinate = SVGValueConstant.PathCoordinate
 # Attributes #
 #------------#
 
-var attr_d = [] setget _set_attr_d
-var attr_path_length = SVGValueConstant.NONE setget _set_attr_path_length
+var attr_d = []: set = _set_attr_d
+var attr_path_length = SVGValueConstant.NONE: set = _set_attr_path_length
 
 #-----------#
 # Lifecycle #

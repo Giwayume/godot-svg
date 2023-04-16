@@ -2,12 +2,13 @@
 
 importer="giwayume.godotsvg"
 type="Resource"
-path="res://.import/circle_with_stroke.svg-1b142271a8d0ab13003394e6b225ce8f.gdsvg"
+uid="uid://p8wypw6h7mnv"
+path="res://.godot/imported/circle_with_stroke.svg-1b142271a8d0ab13003394e6b225ce8f.gdsvg"
 
 [deps]
 
 source_file="res://tests/w3c_1.1_test_suite/svg/custom/circle_with_stroke.svg"
-dest_files=[ "res://.import/circle_with_stroke.svg-1b142271a8d0ab13003394e6b225ce8f.gdsvg" ]
+dest_files=["res://.godot/imported/circle_with_stroke.svg-1b142271a8d0ab13003394e6b225ce8f.gdsvg"]
 
 [params]
 

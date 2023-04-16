@@ -1,7 +1,7 @@
 extends Resource
 class_name SVGClockValue
 
-export(float) var milliseconds = null
+var milliseconds = null # float
 
 func _init(attribute: String):
 	milliseconds = 0.0
@@ -23,7 +23,7 @@ func _init(attribute: String):
 		var time_delimiter_regex = RegEx.new()
 		time_delimiter_regex.compile("\\[:.]+")
 		var search_results = time_delimiter_regex.search_all(attribute)
-		search_results.invert()
+		search_results.reverse()
 		var multipliers = [1.0, 1000.0, 60000.0, 3600000.0]
 		if attribute.find(".") == -1:
 			multipliers.pop_front()

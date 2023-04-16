@@ -1,4 +1,4 @@
-extends Spatial
+extends Node3D
 
 #---------#
 # Signals #
@@ -31,11 +31,11 @@ func _draw():
 # Public methods #
 #----------------#
 
-func add_child(new_child, legible_unique_name = false):
-	controller.add_child(new_child, legible_unique_name)
+func add_child(new_child, force_readable_name = false, internal = 0):
+	controller.add_child(new_child, force_readable_name, internal)
 
-func add_child_to_root(new_child, legible_unique_name = false):
-	.add_child(new_child, legible_unique_name)
+func add_child_to_root(new_child, force_readable_name = false, internal = 0):
+	super.add_child(new_child, force_readable_name, internal)
 
 func get_attribute(name: String):
 	var value = null
@@ -53,7 +53,7 @@ func remove_child(child_to_remove):
 	controller.remove_child(child_to_remove)
 
 func remove_child_from_root(child_to_remove):
-	.remove_child(child_to_remove)
+	super.remove_child(child_to_remove)
 
 func set_attribute(name: String, value):
 	var attr_name = "attr_" + name

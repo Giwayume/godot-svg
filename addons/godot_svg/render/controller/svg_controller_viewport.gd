@@ -4,18 +4,18 @@ extends "svg_controller_element.gd"
 # Attributes #
 #------------#
 
-var attr_x = SVGLengthPercentage.new("0") setget _set_attr_x
-var attr_y = SVGLengthPercentage.new("0") setget _set_attr_y
-var attr_width = SVGValueConstant.AUTO setget _set_attr_width
-var attr_height = SVGValueConstant.AUTO setget _set_attr_height
+var attr_x = SVGLengthPercentage.new("0"): set = _set_attr_x
+var attr_y = SVGLengthPercentage.new("0"): set = _set_attr_y
+var attr_width = SVGValueConstant.AUTO: set = _set_attr_width
+var attr_height = SVGValueConstant.AUTO: set = _set_attr_height
 var attr_preserve_aspect_ratio = {
 	"align": {
 		"x": SVGValueConstant.MID,
 		"y": SVGValueConstant.MID,
 	},
 	"meet_or_slice": SVGValueConstant.MEET,
-} setget _set_attr_preserve_aspect_ratio
-var attr_view_box = SVGValueConstant.NONE setget _set_attr_view_box
+}: set = _set_attr_preserve_aspect_ratio
+var attr_view_box = SVGValueConstant.NONE: set = _set_attr_view_box
 var attr_xmlns = "http://www.w3.org/2000/svg"
 
 #-----------#
@@ -27,7 +27,7 @@ func _init():
 	is_clip_children_to_view_box = true
 
 func _props_applied(changed_props = []):
-	._props_applied(changed_props)
+	super._props_applied(changed_props)
 	var view_box = inherited_view_box
 	if attr_view_box is Rect2:
 		view_box = attr_view_box
@@ -66,7 +66,7 @@ func _props_applied(changed_props = []):
 	if root_controller.is_2d:
 		controlled_node.position = Vector2(x, y)
 	else:
-		controlled_node.translation = Vector3(x, y, 0.0)
+		controlled_node.position = Vector3(x, y, 0.0)
 	if view_box.size.x > 0 and view_box.size.y > 0:
 		var scale_x = width / view_box.size.x
 		var scale_y = height / view_box.size.y
@@ -141,10 +141,10 @@ func _set_attr_view_box(view_box):
 		else:
 			var split = view_box.split(" ", false)
 			attr_view_box = Rect2(
-				split[0] if split.size() > 0 else 0,
-				split[1] if split.size() > 1 else 0,
-				split[2] if split.size() > 2 else 0,
-				split[3] if split.size() > 3 else 0
+				float(split[0] if split.size() > 0 else 0),
+				float(split[1] if split.size() > 1 else 0),
+				float(split[2] if split.size() > 2 else 0),
+				float(split[3] if split.size() > 3 else 0)
 			)
 	apply_props("view_box")
 

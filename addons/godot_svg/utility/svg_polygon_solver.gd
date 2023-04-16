@@ -22,7 +22,7 @@ static func is_polygon_subset_of_polygon(find, in_polygon):
 				break
 	return is_subset
 
-static func get_polygon_bounds(polygon: PoolVector2Array):
+static func get_polygon_bounds(polygon: PackedVector2Array):
 	var left = INF
 	var right = -INF
 	var top = INF
@@ -55,7 +55,7 @@ static func simplify(input_points, fill_rule = FillRule.EVEN_ODD):
 			for j in range(0, i - 1):
 				var prev_segment_start = input_points[j]
 				var prev_segment_end = input_points[j + 1]
-				var intersection_point = Geometry.segment_intersects_segment_2d(
+				var intersection_point = Geometry2D.segment_intersects_segment(
 					segment_start,
 					segment_end,
 					prev_segment_start,
@@ -200,7 +200,7 @@ static func simplify(input_points, fill_rule = FillRule.EVEN_ODD):
 	var filled_polygons = []
 	for solved_polygon in solved_polygons:
 		if solved_polygon.size() > 2:
-			var is_clockwise = Geometry.is_polygon_clockwise(solved_polygon)
+			var is_clockwise = Geometry2D.is_polygon_clockwise(solved_polygon)
 			var check_point = (
 				solved_polygon[0] +
 				(solved_polygon[0].direction_to(solved_polygon[1]).rotated(-PI / 128 if is_clockwise else PI / 128)) *
@@ -216,7 +216,7 @@ static func simplify(input_points, fill_rule = FillRule.EVEN_ODD):
 					(segment_start.y <= check_point.y and segment_end.y <= check_point.y) or
 					(
 						(check_point.y <= segment_start.y or check_point.y <= segment_end.y) and
-						Geometry.segment_intersects_segment_2d(segment_start, segment_end, check_point, check_point - Vector2(0.0, 99999999.0))
+						Geometry2D.segment_intersects_segment(segment_start, segment_end, check_point, check_point - Vector2(0.0, 99999999.0))
 					)
 				):
 					if segment_start.x <= check_point.x and segment_end.x > check_point.x:

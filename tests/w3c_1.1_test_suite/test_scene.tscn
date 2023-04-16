@@ -16,8 +16,8 @@ position = Vector2( 511, 299 )
 current = true
 
 [node name="ColorRect" type="ColorRect" parent="."]
-margin_right = 1066.0
-margin_bottom = 622.0
+offset_right = 1066.0
+offset_bottom = 622.0
 
 [node name="FirefoxSVG" type="Node2D" parent="."]
 position = Vector2( 486, 366 )

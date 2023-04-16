@@ -6,152 +6,23 @@
 ;   [section] ; section goes between []
 ;   param=value ; assign values to parameters
 
-config_version=4
-
-_global_script_classes=[ {
-"base": "Reference",
-"class": "SVGArcs",
-"language": "GDScript",
-"path": "res://addons/godot_svg/utility/svg_arcs.gd"
-}, {
-"base": "Reference",
-"class": "SVGAttributeParser",
-"language": "GDScript",
-"path": "res://addons/godot_svg/utility/svg_attribute_parser.gd"
-}, {
-"base": "Resource",
-"class": "SVGClockValue",
-"language": "GDScript",
-"path": "res://addons/godot_svg/resource/svg_clock_value.gd"
-}, {
-"base": "Reference",
-"class": "SVGCollision",
-"language": "GDScript",
-"path": "res://addons/godot_svg/utility/svg_collision.gd"
-}, {
-"base": "Reference",
-"class": "SVGCubics",
-"language": "GDScript",
-"path": "res://addons/godot_svg/utility/svg_cubics.gd"
-}, {
-"base": "Reference",
-"class": "SVGDelaunay",
-"language": "GDScript",
-"path": "res://addons/godot_svg/utility/svg_delaunay.gd"
-}, {
-"base": "Reference",
-"class": "SVGEarcut",
-"language": "GDScript",
-"path": "res://addons/godot_svg/utility/svg_earcut.gd"
-}, {
-"base": "Reference",
-"class": "SVGHelper",
-"language": "GDScript",
-"path": "res://addons/godot_svg/utility/svg_helper.gd"
-}, {
-"base": "Resource",
-"class": "SVGLengthPercentage",
-"language": "GDScript",
-"path": "res://addons/godot_svg/resource/svg_length_percentage.gd"
-}, {
-"base": "Reference",
-"class": "SVGMath",
-"language": "GDScript",
-"path": "res://addons/godot_svg/utility/svg_math.gd"
-}, {
-"base": "Resource",
-"class": "SVGPaint",
-"language": "GDScript",
-"path": "res://addons/godot_svg/resource/svg_paint.gd"
-}, {
-"base": "Reference",
-"class": "SVGPaintServer",
-"language": "GDScript",
-"path": "res://addons/godot_svg/utility/svg_paint_server.gd"
-}, {
-"base": "Reference",
-"class": "SVGPathSolver",
-"language": "GDScript",
-"path": "res://addons/godot_svg/utility/svg_path_solver.gd"
-}, {
-"base": "Reference",
-"class": "SVGPolygonSolver",
-"language": "GDScript",
-"path": "res://addons/godot_svg/utility/svg_polygon_solver.gd"
-}, {
-"base": "Resource",
-"class": "SVGResource",
-"language": "GDScript",
-"path": "res://addons/godot_svg/resource/svg_resource.gd"
-}, {
-"base": "Resource",
-"class": "SVGResourceElement",
-"language": "GDScript",
-"path": "res://addons/godot_svg/resource/svg_resource_element.gd"
-}, {
-"base": "ResourceFormatLoader",
-"class": "SVGResourceFormatLoader",
-"language": "GDScript",
-"path": "res://addons/godot_svg/import/svg_resource_loader.gd"
-}, {
-"base": "ResourceFormatSaver",
-"class": "SVGResourceFormatSaver",
-"language": "GDScript",
-"path": "res://addons/godot_svg/import/svg_resource_saver.gd"
-}, {
-"base": "Reference",
-"class": "SVGTessellation",
-"language": "GDScript",
-"path": "res://addons/godot_svg/utility/svg_tessellation.gd"
-}, {
-"base": "Reference",
-"class": "SVGTriangulation",
-"language": "GDScript",
-"path": "res://addons/godot_svg/utility/svg_triangulation.gd"
-}, {
-"base": "Reference",
-"class": "SVGValueConstant",
-"language": "GDScript",
-"path": "res://addons/godot_svg/utility/svg_value_constant.gd"
-} ]
-_global_script_class_icons={
-"SVGArcs": "",
-"SVGAttributeParser": "",
-"SVGClockValue": "",
-"SVGCollision": "",
-"SVGCubics": "",
-"SVGDelaunay": "",
-"SVGEarcut": "",
-"SVGHelper": "",
-"SVGLengthPercentage": "",
-"SVGMath": "",
-"SVGPaint": "",
-"SVGPaintServer": "",
-"SVGPathSolver": "",
-"SVGPolygonSolver": "",
-"SVGResource": "",
-"SVGResourceElement": "",
-"SVGResourceFormatLoader": "",
-"SVGResourceFormatSaver": "",
-"SVGTessellation": "",
-"SVGTriangulation": "",
-"SVGValueConstant": ""
-}
+config_version=5
 
 [application]
 
 config/name="SVG"
 run/main_scene="res://tests/w3c_1.1_test_suite/empty_scene.tscn"
+config/features=PackedStringArray("4.0")
 run/low_processor_mode=true
 config/icon="res://icon.png"
 
 [display]
 
-window/vsync/use_vsync=false
+window/vsync/vsync_mode=false
 
 [editor_plugins]
 
-enabled=PoolStringArray( "res://addons/godot_svg/plugin.cfg" )
+enabled=PackedStringArray("res://addons/godot_svg/plugin.cfg")
 
 [global]
 
@@ -163,12 +34,11 @@ common/drop_mouse_on_gui_input_disabled=true
 
 [importer_defaults]
 
-giwayume.godotsvg={
-}
+giwayume.godotsvg={}
 
 [network]
 
-limits/debugger_stdout/max_chars_per_second=100000
+limits/debugger/max_chars_per_second=100000
 
 [physics]
 
@@ -176,4 +46,4 @@ common/enable_pause_aware_picking=true
 
 [rendering]
 
-environment/default_environment="res://default_env.tres"
+environment/defaults/default_environment="res://default_env.tres"

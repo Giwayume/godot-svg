@@ -4,8 +4,8 @@ extends "svg_controller_element.gd"
 # Attributes #
 #------------#
 
-var attr_points = [] setget _set_attr_points
-var attr_path_length = SVGValueConstant.NONE setget _set_attr_path_length
+var attr_points = []: set = _set_attr_points
+var attr_path_length = SVGValueConstant.NONE: set = _set_attr_path_length
 
 #-----------#
 # Lifecycle #
@@ -46,7 +46,7 @@ func _process_polygon():
 	}
 
 func _props_applied(changed_props = []):
-	._props_applied(changed_props)
+	super._props_applied(changed_props)
 	if attr_points.size() < 2:
 		controlled_node.hide()
 		return

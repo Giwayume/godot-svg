@@ -55,8 +55,8 @@ class Quadtree:
 				index = 3
 		return index
 	
-	func find_indices(p_rect: Rect2) -> PoolIntArray:
-		var indices = PoolIntArray()
+	func find_indices(p_rect: Rect2) -> PackedInt32Array:
+		var indices = PackedInt32Array()
 		if nodes[0] != null:
 			for i in range(0, nodes.size()):
 				var node = nodes[i]

@@ -4,17 +4,17 @@ extends "svg_controller_element.gd"
 # Attributes #
 #------------#
 
-var attr_cx = SVGLengthPercentage.new("50%") setget _set_attr_cx
-var attr_cy = SVGLengthPercentage.new("50%") setget _set_attr_cy
-var attr_fr = SVGLengthPercentage.new("0%") setget _set_attr_fr
-var attr_fx = SVGValueConstant.AUTO setget _set_attr_fx
-var attr_fy = SVGValueConstant.AUTO setget _set_attr_fy
-var attr_gradient_units = SVGValueConstant.OBJECT_BOUNDING_BOX setget _set_attr_gradient_units
-var attr_gradient_transform = Transform2D() setget _set_attr_gradient_transform
-var attr_href = SVGValueConstant.NONE setget _set_attr_href
-var attr_xlink_href = SVGValueConstant.NONE setget _set_attr_xlink_href
-var attr_r = SVGLengthPercentage.new("50%") setget _set_attr_r
-var attr_spread_method = SVGValueConstant.PAD setget _set_attr_spread_method
+var attr_cx = SVGLengthPercentage.new("50%"): set = _set_attr_cx
+var attr_cy = SVGLengthPercentage.new("50%"): set = _set_attr_cy
+var attr_fr = SVGLengthPercentage.new("0%"): set = _set_attr_fr
+var attr_fx = SVGValueConstant.AUTO: set = _set_attr_fx
+var attr_fy = SVGValueConstant.AUTO: set = _set_attr_fy
+var attr_gradient_units = SVGValueConstant.OBJECT_BOUNDING_BOX: set = _set_attr_gradient_units
+var attr_gradient_transform = Transform2D(): set = _set_attr_gradient_transform
+var attr_href = SVGValueConstant.NONE: set = _set_attr_href
+var attr_xlink_href = SVGValueConstant.NONE: set = _set_attr_xlink_href
+var attr_r = SVGLengthPercentage.new("50%"): set = _set_attr_r
+var attr_spread_method = SVGValueConstant.PAD: set = _set_attr_spread_method
 
 #-----------#
 # Lifecycle #

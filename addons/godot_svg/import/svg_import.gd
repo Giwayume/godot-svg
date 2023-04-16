@@ -1,52 +1,55 @@
-tool
+@tool
 extends EditorImportPlugin
 
 enum Presets { DEFAULT }
 
-func get_importer_name():
+func _get_importer_name():
 	return "giwayume.godotsvg"
 
-func get_visible_name():
+func _get_visible_name():
 	return "SVG"
 
-func get_recognized_extensions():
+func _get_recognized_extensions():
 	return ["svg"]
 
-func get_save_extension():
+func _get_save_extension():
 	return "gdsvg"
 
-func get_resource_type():
+func _get_resource_type():
 	return "Resource"
 
-func get_preset_count():
+func _get_preset_count():
 	return Presets.size()
 
-func get_preset_name(preset):
-	match preset:
+func _get_preset_name(preset_index):
+	match preset_index:
 		Presets.DEFAULT:
 			return "Default"
 		_:
 			return "Unknown"
 
-func get_import_options(preset):
-	match preset:
+func _get_import_options(path, preset_index):
+	match preset_index:
 		Presets.DEFAULT:
 			return []
 		_:
 			return []
 
-func get_option_visibility(option, options):
+func _get_import_order():
+	return 0
+
+func _get_option_visibility(path, option_name, options):
 	return true
 
-func import(source_file, save_path, options, r_platform_variants, r_gen_files):
-	var file = File.new()
-	if file.open(source_file, File.READ) != OK:
+func _import(source_file, save_path, options, r_platform_variants, r_gen_files):
+	var file = FileAccess.open(source_file, FileAccess.READ)
+	if file.get_error() != OK:
 		return FAILED
 	
 	var svg_resource = SVGResource.new()
 	svg_resource.xml = file.get_as_text()
 	
-	var save_error = ResourceSaver.save("%s.%s" % [save_path, get_save_extension()], svg_resource)
+	var save_error = ResourceSaver.save(svg_resource, "%s.%s" % [save_path, _get_save_extension()])
 	return OK
 
 

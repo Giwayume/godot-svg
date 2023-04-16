@@ -40,7 +40,7 @@
      inkscape:groupmode="layer"
      id="layer1">
     <ellipse
-       style="fill:#ff0000;fill-rule:evenodd;stroke-width:5;stroke:#38ff41;stroke-opacity:1;stroke-dasharray:none"
+       style="fill:#ff0000;fill-rule:evenodd;stroke-width:0;stroke:#38ff41;stroke-opacity:1;stroke-dasharray:none"
        id="path111"
        cx="50"
        cy="50"

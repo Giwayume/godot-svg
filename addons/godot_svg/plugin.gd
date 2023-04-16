@@ -1,4 +1,4 @@
-tool
+@tool
 extends EditorPlugin
 
 const plugin_config = preload("./plugin_config.gd")
@@ -10,7 +10,7 @@ signal svg_plugin_scripts_changed()
 var svg_import_plugin = null
 var edited_scene_viewport = null
 var previous_editor_viewport_transform_scale = Vector2(1.0, 1.0)
-var plugin_folder_path = plugin_config.resource_path.replace("plugin_config.gd", "")
+var plugin_folder_path = 'res://addons/godot_svg/'
 
 func _init():
 	name = "GodotSVGEditorPlugin"
@@ -39,11 +39,11 @@ func _enter_tree():
 	add_custom_type("SVGRect", "Control", preload("./node/svg_rect.gd"), svg_rect_icon)
 
 	var editor_interface = get_editor_interface()
-	editor_interface.get_resource_filesystem().connect("resources_reimported", self, "_on_resources_reimported")
+	editor_interface.get_resource_filesystem().connect("resources_reimported", Callable(self, "_on_resources_reimported"))
 	
 	if Engine.is_editor_hint():
-		connect("resource_saved", self, "_on_resource_saved")
-	connect("scene_changed", self, "_on_editing_scene_changed")
+		connect("resource_saved", Callable(self, "_on_resource_saved"))
+	connect("scene_changed", Callable(self, "_on_editing_scene_changed"))
 
 func _print_rec(node, level = 0):
 	var s = ""
@@ -59,11 +59,11 @@ func _exit_tree():
 	# remove_custom_type("SVG3D")
 	remove_custom_type("SVGRect")
 	
-	get_editor_interface().get_resource_filesystem().disconnect("resources_reimported", self, "_on_resources_reimported")
+	get_editor_interface().get_resource_filesystem().disconnect("resources_reimported", Callable(self, "_on_resources_reimported"))
 	
 	if Engine.is_editor_hint():
-		disconnect("resource_saved", self, "_on_resource_saved")
-	disconnect("scene_changed", self, "_on_editing_scene_changed")
+		disconnect("resource_saved", Callable(self, "_on_resource_saved"))
+	disconnect("scene_changed", Callable(self, "_on_editing_scene_changed"))
 	
 	svg_import_plugin = null
 
@@ -83,7 +83,7 @@ func _find_edit_viewport(node):
 	if node.get_class() == "CanvasItemEditorViewport":
 		viewport = node
 		for child in node.get_parent().get_children():
-			if child.get_class() == "ViewportContainer":
+			if child.get_class() == "SubViewportContainer":
 				viewport = child.get_children()[0]
 				break
 	else:
@@ -94,7 +94,7 @@ func _find_edit_viewport(node):
 	return viewport
 
 func _on_editing_scene_changed(scene_root):
-	edited_scene_viewport = _find_edit_viewport(get_editor_interface().get_editor_viewport())
+	edited_scene_viewport = _find_edit_viewport(get_editor_interface().get_editor_main_screen())
 
 #----------------#
 # Public methods #

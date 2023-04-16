@@ -40,10 +40,10 @@ func _on_child_bounds_changed(_child_bounding_box):
 
 func add_child(new_child, legible_unique_name = false):
 	controlled_node.add_child_to_root(new_child, legible_unique_name)
-	if not new_child.is_connected("bounding_box_calculated", self, "_on_child_bounds_changed"):
-		new_child.connect("bounding_box_calculated", self, "_on_child_bounds_changed")
+	if not new_child.is_connected("bounding_box_calculated", Callable(self, "_on_child_bounds_changed")):
+		new_child.connect("bounding_box_calculated", Callable(self, "_on_child_bounds_changed"))
 
 func remove_child(child_to_remove):
-	if child_to_remove.is_connected("bounding_box_calculated", self, "_on_child_bounds_changed"):
-		child_to_remove.disconnect("bounding_box_calculated", self, "_on_child_bounds_changed")
+	if child_to_remove.is_connected("bounding_box_calculated", Callable(self, "_on_child_bounds_changed")):
+		child_to_remove.disconnect("bounding_box_calculated", Callable(self, "_on_child_bounds_changed"))
 	controlled_node.remove_child_from_root(child_to_remove)

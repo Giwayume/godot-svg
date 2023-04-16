@@ -5,14 +5,14 @@ const ELLIPSE_RATIO = 1.0
 const TILING = 1.0
 
 static func srgb_channel_to_linear_srgb_channel(value):
-    if value < 0.04045: return float(value) / 12.92
-    return pow((float(value) + 0.055) / 1.055, 2.4)
+	if value < 0.04045: return float(value) / 12.92
+	return pow((float(value) + 0.055) / 1.055, 2.4)
 
 static func linear_srgb_channel_to_srgb_channel(value):
-    if value <= 0: return 0.0
-    if value >= 1: return 1.0
-    if value < 0.0031308: return (float(value) * 12.92)
-    return (pow(float(value), 1 / 2.4) * 1.055 - 0.055)
+	if value <= 0: return 0.0
+	if value >= 1: return 1.0
+	if value < 0.0031308: return (float(value) * 12.92)
+	return (pow(float(value), 1 / 2.4) * 1.055 - 0.055)
 
 static func srgb_to_linear_srgb(color):
 	return Color(
@@ -37,7 +37,7 @@ static func generate_gradient_texture_1d(
 	width: int = 2048
 ) -> ImageTexture:
 	var gradient_image = Image.new()
-	var data = PoolByteArray()
+	var data = PackedByteArray()
 	var offset_count = gradient.offsets.size()
 	var current_offset_index = -1
 	var current_offset = 0
@@ -56,7 +56,7 @@ static func generate_gradient_texture_1d(
 		if current_offset == next_offset:
 			color = current_color
 		else:
-			color = current_color.linear_interpolate(next_color, (pixel_offset - current_offset) / (next_offset - current_offset))
+			color = current_color.lerp(next_color, (pixel_offset - current_offset) / (next_offset - current_offset))
 		if color_interpolation == SVGValueConstant.LINEAR_RGB:
 			color = linear_srgb_to_srgb(color)
 		data.push_back(int(color.r * 255))
@@ -77,12 +77,11 @@ static func generate_gradient_texture_1d(
 
 	gradient_image.create_from_data(width, 1, false, Image.FORMAT_RGBA8, data)
 	var gradient_texture = ImageTexture.new()
-	var flags = Texture.FLAG_MIPMAPS | Texture.FLAG_FILTER
-	if texture_repeat_mode == GradientTexture2D.REPEAT:
-		flags |= Texture.FLAG_REPEAT
-	elif texture_repeat_mode == GradientTexture2D.REPEAT_MIRROR:
-		flags |= Texture.FLAG_REPEAT | Texture.FLAG_MIRRORED_REPEAT
-	gradient_texture.create_from_image(gradient_image, flags)
+#	if texture_repeat_mode == GradientTexture2D.REPEAT:
+#		flags |= Texture2D.FLAG_REPEAT
+#	elif texture_repeat_mode == GradientTexture2D.REPEAT_MIRROR:
+#		flags |= Texture2D.FLAG_REPEAT | Texture2D.FLAG_MIRRORED_REPEAT
+	gradient_texture.create_from_image(gradient_image) #,flags
 	return gradient_texture
 
 static func generate_linear_gradient_shader_params(
@@ -271,13 +270,11 @@ static func generate_pattern_server(
 ) -> Dictionary:
 	var viewport = pattern_controller._baking_viewport
 	viewport.size = Vector2(2.0, 2.0)
-	viewport.render_target_v_flip = true
 	viewport.hdr = false
-	viewport.usage = Viewport.USAGE_2D_NO_SAMPLING
 	viewport.transparent_bg = true
 	# TODO - wait for delayed resources such as mask/other paint servers to draw?
 	var viewport_texture = viewport.get_texture()
-	viewport_texture.flags = Texture.FLAGS_DEFAULT
+#	viewport_texture.flags = Texture2D.FLAGS_DEFAULT
 	return {
 		"view_box": inherited_view_box,
 		"controller": pattern_controller,
@@ -538,10 +535,10 @@ static func apply_shader_params(reference_controller, store_name: String, shape_
 					server_response.generate_shader_params.params
 				)
 			for shader_param_name in shader_params:
-				shape_node.material.set_shader_param(shader_param_name, shader_params[shader_param_name])
+				shape_node.material.set_shader_parameter(shader_param_name, shader_params[shader_param_name])
 		else:
 			needs_reset_params = true
 	else:
 		needs_reset_params = true
 	if needs_reset_params:
-		shape_node.material.set_shader_param("gradient_type", 0)
+		shape_node.material.set_shader_parameter("gradient_type", 0)

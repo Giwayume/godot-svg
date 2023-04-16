@@ -1,8 +1,8 @@
 extends Resource
 class_name SVGLengthPercentage
 
-export(float) var length = null
-export(float) var percentage = null
+var length = null # float
+var percentage = null # float
 
 func _init(attribute: String):
 	var is_percentage = false

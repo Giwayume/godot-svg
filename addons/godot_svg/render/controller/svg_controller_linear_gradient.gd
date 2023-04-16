@@ -4,15 +4,15 @@ extends "svg_controller_element.gd"
 # Attributes #
 #------------#
 
-var attr_gradient_units = SVGValueConstant.OBJECT_BOUNDING_BOX setget _set_attr_gradient_units
-var attr_gradient_transform = Transform2D() setget _set_attr_gradient_transform
-var attr_href = SVGValueConstant.NONE setget _set_attr_href
-var attr_xlink_href = SVGValueConstant.NONE setget _set_attr_xlink_href
-var attr_spread_method = SVGValueConstant.PAD setget _set_attr_spread_method
-var attr_x1 = SVGLengthPercentage.new("0%") setget _set_attr_x1
-var attr_x2 = SVGLengthPercentage.new("100%") setget _set_attr_x2
-var attr_y1 = SVGLengthPercentage.new("0%") setget _set_attr_y1
-var attr_y2 = SVGLengthPercentage.new("0%") setget _set_attr_y2
+var attr_gradient_units = SVGValueConstant.OBJECT_BOUNDING_BOX: set = _set_attr_gradient_units
+var attr_gradient_transform = Transform2D(): set = _set_attr_gradient_transform
+var attr_href = SVGValueConstant.NONE: set = _set_attr_href
+var attr_xlink_href = SVGValueConstant.NONE: set = _set_attr_xlink_href
+var attr_spread_method = SVGValueConstant.PAD: set = _set_attr_spread_method
+var attr_x1 = SVGLengthPercentage.new("0%"): set = _set_attr_x1
+var attr_x2 = SVGLengthPercentage.new("100%"): set = _set_attr_x2
+var attr_y1 = SVGLengthPercentage.new("0%"): set = _set_attr_y1
+var attr_y2 = SVGLengthPercentage.new("0%"): set = _set_attr_y2
 
 #-----------#
 # Lifecycle #

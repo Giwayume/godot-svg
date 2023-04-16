@@ -175,7 +175,7 @@ static func is_curve_triangles_intersects_other_curve_triangles(curve_1_triangle
 				):
 					return true
 			elif SVGMath.triangle_intersects_triangle(curve_1_triangle, curve_2_triangle):
-				var main_path_intersection_point = Geometry.segment_intersects_segment_2d(
+				var main_path_intersection_point = Geometry2D.segment_intersects_segment(
 					curve_1_triangle[0], curve_1_triangle[2], curve_2_triangle[0], curve_2_triangle[2]
 				)
 				return true
@@ -429,7 +429,7 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 		else:
 			# This method must work in a different coordinate space than Godot 2D, it gives the OPPOSITE result.
 			clockwise_checks.push_back(
-				!Geometry.is_polygon_clockwise(PoolVector2Array(check_polygon))
+				!Geometry2D.is_polygon_clockwise(PackedVector2Array(check_polygon))
 			)
 		check_polygon_index += 1
 	
@@ -476,18 +476,18 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 	
 	# Build an "interior" polygon with straight edges, and other triangles to draw the bezier curves.
 	var interior_polygon = []
-	var interior_uv = PoolVector2Array()
-	var quadratic_vertices = PoolVector2Array() if is_2d else PoolVector3Array()
-	var quadratic_implicit_coordinates = PoolVector2Array()
-	var quadratic_signs = PoolIntArray()
-	var quadratic_uv = PoolVector2Array()
-	var cubic_vertices = PoolVector2Array() if is_2d else PoolVector3Array()
-	var cubic_implicit_coordinates = PoolVector3Array()
-	var cubic_signs = PoolIntArray()
-	var cubic_uv = PoolVector2Array()
-	var antialias_edge_vertices = PoolVector2Array() if is_2d else PoolVector3Array()
-	var antialias_edge_implicit_coordinates = PoolVector2Array()
-	var antialias_edge_uv = PoolVector2Array()
+	var interior_uv = PackedVector2Array()
+	var quadratic_vertices = PackedVector2Array() if is_2d else PackedVector3Array()
+	var quadratic_implicit_coordinates = PackedVector2Array()
+	var quadratic_signs = PackedInt32Array()
+	var quadratic_uv = PackedVector2Array()
+	var cubic_vertices = PackedVector2Array() if is_2d else PackedVector3Array()
+	var cubic_implicit_coordinates = PackedVector3Array()
+	var cubic_signs = PackedInt32Array()
+	var cubic_uv = PackedVector2Array()
+	var antialias_edge_vertices = PackedVector2Array() if is_2d else PackedVector3Array()
+	var antialias_edge_implicit_coordinates = PackedVector2Array()
+	var antialias_edge_uv = PackedVector2Array()
 	var polygon_break_indices = []
 	var duplicate_edges = {}
 	var current_path_index = 0
@@ -547,7 +547,7 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 				var control_point_2_3d = SVGMath.to_3d_point(control_point_2, is_2d)
 				var end_point = instruction.points[2]
 				var end_point_3d = SVGMath.to_3d_point(end_point, is_2d)
-				var control_intersection = Geometry.segment_intersects_segment_2d(start_point, end_point, control_point_1, control_point_2)
+				var control_intersection = Geometry2D.segment_intersects_segment(start_point, end_point, control_point_1, control_point_2)
 				# If the control points intersect the start/end points, interior polygon can vary wildly
 				if control_intersection != null and not control_intersection == start_point and not control_intersection == end_point:
 					var control_intersection_3d = SVGMath.to_3d_point(control_intersection, is_2d)
@@ -606,9 +606,9 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 				# break # For some reason multiple paths are being passed in some cases?
 	
 	# Triangulate the interior polygon(s).
-	var interior_vertices = PoolVector2Array() if is_2d else PoolVector3Array()
-	var interior_implicit_coordinates = PoolVector3Array()
-	var interior_triangulation = PoolIntArray()
+	var interior_vertices = PackedVector2Array() if is_2d else PackedVector3Array()
+	var interior_implicit_coordinates = PackedVector3Array()
+	var interior_triangulation = PackedInt32Array()
 	var last_break_index = 0
 	var hole_start_break_index = polygon_break_indices[path_group_holes_start_index - 1]
 	
@@ -635,7 +635,7 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 			elif triangulation_method == TriangulationMethod.DELAUNAY:
 				triangulation = SVGDelaunay.delaunay_polygon_2d(sliced_polygon_with_holes, hole_indices)
 		else:
-			triangulation = Geometry.triangulate_polygon(sliced_polygon)
+			triangulation = Geometry2D.triangulate_polygon(sliced_polygon)
 			if triangulation.size() == 0:
 				if triangulation_method == TriangulationMethod.EARCUT:
 					triangulation = SVGEarcut.earcut_polygon_2d(sliced_polygon, [])
@@ -662,9 +662,9 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 				interior_polygon[ti1].is_equal_approx(interior_polygon[ti2])
 			)
 		):
-			interior_triangulation.remove(i)
-			interior_triangulation.remove(i)
-			interior_triangulation.remove(i)
+			interior_triangulation.remove_at(i)
+			interior_triangulation.remove_at(i)
+			interior_triangulation.remove_at(i)
 	
 	# Build edge list and vertex arrays
 	for i in range(0, interior_triangulation.size(), 3):
@@ -1102,7 +1102,7 @@ static func triangulate_stroke_subpath(path: Array, width, cap_mode, joint_mode,
 				var miter_outside_intersection = outside_points[0]
 				var calculated_miter_limit = 0
 				if use_joint_mode == SVGValueConstant.MITER or use_joint_mode == SVGValueConstant.MITER_CLIP:
-					miter_outside_intersection = Geometry.line_intersects_line_2d(
+					miter_outside_intersection = Geometry2D.line_intersects_line(
 						current_point + previous_direction.rotated(outside_90_rotation) * half_width, previous_direction,
 						current_point + current_direction.rotated(outside_90_rotation) * half_width, -current_direction
 					)
@@ -1150,13 +1150,13 @@ static func triangulate_stroke_subpath(path: Array, width, cap_mode, joint_mode,
 							var corner_direction = inside_intersection_point.direction_to(miter_outside_intersection)
 							var clip_point = current_point + (corner_direction * clip_length)
 							var clip_direction = corner_direction.rotated(PI / 2)
-							var outside_edge_start = Geometry.line_intersects_line_2d(
+							var outside_edge_start = Geometry2D.line_intersects_line(
 								current_point + previous_direction.rotated(outside_90_rotation) * half_width,
 								previous_direction,
 								clip_point,
 								clip_direction
 							)
-							var outside_edge_end = Geometry.line_intersects_line_2d(
+							var outside_edge_end = Geometry2D.line_intersects_line(
 								current_point + current_direction.rotated(outside_90_rotation) * half_width,
 								-current_direction,
 								clip_point,
