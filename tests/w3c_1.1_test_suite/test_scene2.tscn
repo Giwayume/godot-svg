@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://addons/godot_svg/node/svg_2d.gd" id="1"]
 [ext_resource type="Script" path="res://tests/_test_scene_control.gd" id="2"]
-[ext_resource type="Resource" uid="uid://p8wypw6h7mnv" path="res://tests/w3c_1.1_test_suite/svg/custom/circle_with_stroke.svg" id="3"]
+[ext_resource type="Resource" uid="uid://chpm0mtnp62jn" path="res://tests/w3c_1.1_test_suite/svg/custom/firefox_logo_2019.svg" id="3_xhm2b"]
 
 [node name="SVGTestScene" type="Node2D"]
 script = ExtResource("2")
@@ -15,8 +15,9 @@ offset_right = 1066.0
 offset_bottom = 622.0
 
 [node name="OutlineSVG" type="Node2D" parent="."]
+scale = Vector2(5, 5)
 script = ExtResource("1")
-svg = ExtResource("3")
+svg = ExtResource("3_xhm2b")
 fixed_scaling_ratio = 0
 antialiased = true
 triangulation_method = 0

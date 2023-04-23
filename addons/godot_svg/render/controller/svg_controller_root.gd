@@ -394,10 +394,10 @@ func _queue_process_polygon(polygon_definition: Dictionary):
 	# Start thread
 	if need_to_create_thread:
 		_process_polygon_thread = Thread.new()
-		_process_polygon_thread.start(Callable(self, "_process_polygon_thread_method").bind(null), Thread.PRIORITY_LOW)
+		_process_polygon_thread.start(Callable(self, "_process_polygon_thread_method"), Thread.PRIORITY_LOW)
 
 # Path solve and triangulate in a thread (thread main logic)
-func _process_polygon_thread_method(_userdata):
+func _process_polygon_thread_method():
 	var has_polygons_to_process = false
 	_polygons_to_process_mutex.lock()
 	has_polygons_to_process = _polygons_to_process.size() > 0
@@ -426,7 +426,7 @@ func _process_polygon_thread_end():
 		_process_polygon_thread = null
 	if _polygons_to_process.size() > 0:
 		_process_polygon_thread = Thread.new()
-		_process_polygon_thread.start(Callable(self, "_process_polygon_thread").bind(null), Thread.PRIORITY_LOW)
+		_process_polygon_thread.start(Callable(self, "_process_polygon_thread_method"), Thread.PRIORITY_LOW)
 	else:
 		call_deferred("_process_polygon_end_notify")
 

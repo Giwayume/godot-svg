@@ -637,7 +637,7 @@ static func dash_array(path_reference: Array, dash_array: Array, dash_offset: fl
 # ...splitting one path into multiple shapes at the intersections.
 # Paths is an array of command dictionaries.
 static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self_intersections = false, assume_no_holes = false):
-	
+
 	var intersections = []
 	var intersections_at_positions = {}
 	var solved_paths = []
@@ -728,6 +728,8 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 				var new_intersections = path_shape.intersect_with(other_path_shape, j != i - 1, true)
 				if new_intersections.size() > 0:
 					for new_intersection in new_intersections:
+						print_debug("new intersection ", new_intersection)
+						print_debug("shapes ", path_shape.to_string(), next_path_shape.to_string())
 						current_loop_range_intersection_count += 1
 						
 						var found_existing_intersection = null
@@ -844,7 +846,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 	no_intersection_solved_paths.clear()
 	loop_range_intersection_indices.clear()
 	path_start_end_intersection_indices.clear()
-	
+	print_debug(intersections)
 	# For each intersection point, follow the intersection lines forward, then take right turns until it comes back to the initial point
 	if intersections.size() > 0:
 		current_path_bounding_box = create_new_bounding_box()

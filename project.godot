@@ -12,7 +12,7 @@ config_version=5
 
 config/name="SVG"
 run/main_scene="res://tests/w3c_1.1_test_suite/empty_scene.tscn"
-config/features=PackedStringArray("4.0")
+config/features=PackedStringArray("4.1")
 run/low_processor_mode=true
 config/icon="res://icon.png"
 

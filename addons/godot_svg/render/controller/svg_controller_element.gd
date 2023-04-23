@@ -13,9 +13,7 @@ signal distribute_inherited_properties(inherited_props)
 const PathCommand = SVGValueConstant.PathCommand
 const SVGRenderBakedShader2D = preload("../shader/svg_render_baked_shader_2d.tres")
 const SVGRenderBakedShader3D = preload("../shader/svg_render_baked_shader_3d.tres")
-const SVGRenderFillShaderGles2 = preload("../shader/svg_render_fill_shader_gles2.tres")
-const SVGRenderFillShaderGles3 = preload("../shader/svg_render_fill_shader_gles3.tres")
-var SVGRenderFillShader = SVGRenderFillShaderGles3
+var SVGRenderFillShader = preload("../shader/svg_render_fill_shader.tres")
 
 #-------------------#
 # Public properties #
@@ -578,52 +576,46 @@ func _create_mesh_from_triangulation(fill_definition):
 	var surface = []
 	surface.resize(ArrayMesh.ARRAY_MAX)
 	var vertices = PackedVector2Array()
-	var colors = PackedColorArray()
+	var implicit_coordinates = PackedFloat32Array()
 	var uv = PackedVector2Array()
-	var normals = PackedVector3Array()
 	var coordinate_index = 0
 	# Interior faces
 	vertices.append_array(fill_definition.interior_vertices)
 	for implicit_coordinate in fill_definition.interior_implicit_coordinates:
-		colors.push_back(Color(implicit_coordinate.x, implicit_coordinate.y, implicit_coordinate.z, 0.7))
-		normals.push_back(Vector3(implicit_coordinate.x, implicit_coordinate.y, implicit_coordinate.z))
+		implicit_coordinates.append_array([implicit_coordinate.x, implicit_coordinate.y, implicit_coordinate.z, 0.7])
 	uv.append_array(fill_definition.interior_uv)
 	# Quadratic edges
 	vertices.append_array(fill_definition.quadratic_vertices)
 	coordinate_index = 0
 	for implicit_coordinate in fill_definition.quadratic_implicit_coordinates:
-		colors.push_back(Color(
+		implicit_coordinates.append_array([
 			implicit_coordinate.x, implicit_coordinate.y, 1.0,
 			0.1 + 0.15 * float(fill_definition.quadratic_signs[coordinate_index])
-		))
-		normals.push_back(Vector3(implicit_coordinate.x, implicit_coordinate.y, 1.0))
+		])
 		coordinate_index += 1
 	uv.append_array(fill_definition.quadratic_uv)
 	# Cubic edges
 	vertices.append_array(fill_definition.cubic_vertices)
 	coordinate_index = 0
 	for implicit_coordinate in fill_definition.cubic_implicit_coordinates:
-		colors.push_back(Color(
+		implicit_coordinates.append_array([
 			implicit_coordinate.x, implicit_coordinate.y, implicit_coordinate.z,
 			0.31 + 0.15 * float(fill_definition.cubic_signs[coordinate_index])
-		))
-		normals.push_back(Vector3(implicit_coordinate.x, implicit_coordinate.y, implicit_coordinate.z))
+		])
 		coordinate_index += 1
 	uv.append_array(fill_definition.cubic_uv)
 	# Antialiased line edges
 	vertices.append_array(fill_definition.antialias_edge_vertices)
 	for implicit_coordinate in fill_definition.antialias_edge_implicit_coordinates:
-		colors.push_back(Color(
+		implicit_coordinates.append_array([
 			implicit_coordinate.x, implicit_coordinate.y, 0.0, 0.9
-		))
-		normals.push_back(Vector3(implicit_coordinate.x, implicit_coordinate.y, 0.0))
+		])
 	uv.append_array(fill_definition.antialias_edge_uv)
 	# Create the mesh
 	surface[ArrayMesh.ARRAY_VERTEX] = vertices
-	surface[ArrayMesh.ARRAY_COLOR] = colors
+	surface[ArrayMesh.ARRAY_CUSTOM0] = implicit_coordinates
 	surface[ArrayMesh.ARRAY_TEX_UV] = uv
-	surface[ArrayMesh.ARRAY_NORMAL] = normals
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, surface, [], {})
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, surface, [], {}, Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM0_SHIFT)
 	return mesh
 
 # Pass props down to child controllers
@@ -748,7 +740,8 @@ func _generate_shape_nodes(changed_prop_list: Array = []):
 			if fill_index < polygon_lists.size():
 				_shape_fill.mesh = _create_mesh_from_triangulation(polygon_lists[fill_index])
 				material = ShaderMaterial.new()
-				material.shader = SVGRenderFillShader if root_controller.antialiased else SVGRenderFillShaderGles2
+				material.shader = SVGRenderFillShader
+				material.set_shader_parameter("antialiased", root_controller.antialiased)
 				if root_controller.is_2d:
 					_shape_fill.material = material
 				else:
@@ -791,7 +784,8 @@ func _generate_shape_nodes(changed_prop_list: Array = []):
 			if stroke_index < polygon_lists.size():
 				_shape_stroke.mesh = _create_mesh_from_triangulation(polygon_lists[stroke_index])
 				material = ShaderMaterial.new()
-				material.shader = SVGRenderFillShader if root_controller.antialiased else SVGRenderFillShaderGles2
+				material.shader = SVGRenderFillShader
+				material.set_shader_parameter("antialiased", root_controller.antialiased)
 				if root_controller.is_2d:
 					_shape_stroke.material = material
 				else:

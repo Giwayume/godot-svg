@@ -5,6 +5,7 @@ code = "shader_type canvas_item;
 
 const float GRADIENT_TILING_RATIO = 1.0;
 
+uniform bool antialiased = true;
 uniform vec4 fill_color = vec4(1.0, 1.0, 1.0, 1.0);
 uniform vec3 uv_transform_column_1 = vec3(1.0, 0.0, 0.0);
 uniform vec3 uv_transform_column_2 = vec3(0.0, 1.0, 0.0);
@@ -18,6 +19,8 @@ uniform vec2 gradient_end_radius = vec2(0.0, 0.0);
 uniform int gradient_repeat = 0;
 uniform sampler2D fill_texture;
 uniform sampler2D gradient_texture;
+
+varying vec4 implicit_coordinates;
 
 vec4 sample_gradient(float position) {
 	if (position > 1.0) {
@@ -33,37 +36,57 @@ vec4 quadratic_ps(vec2 p, float inside_sign, vec4 color) {
 	float u = p.x;
 	float v = p.y;
 	
-	// Gradients
-	vec2 dpdx = dFdx(p);
-	vec2 dpdy = dFdy(p);
+	float antialias_divisor = 1.0;
+	
+	if (antialiased) {
+		// Gradients
+		vec2 dpdx = dFdx(p);
+		vec2 dpdy = dFdy(p);
 
-	// Chain rule
-	float fx = (2.0 * u) * dpdx.x - dpdx.y;
-	float fy = (2.0 * u) * dpdy.x - dpdy.y;
+		// Chain rule
+		float fx = (2.0 * u) * dpdx.x - dpdx.y;
+		float fy = (2.0 * u) * dpdy.x - dpdy.y;
+		
+		antialias_divisor = sqrt(fx * fx + fy * fy);
+	}
 	
 	// Linear algebra
-	float sd = inside_sign * (u * u - v) / sqrt(fx * fx + fy * fy);
+	float sd = inside_sign * (u * u - v) / antialias_divisor;
 	
-	color.a = clamp(sd, 0.0, 1.0) * color.a;
+	if (antialiased) {
+		color.a = clamp(sd, 0.0, 1.0) * color.a;
+	} else {
+		color.a = step(sd, 0.0) * color.a;
+	}
 	
 	return color;
 }
 
 vec4 cubic_ps(vec3 klm, float inside_sign, vec4 color) {
-
-	// Gradients
-	vec3 dpdx = dFdx(klm);
-	vec3 dpdy = dFdy(klm);
 	
-	// Chain rule
-	vec3 dfdp = vec3(3.0 * klm.x * klm.x, -klm.z, -klm.y);
-	vec2 f = vec2(dot(dfdp, dpdx), dot(dfdp, dpdy));
+	float antialias_divisor = 1.0;
+	
+	if (antialiased) {
+		// Gradients
+		vec3 dpdx = dFdx(klm);
+		vec3 dpdy = dFdy(klm);
+		
+		// Chain rule
+		vec3 dfdp = vec3(3.0 * klm.x * klm.x, -klm.z, -klm.y);
+		vec2 f = vec2(dot(dfdp, dpdx), dot(dfdp, dpdy));
+		
+		antialias_divisor = length(f);
+	}
 	
 	// Linear algebra
-	float sd = inside_sign * (klm.x * klm.x * klm.x - klm.y * klm.z) / length(f);
+	float sd = inside_sign * (klm.x * klm.x * klm.x - klm.y * klm.z) / antialias_divisor;
 	
-	sd = 0.5 - sd;
-	color.a = clamp(sd, 0.0, 1.0) * color.a;
+	if (antialiased) {
+		sd = 0.5 - sd;
+		color.a = clamp(sd, 0.0, 1.0) * color.a;
+	} else {
+		color.a = step(sd, 0.0) * color.a;
+	}
 
 	return color;
 }
@@ -154,6 +177,10 @@ vec4 radial_gradient(vec2 uv) {
 	return color;
 }
 
+void vertex() {
+	implicit_coordinates = CUSTOM0;
+}
+
 void fragment() {
 	vec3 normal = NORMAL_MAP;
 	mat3 container_uv_transform = mat3(
@@ -173,19 +200,18 @@ void fragment() {
 		gradient_color = radial_gradient(transform_applied_uv);
 	}
 	vec4 blend_color = texture(fill_texture, transform_applied_uv) * fill_color * gradient_color;
-	if (COLOR.a < 0.3) {
-		//COLOR = quadratic_ps(COLOR.rg, 2.0 * (0.5 - step(COLOR.a, 0.15)), blend_color);
-//		COLOR = vec4(0.0, 0.0, 0.0, 0.0);
-	} else if (COLOR.a < 0.6) {
-		//COLOR = cubic_ps(COLOR.rgb, 2.0 * (0.5 - step(COLOR.a, 0.45)), blend_color);
-//		COLOR = vec4(0.0, 0.0, 0.0, 0.0);
-	} else if (COLOR.a < 0.8) {
-		//COLOR = blend_color;
-//		COLOR = vec4(1.0, 0.0, 0.0, 1.0);
-//		COLOR = vec4(0.0, 0.0, 0.0, 0.0);
+	if (implicit_coordinates.a < 0.3) {
+		COLOR = quadratic_ps(implicit_coordinates.rg, 2.0 * (0.5 - step(implicit_coordinates.a, 0.15)), blend_color);
+	} else if (implicit_coordinates.a < 0.6) {
+		COLOR = cubic_ps(implicit_coordinates.rgb, 2.0 * (0.5 - step(implicit_coordinates.a, 0.45)), blend_color);
+	} else if (implicit_coordinates.a < 0.8) {
+		COLOR = blend_color;
 	} else {
-		//COLOR = antialiased_edge(COLOR.rg, blend_color);
-//		COLOR = antialiased_edge(COLOR.rg, vec4(1.0, 1.0, 1.0, 1.0));
+		if (antialiased) {
+			COLOR = antialiased_edge(implicit_coordinates.rg, blend_color);
+		} else {
+			COLOR = vec4(0.0, 0.0, 0.0, 0.0);
+		}
 	}
 }
 "

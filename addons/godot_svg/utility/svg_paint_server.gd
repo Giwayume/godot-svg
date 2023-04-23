@@ -75,13 +75,13 @@ static func generate_gradient_texture_1d(
 				current_color = srgb_to_linear_srgb(current_color)
 				next_color = srgb_to_linear_srgb(next_color)
 
-	gradient_image.create_from_data(width, 1, false, Image.FORMAT_RGBA8, data)
+	gradient_image = gradient_image.create_from_data(width, 1, false, Image.FORMAT_RGBA8, data)
 	var gradient_texture = ImageTexture.new()
 #	if texture_repeat_mode == GradientTexture2D.REPEAT:
 #		flags |= Texture2D.FLAG_REPEAT
 #	elif texture_repeat_mode == GradientTexture2D.REPEAT_MIRROR:
 #		flags |= Texture2D.FLAG_REPEAT | Texture2D.FLAG_MIRRORED_REPEAT
-	gradient_texture.create_from_image(gradient_image) #,flags
+	gradient_texture = gradient_texture.create_from_image(gradient_image) #,flags
 	return gradient_texture
 
 static func generate_linear_gradient_shader_params(
