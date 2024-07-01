@@ -1346,5 +1346,3 @@ static func triangulate_stroke_subpath(path: Array, width, cap_mode, joint_mode,
 	})
 	
 	return triangulate_fill_path(all_paths, [], null, TriangulationMethod.EARCUT, is_2d)
-
-

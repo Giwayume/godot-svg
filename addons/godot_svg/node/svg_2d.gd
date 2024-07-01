@@ -112,7 +112,7 @@ func _set_triangulation_method(triangulation_method):
 		_triangulation_method = triangulation_method
 		controller.triangulation_method = triangulation_method
 		if _svg != null and _is_ready:
-			_svg.render_cache = null
+			_svg.render_cache = {}
 		controller.generate_from_scratch()
 
 func _get_triangulation_method():
@@ -123,7 +123,7 @@ func _set_assume_no_self_intersections(assume_no_self_intersections):
 		_assume_no_self_intersections = assume_no_self_intersections
 		controller.assume_no_self_intersections = assume_no_self_intersections
 		if _svg != null and _is_ready:
-			_svg.render_cache = null
+			_svg.render_cache = {}
 		controller.generate_from_scratch()
 
 func _get_assume_no_self_intersections():
@@ -134,7 +134,7 @@ func _set_assume_no_holes(assume_no_holes):
 		_assume_no_holes = assume_no_holes
 		controller.assume_no_holes = assume_no_holes
 		if _svg != null and _is_ready:
-			_svg.render_cache = null
+			_svg.render_cache = {}
 		controller.generate_from_scratch()
 
 func _get_assume_no_holes():
@@ -145,7 +145,7 @@ func _set_disable_render_cache(disable_render_cache):
 		_disable_render_cache = disable_render_cache
 		controller.disable_render_cache = disable_render_cache
 		if _svg != null and _is_ready:
-			_svg.render_cache = null
+			_svg.render_cache = {}
 		controller.generate_from_scratch()
 	
 func _get_disable_render_cache():

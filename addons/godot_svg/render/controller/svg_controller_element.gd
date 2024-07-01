@@ -411,6 +411,7 @@ var _inherited_property_values = {} # Values of properties inherited from all of
 var _is_href_duplicate = false # Used while resolving href (gradients, etc) to mark that this is a duplicate controller of existing one.
 var _paint_server_container_node = null # Node that contains paint server assets, like viewports
 var _paint_server_textures = {} # Cache for paint server responses, key is store_name
+var _path_solver_debug = [] # Output of debug commands from path solver
 var _rerender_prop_cache = {} # Cache for certain computed values, such as fill and stroke
 var _shape_fills = [] # List of MeshInstance2D nodes representing the fill of the path
 var _shape_strokes = [] # List of MeshInstance2D nodes representing the stroke of the path
@@ -451,7 +452,7 @@ func _ready():
 			not root_controller.disable_render_cache and
 			is_cacheable and
 			root_controller.svg != null and
-			root_controller.svg.render_cache != null and
+			not root_controller.svg.render_cache.is_empty() and
 			root_controller.svg.render_cache.has("process_polygon") and
 			root_controller.svg.render_cache.process_polygon.has(render_cache_id)
 		):
@@ -848,6 +849,7 @@ func _process_simplified_polygon():
 	var simplified_holes = []
 	var needs_refill = false
 	var needs_restroke = false
+	_path_solver_debug = []
 	
 	if polygons.has("fill"):
 		if polygons.fill.size() > 0:
@@ -864,7 +866,7 @@ func _process_simplified_polygon():
 				fill_rule = attr_clip_rule
 			
 			for fill_path in polygons.fill:
-				var path_simplifications = SVGPathSolver.simplify(
+				var simplify_result = SVGPathSolver.simplify(
 					fill_path,
 					{
 						SVGValueConstant.EVEN_ODD: SVGPolygonSolver.FillRule.EVEN_ODD,
@@ -873,7 +875,11 @@ func _process_simplified_polygon():
 					root_controller.assume_no_self_intersections,
 					root_controller.assume_no_holes
 				)
-				for path_simplification in path_simplifications:
+				_path_solver_debug.push_back({
+					"paths": fill_path,
+					"log": simplify_result.debug,
+				})
+				for path_simplification in simplify_result.instruction_groups:
 					var simplified_fill = path_simplification.fill_instructions
 					var simplified_hole = path_simplification.hole_instructions
 					if simplified_fill.size() > 0:

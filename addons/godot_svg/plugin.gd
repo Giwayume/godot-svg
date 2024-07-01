@@ -106,4 +106,3 @@ func overwrite_svg_resource(resource):
 		var error = SVGResourceFormatSaver.new().save(resource.imported_path, resource, 0)
 		return error
 	return ERR_CANT_CREATE
-

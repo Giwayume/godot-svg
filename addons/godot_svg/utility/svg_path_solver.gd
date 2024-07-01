@@ -159,6 +159,9 @@ class PathSegment extends PathShape:
 	func find_direction_at(_t):
 		return p0.direction_to(p1)
 	
+	func find_point_at(t):
+		return slice(0, t).p1
+	
 	func slice(start_t, end_t):
 		var is_reversed = false
 		if start_t > end_t:
@@ -233,6 +236,9 @@ class PathQuadraticBezier extends PathShape:
 		var start_t = min(1, max(0, t - epsilon))
 		var end_t = min(1, max(0, t + epsilon))
 		return SVGMath.quadratic_bezier_at(p0, p1, p2, start_t).direction_to(SVGMath.quadratic_bezier_at(p0, p1, p2, end_t))
+	
+	func find_point_at(t):
+		return SVGMath.quadratic_bezier_at(p0, p1, p2, t)
 	
 	func slice(start_t, end_t):
 		var is_reversed = false
@@ -311,6 +317,9 @@ class PathCubicBezier extends PathShape:
 		var start_t = min(1, max(0, t - epsilon))
 		var end_t = min(1, max(0, t + epsilon))
 		return SVGMath.cubic_bezier_at(p0, p1, p2, p3, start_t).direction_to(SVGMath.cubic_bezier_at(p0, p1, p2, p3, end_t))
+	
+	func find_point_at(t):
+		return SVGMath.cubic_bezier_at(p0, p1, p2, p3, t)
 	
 	func slice(start_t, end_t):
 		var is_reversed = false
@@ -643,6 +652,9 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 	var solved_paths = []
 	var path_shapes = []
 	
+	var is_debug = true
+	var simplify_debug = []
+	
 	# Determine the looping ranges for each path
 	var path_loop_ranges = []
 	var shape_loop_ranges = []
@@ -728,8 +740,6 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 				var new_intersections = path_shape.intersect_with(other_path_shape, j != i - 1, true)
 				if new_intersections.size() > 0:
 					for new_intersection in new_intersections:
-						print_debug("new intersection ", new_intersection)
-						print_debug("shapes ", path_shape.to_string(), next_path_shape.to_string())
 						current_loop_range_intersection_count += 1
 						
 						var found_existing_intersection = null
@@ -768,6 +778,15 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 							# Add intersection to global intersection list.
 							intersections.push_back(intersection)
 							
+							# Track for debugging purposes
+							if is_debug:
+								simplify_debug.push_back({
+									"type": "intersection",
+									"point": new_intersection.point,
+									"intersected_shape_indices": [i, j],
+									"intersected_shape_t": [new_intersection.self_t, new_intersection.other_t],
+								})
+							
 							# Keep a reverse lookup of intersections at specific points.
 							if not intersections_at_positions.has(i):
 								intersections_at_positions[i] = []
@@ -789,6 +808,14 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 								intersections_at_positions[j] = []
 							if not intersections_at_positions.has(found_existing_intersection):
 								intersections_at_positions[j].push_back(found_existing_intersection)
+							
+							if is_debug:
+								simplify_debug.push_back({
+									"type": "existing_intersection",
+									"point": found_existing_intersection.point,
+									"intersected_shape_indices": [j],
+									"intersected_shape_t": [new_intersection.other_t],
+								})
 		
 		# We have reached the end of a loop, add path to solutions if no intersection occurred.
 		if i >= current_loop_range.end:
@@ -809,6 +836,12 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 	for intersection_index in path_start_end_intersection_indices:
 		if intersections[intersection_index].intersected_shape_indices.size() == 2:
 			intersection_indices_to_remove.push_back(intersection_index)
+			
+			if is_debug:
+				simplify_debug.push_back({
+					"type": "remove_star_end_intersections",
+					"intersection_index": intersection_index,
+				})
 	
 	# Loop through the list of intersections that occurred in each loop range,
 	# immediately adding a path to the solved_paths array if no intersections took place for that loop.
@@ -817,10 +850,23 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 		# No intersections found! Add the loop to the solved path list.
 		if current_loop_intersection_count == 0:
 			solved_paths.push_back(no_intersection_solved_paths[i])
+			
+			if is_debug:
+				simplify_debug.push_back({
+					"type": "add_solved_path_no_intersections",
+					"solved_path": no_intersection_solved_paths[i],
+				})
+		
 		elif current_loop_intersection_count == 1:
 			var intersection_index = loop_range_intersection_indices[i][0]
 			if intersection_indices_to_remove.has(intersection_index):
 				solved_paths.push_back(no_intersection_solved_paths[i])
+				
+				if is_debug:
+					simplify_debug.push_back({
+						"type": "add_solved_path_one_removed_intersection",
+						"solved_path": no_intersection_solved_paths[i],
+					})
 	
 	# Remove intersections that we have identified above to ignore.
 	intersection_indices_to_remove.sort()
@@ -846,7 +892,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 	no_intersection_solved_paths.clear()
 	loop_range_intersection_indices.clear()
 	path_start_end_intersection_indices.clear()
-	print_debug(intersections)
+	
 	# For each intersection point, follow the intersection lines forward, then take right turns until it comes back to the initial point
 	if intersections.size() > 0:
 		current_path_bounding_box = create_new_bounding_box()
@@ -907,6 +953,14 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 					
 					# If next intersection is our starting intersection, we're done
 					if encountered_intersections.has(next_intersection):
+					
+						if is_debug:
+							simplify_debug.push_back({
+								"type": "loop_reached_back_to_start",
+								"current_shape_index": current_shape_index,
+								"shape_slice": [check_t, next_intersection_t],
+							})
+						
 						if next_intersection == intersection:
 							# Add the rest of the shape to the path
 							if next_intersection_t != check_t:
@@ -916,6 +970,13 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 										next_intersection_t
 									)
 								)
+								if is_debug:
+									simplify_debug.push_back({
+										"type": "loop_add_rest_of_shape_to_path",
+										"current_shape_index": current_shape_index,
+										"shape_slice": [check_t, next_intersection_t],
+									})
+								
 							# Update path ranges
 							did_path_return_to_start = true
 							new_path_current_range[1] = current_shape_index
@@ -932,29 +993,53 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 						)
 						encountered_intersections.push_back(next_intersection)
 						
-						var entry_direction = traverse_direction * current_shape.find_direction_at(next_intersection_t)
+						var debug_check_angles = []
+						if is_debug:
+							simplify_debug.push_back({
+								"type": "loop_found_next_intersection",
+								"current_shape_index": current_shape_index,
+								"shape_slice": [check_t, next_intersection_t],
+							})
+						
+						var entry_angle = traverse_direction * current_shape.find_direction_at(next_intersection_t)
 						var closest_angle = INF
 						var winning_index = -1
 						var winning_t = 0.0
 						for check_shape_array_index in range(0, next_intersection.intersected_shape_indices.size()):
 							var check_shape_index = next_intersection.intersected_shape_indices[check_shape_array_index]
 							var current_check_t = next_intersection.intersected_shape_t[check_shape_array_index]
-							var check_direction = path_shapes[check_shape_index].find_direction_at(current_check_t)
+							var check_angle = path_shapes[check_shape_index].find_direction_at(current_check_t)
 							var check_loop_range = get_path_loop_range(shape_loop_ranges, check_shape_index)
-							var is_check_positive_angle = not (current_check_t < 1.0 and check_shape_index == check_loop_range.end)
-							var is_check_negative_angle = not (current_check_t > 0.0 and check_shape_index == check_loop_range.start)
-							var positive_angle = check_direction.angle_to(-entry_direction)
-							var negative_angle = -check_direction.angle_to(-entry_direction)
+							# TODO - I don't know what this logic was fixing. It breaks the simple star in painting-fill-03-t.svg
+							#var is_check_positive_angle = not (current_check_t < 1.0 and check_shape_index == check_loop_range.end)
+							#var is_check_negative_angle = not (current_check_t > 0.0 and check_shape_index == check_loop_range.start)
+							
+							# The is_check_positive_angle and is_check_negative_angle variables ensure we don't go back from where we came.
+							var is_check_positive_angle = not (current_shape_index == check_shape_index and traverse_direction == -1)
+							var is_check_negative_angle = not (current_shape_index == check_shape_index and traverse_direction == 1)
+							var positive_angle = check_angle.angle_to(-entry_angle)
+							var negative_angle = -check_angle.angle_to(-entry_angle)
 							if positive_angle < 0.0:
 								positive_angle = PI + abs(positive_angle)
 							if negative_angle < 0.0:
 								negative_angle = PI + abs(negative_angle)
+							if is_debug:
+								debug_check_angles.push_back({
+									"current_shape_index": current_shape_index,
+									"check_shape_index": check_shape_index,
+									"current_check_t": current_check_t,
+									"check_angle": check_angle,
+									"positive_angle": positive_angle,
+									"negative_angle": negative_angle,
+									"is_check_positive_angle": is_check_positive_angle,
+									"is_check_negative_angle": is_check_negative_angle,
+								})
 							if is_check_positive_angle and positive_angle > 0 and positive_angle < closest_angle:
 								closest_angle = positive_angle
 								winning_index = check_shape_index
 								winning_t = current_check_t
 								traverse_direction = 1
-							elif is_check_negative_angle and negative_angle > 0 and negative_angle < closest_angle:
+							if is_check_negative_angle and negative_angle > 0 and negative_angle < closest_angle:
 								closest_angle = negative_angle
 								winning_index = check_shape_index
 								winning_t = current_check_t
@@ -970,6 +1055,18 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 							has_looped_from_beginning = false
 							last_passed_intersection = next_intersection
 							last_passed_intersection_start_shape_index = winning_index
+							
+							if is_debug:
+								simplify_debug.push_back({
+									"type": "loop_found_right_turn",
+									"new_shape_index": current_shape_index,
+									"new_t": check_t,
+									"traverse_direction": traverse_direction,
+									"closest_angle": closest_angle,
+									"entry_angle": entry_angle,
+									"check_angles": debug_check_angles,
+								})
+							
 							if (
 								traverse_direction > 0 and last_passed_intersection.solved.has(
 									str(last_passed_intersection_start_shape_index) + "_" + str(winning_t)
@@ -980,6 +1077,12 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 									"shape_index": last_passed_intersection_start_shape_index,
 									"shape_t": winning_t,
 								})
+								if is_debug:
+									simplify_debug.push_back({
+										"type": "loop_found_right_turn_add_existing_solution",
+										"shape_index": last_passed_intersection_start_shape_index,
+										"shape_t": winning_t,
+									})
 						else:
 							print("[godot-svg] Error solving simple shape: no valid direction found")
 							break
@@ -991,6 +1094,13 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 							(1.0 if traverse_direction > 0.0 else 0.0)
 						)
 						new_path.push_back(new_sliced_shape)
+						
+						if is_debug:
+							simplify_debug.push_back({
+								"type": "loop_no_intersection_found",
+								"current_shape_index": current_shape_index,
+								"shape_slice": [check_t, (1.0 if traverse_direction > 0.0 else 0.0)],
+							})
 						
 						current_path_bounding_box = apply_shape_to_bounding_box(current_path_bounding_box, current_shape)
 						
@@ -1030,6 +1140,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 						if trumps_all_existing_solutions:
 							for existing_solution in existing_solutions:
 								existing_solution.intersection.solved.erase(str(existing_solution.shape_index) + "_" + str(existing_solution.shape_t))
+					
 					if trumps_all_existing_solutions:
 						intersection.solved[str(shape_start_index) + "_" + str(shape_start_t)] = {
 							"path": new_path,
@@ -1038,6 +1149,18 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 							"is_clockwise": PathShape.sum_over_edges(new_path) < 0.0,
 						}
 						current_path_bounding_box = create_new_bounding_box()
+						
+						if is_debug:
+							simplify_debug.push_back({
+								"type": "found_final_solution",
+								"path_ranges": new_path_ranges,
+							})
+					else:
+						if is_debug:
+							simplify_debug.push_back({
+								"type": "solution_discarded",
+								"path_ranges": new_path_ranges,
+							})
 		
 		for intersection in intersections:
 			for solved_key in intersection.solved:
@@ -1051,7 +1174,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 	var hole_candidates = []
 	var current_solved_path_index = 0
 	for solved_path_info in solved_paths:
-#		print_debug(SVGAttributeParser.serialize_d(convert_path_shapes_to_instructions(solved_path_info.path)))
+		#print_debug(SVGAttributeParser.serialize_d(convert_path_shapes_to_instructions(solved_path_info.path)))
 		var is_insideness_even = true
 		var is_insideness_non_zero = false
 		var solved_path = solved_path_info.path
@@ -1175,6 +1298,8 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 			"is_clockwise": filled_paths_clockwise_checks[path_index],
 			"hole_instructions": hole_instructions,
 		})
-		
-	return instruction_groups
-
+	
+	return {
+		"debug": simplify_debug,
+		"instruction_groups": instruction_groups,
+	}

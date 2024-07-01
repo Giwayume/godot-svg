@@ -172,7 +172,7 @@ func _generate_from_scratch_deferred():
 	
 	# Create controllers
 	if svg is SVGResource and svg.viewport != null:
-		_is_render_cache_computed = svg.render_cache != null
+		_is_render_cache_computed = not svg.render_cache.is_empty()
 		if not disable_render_cache and not _is_render_cache_computed:
 			svg.render_cache = {
 				"process_polygon": {},
@@ -457,14 +457,18 @@ func get_elements_by_name(name: String, parent_resource = null) -> Array:
 	var found_resources = []
 	for child_resource in parent_resource.children:
 		if child_resource != null:
-			if child_resource.node_name == name:
-				var controller = _element_resource_to_controller_map[child_resource]
-				found_resources.push_back({
-					"resource": child_resource,
-					"controller": controller,
-					"node": controller.controlled_node,
-				})
-				found_resources.append_array(get_elements_by_name(name, child_resource))
+			var controller = _element_resource_to_controller_map[child_resource] if _element_resource_to_controller_map.has(child_resource) else null
+			if controller:
+				if child_resource.node_name == name:
+					found_resources.push_back({
+						"resource": child_resource,
+						"controller": controller,
+						"node": controller.controlled_node,
+					})
+				elif child_resource.node_name == "g":
+					found_resources.append_array(
+						get_elements_by_name(name, child_resource)
+					)
 	return found_resources
 
 # Resolves an IRI reference, returning a dictionary containing the

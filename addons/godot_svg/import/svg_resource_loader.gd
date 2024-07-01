@@ -27,7 +27,7 @@ func _load(path: String, original_path: String, use_sub_threads: bool, cache_mod
 	
 	var xml_string = ""
 	var xml_buffer = null
-	var render_cache = null
+	var render_cache = {}
 	if file_text.begins_with("{"):
 		var test_json_conv = JSON.new()
 		var test_json_conv_error = test_json_conv.parse(file_text)
@@ -42,9 +42,8 @@ func _load(path: String, original_path: String, use_sub_threads: bool, cache_mod
 	
 	var svg_resource = SVGResource.new()
 	svg_resource.xml = xml_string
-	svg_resource.render_cache = null if render_cache == null else str_to_var(render_cache)
+	svg_resource.render_cache = {} if render_cache.is_empty() else str_to_var(render_cache)
 	svg_resource.imported_path = path
-	
 	return load_svg_resource_from_buffer(svg_resource, xml_string.to_utf8_buffer())
 
 func load_svg_resource_from_buffer(svg_resource, xml_string_buffer: PackedByteArray):

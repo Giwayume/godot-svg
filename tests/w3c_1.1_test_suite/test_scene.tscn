@@ -1,29 +1,28 @@
-[gd_scene load_steps=8 format=2]
+[gd_scene load_steps=8 format=3 uid="uid://c0nrmxyel2ym2"]
 
-[ext_resource path="res://addons/godot_svg/node/svg_2d.gd" type="Script" id=1]
-[ext_resource path="res://tests/_test_scene_control.gd" type="Script" id=2]
-[ext_resource path="res://tests/w3c_1.1_test_suite/svg/pservers/pservers-grad-06-b.svg" type="Resource" id=3]
-[ext_resource path="res://tests/w3c_1.1_test_suite/svg/pservers/pservers-grad-03-b.svg" type="Resource" id=4]
-[ext_resource path="res://tests/w3c_1.1_test_suite/svg/pservers/pservers-grad-02-b.svg" type="Resource" id=5]
-[ext_resource path="res://tests/w3c_1.1_test_suite/svg/custom/firefox_logo_2019.svg" type="Resource" id=6]
-[ext_resource path="res://tests/w3c_1.1_test_suite/svg/custom/color_interpolation_gradient_pure.svg" type="Resource" id=7]
+[ext_resource type="Script" path="res://addons/godot_svg/node/svg_2d.gd" id="1"]
+[ext_resource type="Script" path="res://tests/_test_scene_control.gd" id="2"]
+[ext_resource type="Texture2D" uid="uid://b73wnan5rpk2r" path="res://tests/w3c_1.1_test_suite/svg/pservers/pservers-grad-06-b.svg" id="3"]
+[ext_resource type="Texture2D" uid="uid://cqxm71u330ydg" path="res://tests/w3c_1.1_test_suite/svg/pservers/pservers-grad-03-b.svg" id="4"]
+[ext_resource type="Texture2D" uid="uid://bg6ccmncgwr1" path="res://tests/w3c_1.1_test_suite/svg/pservers/pservers-grad-02-b.svg" id="5"]
+[ext_resource type="Resource" uid="uid://chpm0mtnp62jn" path="res://tests/w3c_1.1_test_suite/svg/custom/firefox_logo_2019.svg" id="6"]
+[ext_resource type="Texture2D" uid="uid://jtcxrftb15rr" path="res://tests/w3c_1.1_test_suite/svg/custom/color_interpolation_gradient_pure.svg" id="7"]
 
 [node name="SVGTestScene" type="Node2D"]
-script = ExtResource( 2 )
+script = ExtResource("2")
 
 [node name="Camera2D" type="Camera2D" parent="."]
-position = Vector2( 511, 299 )
-current = true
+position = Vector2(511, 299)
 
 [node name="ColorRect" type="ColorRect" parent="."]
 offset_right = 1066.0
 offset_bottom = 622.0
 
 [node name="FirefoxSVG" type="Node2D" parent="."]
-position = Vector2( 486, 366 )
-scale = Vector2( 2, 2 )
-script = ExtResource( 1 )
-svg = ExtResource( 6 )
+position = Vector2(486, 366)
+scale = Vector2(2, 2)
+script = ExtResource("1")
+svg = ExtResource("6")
 fixed_scaling_ratio = 0
 antialiased = true
 triangulation_method = 0
@@ -32,8 +31,9 @@ assume_no_holes = false
 disable_render_cache = false
 
 [node name="Gradient06SVG" type="Node2D" parent="."]
-script = ExtResource( 1 )
-svg = ExtResource( 3 )
+visible = false
+script = ExtResource("1")
+svg = ExtResource("3")
 fixed_scaling_ratio = 0
 antialiased = true
 triangulation_method = 0
@@ -42,9 +42,10 @@ assume_no_holes = false
 disable_render_cache = true
 
 [node name="PatternSVG" type="Node2D" parent="."]
-position = Vector2( 479, 1 )
-script = ExtResource( 1 )
-svg = ExtResource( 4 )
+visible = false
+position = Vector2(479, 1)
+script = ExtResource("1")
+svg = ExtResource("4")
 fixed_scaling_ratio = 0
 antialiased = true
 triangulation_method = 0
@@ -53,9 +54,10 @@ assume_no_holes = false
 disable_render_cache = false
 
 [node name="Gradient02SVG" type="Node2D" parent="."]
-position = Vector2( 0, 362 )
-script = ExtResource( 1 )
-svg = ExtResource( 5 )
+visible = false
+position = Vector2(0, 362)
+script = ExtResource("1")
+svg = ExtResource("5")
 fixed_scaling_ratio = 0
 antialiased = true
 triangulation_method = 0
@@ -64,10 +66,11 @@ assume_no_holes = false
 disable_render_cache = false
 
 [node name="ColorInterpolationSVG" type="Node2D" parent="."]
-position = Vector2( 676, 361 )
-scale = Vector2( 0.6, 0.6 )
-script = ExtResource( 1 )
-svg = ExtResource( 7 )
+visible = false
+position = Vector2(676, 361)
+scale = Vector2(0.6, 0.6)
+script = ExtResource("1")
+svg = ExtResource("7")
 fixed_scaling_ratio = 0
 antialiased = true
 triangulation_method = 0
