@@ -196,6 +196,8 @@ func _process_polygon():
 func _calculate_bounding_box():
 	# TODO - currently only calculated during render.
 	emit_signal("bounding_box_calculated", _bounding_box)
+	if parent_controller != null and parent_controller.node_name == "g":
+		parent_controller._calculate_bounding_box()
 
 #-------------------#
 # Getters / Setters #

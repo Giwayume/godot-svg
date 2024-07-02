@@ -364,10 +364,10 @@ static func segment_intersects_triangle(s0: Vector2, s1: Vector2, t0: Array):
 		Geometry2D.segment_intersects_segment(s0, s1, t0[0], t0[2])
 	)
 
-static func to_3d_point(point: Vector2, is_2d: bool):
+static func to_3d_point(point, is_2d: bool, z = 0.0):
 	if is_2d:
 		return point
-	return Vector3(point.x, point.y, 0.0)
+	return Vector3(point.x, point.y, z)
 
 static func to_2d_point(point):
 	return Vector2(point.x, point.y)

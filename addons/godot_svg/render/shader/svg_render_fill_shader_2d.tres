@@ -182,6 +182,7 @@ void vertex() {
 }
 
 void fragment() {
+	float alpha = COLOR.a;
 	vec3 normal = NORMAL_MAP;
 	mat3 container_uv_transform = mat3(
 		vec3(uv_transform_column_1.x, uv_transform_column_2.x, 0.0),
@@ -199,7 +200,7 @@ void fragment() {
 	} else if (gradient_type == 2) {
 		gradient_color = radial_gradient(transform_applied_uv);
 	}
-	vec4 blend_color = texture(fill_texture, transform_applied_uv) * fill_color * gradient_color;
+	vec4 blend_color = texture(fill_texture, transform_applied_uv) * fill_color * gradient_color * vec4(1.0, 1.0, 1.0, alpha);
 	if (implicit_coordinates.a < 0.3) {
 		COLOR = quadratic_ps(implicit_coordinates.rg, 2.0 * (0.5 - step(implicit_coordinates.a, 0.15)), blend_color);
 	} else if (implicit_coordinates.a < 0.6) {

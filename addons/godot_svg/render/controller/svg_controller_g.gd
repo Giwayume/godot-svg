@@ -30,6 +30,8 @@ func _calculate_bounding_box():
 				bottom = child_bounds.position.y + child_bounds.size.y
 	_bounding_box = Rect2(left, top, right - left, bottom - top)
 	emit_signal("bounding_box_calculated", _bounding_box)
+	if parent_controller != null and parent_controller.node_name == "g":
+		parent_controller._calculate_bounding_box()
 
 func _on_child_bounds_changed(_child_bounding_box):
 	_calculate_bounding_box()

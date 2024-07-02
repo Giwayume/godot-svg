@@ -20,6 +20,8 @@ var controller = null
 func _notification(what):
 	if controller != null and controller.has_method("_notification"):
 		controller._notification(what)
+	if what == NOTIFICATION_PREDELETE:
+		controller = null
 
 func _ready():
 	controller._ready()
@@ -32,10 +34,10 @@ func _draw():
 #----------------#
 
 func add_child(new_child, force_readable_name = false, internal = 0):
-	controller.add_child(new_child, force_readable_name, internal)
+	controller.add_child(new_child, force_readable_name)
 
 func add_child_to_root(new_child, force_readable_name = false, internal = 0):
-	super.add_child(new_child, force_readable_name, internal)
+	super.add_child(new_child, force_readable_name)
 
 func get_attribute(name: String):
 	var value = null

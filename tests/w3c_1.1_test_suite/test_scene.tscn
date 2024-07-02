@@ -1,7 +1,7 @@
 [gd_scene load_steps=8 format=3 uid="uid://c0nrmxyel2ym2"]
 
 [ext_resource type="Script" path="res://addons/godot_svg/node/svg_2d.gd" id="1"]
-[ext_resource type="Script" path="res://tests/_test_scene_control.gd" id="2"]
+[ext_resource type="Script" path="res://tests/scripts/test_scene_control.gd" id="2"]
 [ext_resource type="Texture2D" uid="uid://b73wnan5rpk2r" path="res://tests/w3c_1.1_test_suite/svg/pservers/pservers-grad-06-b.svg" id="3"]
 [ext_resource type="Texture2D" uid="uid://cqxm71u330ydg" path="res://tests/w3c_1.1_test_suite/svg/pservers/pservers-grad-03-b.svg" id="4"]
 [ext_resource type="Texture2D" uid="uid://bg6ccmncgwr1" path="res://tests/w3c_1.1_test_suite/svg/pservers/pservers-grad-02-b.svg" id="5"]

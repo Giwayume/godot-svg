@@ -23,7 +23,7 @@ static func evaluate_rect_bounding_box(bounding_box: Dictionary, rect: Rect2):
 	if rect.position.y + rect.size.y > bounding_box.bottom:
 		bounding_box.bottom = rect.position.y + rect.size.y
 
-static func generate_uv_at_point(bounding_box: Dictionary, point: Vector2) -> Vector2:
+static func generate_uv_at_point(bounding_box: Dictionary, point) -> Vector2:
 	var x_denominator = (bounding_box.right - bounding_box.left)
 	var y_denominator = (bounding_box.bottom - bounding_box.top)
 	if x_denominator != 0.0 and y_denominator != 0.0:
@@ -314,7 +314,7 @@ static func circle_segment_to_quadratic_bezier(start_point, end_point, start_dir
 # path is an array of dictionaries following the format:
 # { "command": PathCommand, "points": [Vector()] }
 # It only supports a subset of PathCommand. Points are absolute coordinates.
-static func triangulate_fill_path(path: Array, holes: Array = [], override_clockwise_check = null, triangulation_method = TriangulationMethod.EARCUT, is_2d = true):
+static func triangulate_fill_path(path: Array, holes: Array = [], override_clockwise_check = null, triangulation_method = TriangulationMethod.EARCUT, is_2d = true, z = 0.0):
 #	print_debug(SVGAttributeParser.serialize_d(path))
 	var current_point = Vector2()
 	var current_path_start_point = current_point
@@ -451,7 +451,7 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 				var final_subdivided_paths = []
 				var subdivide_index = 0
 				for subdivided_path in subdivided_paths:
-					var cubic_evaluation = SVGCubics.evaluate_control_points([subdivided_path.current_point, subdivided_path.points[0], subdivided_path.points[1], subdivided_path.points[2]], is_2d)
+					var cubic_evaluation = SVGCubics.evaluate_control_points([subdivided_path.current_point, subdivided_path.points[0], subdivided_path.points[1], subdivided_path.points[2]], is_2d, z)
 					var subdivided_evaluations = []
 					if cubic_evaluation.needs_subdivision_at.size() > 0:
 						cubic_evaluation.needs_subdivision_at.push_back(1.0)
@@ -504,16 +504,16 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 				current_point = instruction.points[0]
 				current_path_start_point = current_point
 				if not [PathCommand.MOVE_TO, PathCommand.CLOSE_PATH].has(next_instruction.command):
-					interior_polygon.push_back(SVGMath.to_3d_point(current_point, is_2d))
+					interior_polygon.push_back(SVGMath.to_3d_point(current_point, is_2d, z))
 			PathCommand.LINE_TO:
 				current_point = instruction.points[0]
-				interior_polygon.push_back(SVGMath.to_3d_point(current_point, is_2d))
+				interior_polygon.push_back(SVGMath.to_3d_point(current_point, is_2d, z))
 			PathCommand.QUADRATIC_BEZIER_CURVE:
-				var current_point_3d = SVGMath.to_3d_point(current_point, is_2d)
+				var current_point_3d = SVGMath.to_3d_point(current_point, is_2d, z)
 				var control_point = instruction.points[0]
-				var control_point_3d = SVGMath.to_3d_point(control_point, is_2d)
+				var control_point_3d = SVGMath.to_3d_point(control_point, is_2d, z)
 				var end_point = instruction.points[1]
-				var end_point_3d = SVGMath.to_3d_point(end_point, is_2d)
+				var end_point_3d = SVGMath.to_3d_point(end_point, is_2d, z)
 				var is_interior = false
 				if SVGMath.is_point_right_of_segment(current_point, end_point, control_point) == is_clockwise:
 					is_interior = true
@@ -540,23 +540,23 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 				current_point = end_point
 			PathCommand.CUBIC_BEZIER_CURVE:
 				var start_point = current_point
-				var start_point_3d = SVGMath.to_3d_point(start_point, is_2d)
+				var start_point_3d = SVGMath.to_3d_point(start_point, is_2d, z)
 				var control_point_1 = instruction.points[0]
-				var control_point_1_3d = SVGMath.to_3d_point(control_point_1, is_2d)
+				var control_point_1_3d = SVGMath.to_3d_point(control_point_1, is_2d, z)
 				var control_point_2 = instruction.points[1]
-				var control_point_2_3d = SVGMath.to_3d_point(control_point_2, is_2d)
+				var control_point_2_3d = SVGMath.to_3d_point(control_point_2, is_2d, z)
 				var end_point = instruction.points[2]
-				var end_point_3d = SVGMath.to_3d_point(end_point, is_2d)
+				var end_point_3d = SVGMath.to_3d_point(end_point, is_2d, z)
 				var control_intersection = Geometry2D.segment_intersects_segment(start_point, end_point, control_point_1, control_point_2)
 				# If the control points intersect the start/end points, interior polygon can vary wildly
 				if control_intersection != null and not control_intersection == start_point and not control_intersection == end_point:
-					var control_intersection_3d = SVGMath.to_3d_point(control_intersection, is_2d)
+					var control_intersection_3d = SVGMath.to_3d_point(control_intersection, is_2d, z)
 					var control_point_1_distance = SVGMath.point_distance_along_segment(start_point, end_point, control_point_1)
 					var control_point_2_distance = SVGMath.point_distance_along_segment(start_point, end_point, control_point_2)
 					var first_control_point = control_point_1 if control_point_1_distance < control_point_2_distance else control_point_2
-					var first_control_point_3d = SVGMath.to_3d_point(first_control_point, is_2d)
+					var first_control_point_3d = SVGMath.to_3d_point(first_control_point, is_2d, z)
 					var second_control_point = control_point_2 if control_point_1_distance < control_point_2_distance else control_point_1
-					var second_control_point_3d = SVGMath.to_3d_point(second_control_point, is_2d)
+					var second_control_point_3d = SVGMath.to_3d_point(second_control_point, is_2d, z)
 					if SVGMath.is_point_right_of_segment(start_point, end_point, first_control_point) == is_clockwise:
 						interior_polygon.push_back(first_control_point_3d)
 						add_duplicate_edge(duplicate_edges, start_point, first_control_point)
@@ -588,7 +588,7 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 				var cubic_evaluation = (
 					cubic_evaluations[i]
 					if cubic_evaluations.has(i) else
-					SVGCubics.evaluate_control_points([start_point, control_point_1, control_point_2, end_point], is_2d)
+					SVGCubics.evaluate_control_points([start_point, control_point_1, control_point_2, end_point], is_2d, z)
 				)
 				cubic_vertices.append_array(cubic_evaluation.vertices)
 				for vertex in cubic_evaluation.vertices:
@@ -601,7 +601,7 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 				current_point = instruction.points[2]
 			PathCommand.CLOSE_PATH:
 				if not current_path_start_point.is_equal_approx(current_point):
-					interior_polygon.push_back(SVGMath.to_3d_point(current_path_start_point, is_2d))
+					interior_polygon.push_back(SVGMath.to_3d_point(current_path_start_point, is_2d, z))
 				polygon_break_indices.push_back(interior_polygon.size())
 				# break # For some reason multiple paths are being passed in some cases?
 	
@@ -743,16 +743,18 @@ static func triangulate_fill_path(path: Array, holes: Array = [], override_clock
 				var p1 = duplicate_edges[edge_key][0][2]
 				var direction = p0.direction_to(p1)
 				var edge_size = 1.0
-				var ae0 = p0 + (direction.rotated(-PI / 2.0) * edge_size)
-				var ae1 = p1 + (direction.rotated(-PI / 2.0) * edge_size)
-				var ae2 = p1 + (direction.rotated(PI / 2.0) * edge_size)
-				var ae3 = p0 + (direction.rotated(PI / 2.0) * edge_size)
-				antialias_edge_vertices.push_back(SVGMath.to_3d_point(ae0, is_2d))
-				antialias_edge_vertices.push_back(SVGMath.to_3d_point(ae1, is_2d))
-				antialias_edge_vertices.push_back(SVGMath.to_3d_point(ae2, is_2d))
-				antialias_edge_vertices.push_back(SVGMath.to_3d_point(ae0, is_2d))
-				antialias_edge_vertices.push_back(SVGMath.to_3d_point(ae2, is_2d))
-				antialias_edge_vertices.push_back(SVGMath.to_3d_point(ae3, is_2d))
+				var rotated_counter_clockwise = direction.rotated(-PI / 2.0) if p0 is Vector2 else direction.rotated(Vector3(0.0, 0.0, 1.0), -PI / 2.0)
+				var rotated_clockwise = direction.rotated(PI / 2.0) if p0 is Vector2 else direction.rotated(Vector3(0.0, 0.0, 1.0), PI / 2.0)
+				var ae0 = p0 + (rotated_counter_clockwise * edge_size)
+				var ae1 = p1 + (rotated_counter_clockwise * edge_size)
+				var ae2 = p1 + (rotated_clockwise * edge_size)
+				var ae3 = p0 + (rotated_clockwise * edge_size)
+				antialias_edge_vertices.push_back(SVGMath.to_3d_point(ae0, is_2d, z))
+				antialias_edge_vertices.push_back(SVGMath.to_3d_point(ae1, is_2d, z))
+				antialias_edge_vertices.push_back(SVGMath.to_3d_point(ae2, is_2d, z))
+				antialias_edge_vertices.push_back(SVGMath.to_3d_point(ae0, is_2d, z))
+				antialias_edge_vertices.push_back(SVGMath.to_3d_point(ae2, is_2d, z))
+				antialias_edge_vertices.push_back(SVGMath.to_3d_point(ae3, is_2d, z))
 				antialias_edge_implicit_coordinates.push_back(Vector2(0.0, 0.0))
 				antialias_edge_implicit_coordinates.push_back(Vector2(1.0, 0.0))
 				antialias_edge_implicit_coordinates.push_back(Vector2(1.0, 1.0))
@@ -789,7 +791,7 @@ static func combine_triangulation(triangulation1, triangulation2):
 	var bounding_box = triangulation1.bounding_box
 	var interior_vertices = []
 	var interior_implicit_coordinates = []
-	var interior_uv
+	var interior_uv = []
 	var quadratic_vertices = []
 	var quadratic_implicit_coordinates = []
 	var quadratic_signs = []
@@ -891,7 +893,7 @@ static func adaptive_offset_curve(curve_points, offset, recursion_count = 0):
 # path is an array of dictionaries following the format:
 # { "command": PathCommand, "points": [Vector()] }
 # It only supports a subset of PathCommand. Points are absolute coordinates.
-static func triangulate_stroke_path(path: Array, width, cap_mode, joint_mode, sharp_limit, closed: bool):
+static func triangulate_stroke_path(path: Array, width, cap_mode, joint_mode, sharp_limit, closed: bool, is_2d = true, z = 0.0):
 	var is_path_start = true
 	var working_path = []
 	var triangulation_result = null
@@ -944,7 +946,7 @@ static func triangulate_stroke_path(path: Array, width, cap_mode, joint_mode, sh
 					break
 				is_encountered_close = true
 		if path_to_triangulate != null:
-			var subpath_triangulation = triangulate_stroke_subpath(path_to_triangulate, width, cap_mode, joint_mode, sharp_limit, closed and is_path_start)
+			var subpath_triangulation = triangulate_stroke_subpath(path_to_triangulate, width, cap_mode, joint_mode, sharp_limit, closed and is_path_start, is_2d, z)
 			if triangulation_result == null:
 				triangulation_result = subpath_triangulation
 			else:
@@ -956,7 +958,7 @@ static func triangulate_stroke_path(path: Array, width, cap_mode, joint_mode, sh
 	return triangulation_result
 
 # Does the work to outline a single subpath (no internal move or close commands)
-static func triangulate_stroke_subpath(path: Array, width, cap_mode, joint_mode, sharp_limit, closed: bool, is_2d = true):
+static func triangulate_stroke_subpath(path: Array, width, cap_mode, joint_mode, sharp_limit, closed: bool, is_2d = true, z = 0.0):
 	var half_width = width / 2.0
 	
 	if path.size() < 2 or not path[0].has("points"):
@@ -1345,4 +1347,4 @@ static func triangulate_stroke_subpath(path: Array, width, cap_mode, joint_mode,
 		"command": PathCommand.CLOSE_PATH,
 	})
 	
-	return triangulate_fill_path(all_paths, [], null, TriangulationMethod.EARCUT, is_2d)
+	return triangulate_fill_path(all_paths, [], null, TriangulationMethod.EARCUT, is_2d, z)

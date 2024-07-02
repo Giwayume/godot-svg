@@ -21,6 +21,8 @@ var controller = null
 func _notification(what):
 	if controller != null and controller.has_method("_notification"):
 		controller._notification(what)
+	if what == NOTIFICATION_PREDELETE:
+		controller = null
 
 func _ready():
 	controller._ready()

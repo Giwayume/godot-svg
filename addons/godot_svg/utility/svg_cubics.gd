@@ -208,7 +208,7 @@ static func H(d: Array, t: float, s: float):
 		d[1] * d[1] * t * t
 	)
 
-static func evaluate_control_points(control_points: Array, is_2d: bool = true):
+static func evaluate_control_points(control_points: Array, is_2d: bool = true, z = 0.0):
 	var vertices = PackedVector2Array() if is_2d else PackedVector3Array()
 	var implicit_coordinates = PackedVector3Array()
 	
@@ -261,7 +261,7 @@ static func evaluate_control_points(control_points: Array, is_2d: bool = true):
 	
 	if max_x - min_x == 0.0 or max_y - min_y == 0.0:
 		for i in range(0, 4):
-			vertices.push_back(Vector2.ZERO if is_2d else Vector3.ZERO)
+			vertices.push_back(Vector2.ZERO if is_2d else Vector3(0.0, 0.0, z))
 			implicit_coordinates.push_back(Vector3.ZERO)
 		return {
 			"vertices": vertices,
@@ -466,7 +466,7 @@ static func evaluate_control_points(control_points: Array, is_2d: bool = true):
 		order = [0, 2, 1, 3]
 	
 	for i in [order[0], order[1], order[2], order[1], order[2], order[3]]:
-		vertices.push_back(SVGMath.to_3d_point(control_points[i], is_2d))
+		vertices.push_back(SVGMath.to_3d_point(control_points[i], is_2d, z))
 		implicit_coordinates.push_back(Vector3(
 			tex_coords.rows[i][0],
 			tex_coords.rows[i][1],

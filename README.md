@@ -1,6 +1,6 @@
 # Godot SVG
 
-This Godot 4.0 plugin **renders SVG files at runtime**. It achieves the effect of infinite scaling and smooth curves by calculating the curves in shaders drawn on polygons.
+This Godot 4.3 plugin **renders SVG files at runtime**. It achieves the effect of infinite scaling and smooth curves by calculating the curves in shaders drawn on polygons.
 
 To be clear, Godot already has built-in functionality to import SVGs and display them as rasterized (pixel map) textures in-game. This is likely what you should do 90% of the time instead of using this plugin to render every SVG in your game.
 
@@ -18,9 +18,7 @@ This software is in early development.
 
 Resolving the following issues in Godot core will improve this plugin. Please visit them and give a thumbs up.
 
-1. [OpenGL: MSAA antialiasing is not reimplemented yet](https://github.com/godotengine/godot/issues/69462) - SVGs are drawn on meshes, there are noticable aliasing artifacts especially as you scale out. This will fix that.
-
-2. [Expose _edit_get_rect, _edit_use_rect to gdscript](https://github.com/godotengine/godot-proposals/issues/5289) - SVG2D is set up as a custom node, without this engine feature you cannot resize and rescale it with editor controls (must use the inspector).
+1. [Expose _edit_get_rect, _edit_use_rect to gdscript](https://github.com/godotengine/godot-proposals/issues/5289) - SVG2D is set up as a custom node, without this engine feature you cannot resize and rescale it with editor controls (must use the inspector).
 
 ## Installation
 
@@ -89,6 +87,12 @@ Use in 2D scenes similar to how you would use a *TextureRect*. How the SVG fits 
 |:-----------------|:------|
 | remove_attribute(name: String) | Removes an attribute with the specified name. |
 | set_attribute(name: String, value: String) | Sets the value of an attribute with the specified name. It is recommended at the moment to pass a string value, equivalent to what you would type in a SVG document. |
+
+### SVG3D Documentation
+
+While a SVG3D node exists, this is **purely experimental** at the moment, and you can expect it to have **breaking changes** in the future.
+
+The main problem with this node at the moment is Godot doesn't provide an easy way to accurately sort transparent 3D meshes.
 
 ## Performance Considerations
 

@@ -13,7 +13,10 @@ signal distribute_inherited_properties(inherited_props)
 const PathCommand = SVGValueConstant.PathCommand
 const SVGRenderBakedShader2D = preload("../shader/svg_render_baked_shader_2d.tres")
 const SVGRenderBakedShader3D = preload("../shader/svg_render_baked_shader_3d.tres")
-var SVGRenderFillShader = preload("../shader/svg_render_fill_shader.tres")
+const SVGRenderFillShader2D = preload("../shader/svg_render_fill_shader_2d.tres")
+const SVGRenderFillShader3D = preload("../shader/svg_render_fill_shader_3d.tres")
+const SORTING_GAP_3D = 0.001
+const RENDER_GAP_3D = -0.01
 
 #-------------------#
 # Public properties #
@@ -32,6 +35,7 @@ var is_root_element: bool = false # <svg> tag; SVGControllerViewport
 var node_name: String = ""
 var node_text: String = ""
 var render_cache_id: String = ""
+var render_order = 0.0
 var root_controller = null # SVGControllerRoot instance
 var parent_controller = null: set = _set_parent_controller
 var parent_viewport_controller = null: set = _set_parent_viewport_controller
@@ -404,6 +408,7 @@ var _apply_props_notify_list: Array = []
 var _assigned_global_property_names = [] # List of properties that were explicity assigned (not inherited)
 var _baked_sprite = null # Sprite2D that displays the _baking_viewport image
 var _baking_viewport = null # SubViewport used for rendering raster effects, like mask
+var _baking_canvas_group = null # Canvas group used for group opacity and other effects that a separate viewport was previously used for
 var _bounding_box = Rect2(0, 0, 0, 0) # Bounding box for the current shape (not including stroke)
 var _child_container = null # Node where controlled_node should place its children via add_child()
 var _child_list = [] # List of children that should be inside of _child_container
@@ -430,6 +435,8 @@ func _notification(what):
 		if _paint_server_container_node != null:
 			if is_instance_valid(_paint_server_container_node):
 				_paint_server_container_node.queue_free()
+			if is_instance_valid(_baking_canvas_group):
+				_baking_canvas_group.queue_free()
 			if is_instance_valid(_baking_viewport):
 				_baking_viewport.queue_free()
 			if is_instance_valid(_baked_sprite):
@@ -525,6 +532,7 @@ func _calculate_bounding_box():
 func _canvas_group_opacity_mask_updated():
 	if _baked_sprite != null and _baking_viewport != null:
 		if attr_mask == SVGValueConstant.NONE and attr_clip_path == SVGValueConstant.NONE:
+			
 			var bounding_box = get_stroked_bounding_box()
 			var scale_factor = get_scale_factor()
 			if (
@@ -576,7 +584,7 @@ func _create_mesh_from_triangulation(fill_definition):
 	var mesh = ArrayMesh.new()
 	var surface = []
 	surface.resize(ArrayMesh.ARRAY_MAX)
-	var vertices = PackedVector2Array()
+	var vertices = PackedVector2Array() if root_controller.is_2d else PackedVector3Array()
 	var implicit_coordinates = PackedFloat32Array()
 	var uv = PackedVector2Array()
 	var coordinate_index = 0
@@ -726,14 +734,24 @@ func _generate_shape_nodes(changed_prop_list: Array = []):
 		for point_list_index in range(_shape_fills.size(), polygon_lists.size()):
 			var shape = MeshInstance2D.new() if root_controller.is_2d else MeshInstance3D.new()
 			add_child(shape)
+			if not root_controller.is_2d:
+				shape.sorting_use_aabb_center = true
+				#shape.custom_aabb = AABB(_get_parent_viewport_sort_offset_position(), Vector3(0, 0, 0))
+				shape.sorting_offset = render_order * SORTING_GAP_3D
+				shape.position.z = render_order * RENDER_GAP_3D
 			_shape_fills.push_back(shape)
 		
-		if _bounding_box.size == Vector2.ZERO:
-			var bounding_boxes = []
-			for polygon_list in polygon_lists:
-				if (polygon_list.has("bounding_box")):
-					bounding_boxes.push_back(polygon_list.bounding_box)
-			_bounding_box = SVGHelper.merge_bounding_boxes(bounding_boxes)
+		if _bounding_box.size == Vector2.ZERO && processed_polygon.bounding_box.size != Vector2.ZERO:
+			_bounding_box = processed_polygon.bounding_box
+			
+			#print_debug(processed_polygon.bounding_box)
+			#var bounding_boxes = []
+			#for polygon_list in polygon_lists:
+				#if (polygon_list.has("bounding_box")):
+					##print_debug(polygon_list.bounding_box)
+					#bounding_boxes.push_back(polygon_list.bounding_box)
+			#if len(bounding_boxes) > 0:
+				#_bounding_box = SVGHelper.merge_bounding_boxes(bounding_boxes)
 		
 		var fill_index = 0
 		for _shape_fill in _shape_fills:
@@ -741,7 +759,7 @@ func _generate_shape_nodes(changed_prop_list: Array = []):
 			if fill_index < polygon_lists.size():
 				_shape_fill.mesh = _create_mesh_from_triangulation(polygon_lists[fill_index])
 				material = ShaderMaterial.new()
-				material.shader = SVGRenderFillShader
+				material.shader = SVGRenderFillShader2D if root_controller.is_2d else SVGRenderFillShader3D
 				material.set_shader_parameter("antialiased", root_controller.antialiased)
 				if root_controller.is_2d:
 					_shape_fill.material = material
@@ -777,6 +795,11 @@ func _generate_shape_nodes(changed_prop_list: Array = []):
 		for stroke_list_index in range(_shape_strokes.size(), polygon_lists.size()):
 			var shape = MeshInstance2D.new() if root_controller.is_2d else MeshInstance3D.new()
 			add_child(shape)
+			if not root_controller.is_2d:
+				shape.sorting_use_aabb_center = true
+				#shape.custom_aabb = AABB(_get_parent_viewport_sort_offset_position(), Vector3(0, 0, 0))
+				shape.sorting_offset = render_order * SORTING_GAP_3D
+				shape.position.z = render_order * RENDER_GAP_3D
 			_shape_strokes.push_back(shape)
 		
 		var stroke_index = 0
@@ -785,7 +808,7 @@ func _generate_shape_nodes(changed_prop_list: Array = []):
 			if stroke_index < polygon_lists.size():
 				_shape_stroke.mesh = _create_mesh_from_triangulation(polygon_lists[stroke_index])
 				material = ShaderMaterial.new()
-				material.shader = SVGRenderFillShader
+				material.shader = SVGRenderFillShader2D if root_controller.is_2d else SVGRenderFillShader3D
 				material.set_shader_parameter("antialiased", root_controller.antialiased)
 				if root_controller.is_2d:
 					_shape_stroke.material = material
@@ -919,7 +942,7 @@ func _process_simplified_polygon():
 		_rerender_prop_cache.erase("stroke")
 		_rerender_prop_cache.erase("fill")
 		is_recalculate_paint = true
-	var bounding_box = Rect2(bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top)
+	var bounding_box = Rect2(bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top) if bounds.left != INF and bounds.right != INF else Rect2()
 	if is_recalculate_paint:
 		needs_refill = true
 		needs_restroke = true
@@ -950,7 +973,8 @@ func _process_simplified_polygon():
 								SVGTriangulation.triangulate_stroke_path(
 									dasharray_path, stroke_width, attr_stroke_linecap,
 									attr_stroke_linejoin, attr_stroke_miterlimit,
-									current_stroke[current_stroke.size() -1].command == PathCommand.CLOSE_PATH
+									current_stroke[current_stroke.size() -1].command == PathCommand.CLOSE_PATH,
+									root_controller.is_2d
 								)
 							)
 						else:
@@ -958,7 +982,8 @@ func _process_simplified_polygon():
 								SVGTriangulation.triangulate_stroke_subpath(
 									current_stroke, stroke_width, attr_stroke_linecap,
 									attr_stroke_linejoin, attr_stroke_miterlimit,
-									current_stroke[current_stroke.size() -1].command == PathCommand.CLOSE_PATH
+									current_stroke[current_stroke.size() -1].command == PathCommand.CLOSE_PATH,
+									root_controller.is_2d
 								)
 							)
 					current_stroke = []
@@ -1036,7 +1061,10 @@ func _reorganize_baking_containers():
 				if root_controller.is_2d:
 					_view_box_transform_container.position = -view_box.position
 				else:
-					pass # TODO - which way are we orienting 3D nodes?
+					_view_box_transform_container.scale = Vector3(0.001, 0.001, 0.011)
+					_view_box_transform_container.rotation = Vector3(PI, 0.0, 0.0)
+					_view_box_transform_container.position = Vector3(0.0, view_box.size.y * 0.001, 0.0)
+					# TODO - which way are we orienting 3D nodes?
 				_view_box_clip_container.add_child(_view_box_transform_container)
 				_view_box_transform_container.name = node_name + "_viewbox_transform"	
 			_swap_child_container(_view_box_transform_container)
@@ -1066,7 +1094,7 @@ func _swap_child_container(new_container):
 			var parent = child.get_parent()
 			if parent == self:
 				controlled_node.remove_child_from_root(child)
-			else:
+			elif parent != null:
 				parent.remove_child(child)
 			if new_container == self:
 				controlled_node.add_child_to_root(child)
@@ -1075,7 +1103,6 @@ func _swap_child_container(new_container):
 			swapped_child_list.push_back(child)
 	_child_list = swapped_child_list
 	_child_container = new_container
-
 
 # Applies shader params to a MeshInstance2D for passing a UV coordinate transformation matrix
 func _update_shape_material_uv_params(shape_node, texture_units, texture_uv_transform, processed_polygon):
@@ -1101,6 +1128,18 @@ func _update_shape_material_uv_params(shape_node, texture_units, texture_uv_tran
 	var material = shape_node.material if root_controller.is_2d else shape_node.material_override
 	# material.set_shader_param("uv_transform_column_1", Vector3(transform.x.x, transform.y.x, transform.origin.x))
 	# material.set_shader_param("uv_transform_column_2", Vector3(transform.x.y, transform.y.y, transform.origin.y))
+
+func _get_parent_viewport_sort_offset_position():
+	var check_controller = parent_controller
+	var transform_list = [controlled_node.transform]
+	while check_controller != null and check_controller.node_name != "viewport":
+		if check_controller.controlled_node != null:
+			transform_list.push_front(check_controller.controlled_node.transform)
+		check_controller = check_controller.parent_controller
+	var transform = Transform3D()
+	for xform in transform_list:
+		transform *= xform
+	return Vector3.ZERO * transform
 
 #------------------#
 # Signal callbacks #
@@ -1131,7 +1170,7 @@ func _on_viewport_scale_changed(new_viewport_scale):
 #----------------#
 
 # Adds a child to the current child container
-func add_child(new_child, legible_unique_name = false):
+func add_child(new_child, legible_unique_name = true):
 	if not _child_list.has(new_child):
 		_child_list.push_back(new_child)
 	if _child_container == controlled_node:

@@ -1,0 +1,227 @@
+[gd_resource type="Shader" format=3 uid="uid://d2ygmkisqyli0"]
+
+[resource]
+code = "shader_type spatial;
+render_mode cull_disabled, depth_prepass_alpha;
+
+const float GRADIENT_TILING_RATIO = 1.0;
+
+uniform bool antialiased = true;
+uniform vec4 fill_color = vec4(1.0, 1.0, 1.0, 1.0);
+uniform vec3 uv_transform_column_1 = vec3(1.0, 0.0, 0.0);
+uniform vec3 uv_transform_column_2 = vec3(0.0, 1.0, 0.0);
+uniform vec2 uv_position_in_container = vec2(0.0, 0.0);
+uniform vec2 uv_size_in_container = vec2(1.0, 1.0);
+uniform int gradient_type = 0;
+uniform vec2 gradient_start_center = vec2(0.0, 0.0);
+uniform vec2 gradient_start_radius = vec2(0.0, 0.0);
+uniform vec2 gradient_end_center = vec2(0.0, 0.0);
+uniform vec2 gradient_end_radius = vec2(0.0, 0.0);
+uniform int gradient_repeat = 0;
+uniform sampler2D fill_texture;
+uniform sampler2D gradient_texture;
+
+varying vec4 implicit_coordinates;
+
+vec4 sample_gradient(float position) {
+	if (position > 1.0) {
+		position = 1.0;
+	}
+	if (position < 0.0) {
+		position = 0.0;
+	}
+	return texture(gradient_texture, vec2(position, 0.0));
+}
+
+vec4 quadratic_ps(vec2 p, float inside_sign, vec4 color) {
+	float u = p.x;
+	float v = p.y;
+	
+	float antialias_divisor = 1.0;
+	
+	if (antialiased) {
+		// Gradients
+		vec2 dpdx = dFdx(p);
+		vec2 dpdy = dFdy(p);
+
+		// Chain rule
+		float fx = (2.0 * u) * dpdx.x - dpdx.y;
+		float fy = (2.0 * u) * dpdy.x - dpdy.y;
+		
+		antialias_divisor = sqrt(fx * fx + fy * fy);
+	}
+	
+	// Linear algebra
+	float sd = inside_sign * (u * u - v) / antialias_divisor;
+	
+	if (antialiased) {
+		color.a = clamp(sd, 0.0, 1.0) * color.a;
+	} else {
+		color.a = step(sd, 0.0) * color.a;
+	}
+	
+	return color;
+}
+
+vec4 cubic_ps(vec3 klm, float inside_sign, vec4 color) {
+	
+	float antialias_divisor = 1.0;
+	
+	if (antialiased) {
+		// Gradients
+		vec3 dpdx = dFdx(klm);
+		vec3 dpdy = dFdy(klm);
+		
+		// Chain rule
+		vec3 dfdp = vec3(3.0 * klm.x * klm.x, -klm.z, -klm.y);
+		vec2 f = vec2(dot(dfdp, dpdx), dot(dfdp, dpdy));
+		
+		antialias_divisor = length(f);
+	}
+	
+	// Linear algebra
+	float sd = inside_sign * (klm.x * klm.x * klm.x - klm.y * klm.z) / antialias_divisor;
+	
+	if (antialiased) {
+		sd = 0.5 - sd;
+		color.a = clamp(sd, 0.0, 1.0) * color.a;
+	} else {
+		color.a = step(sd, 0.0) * color.a;
+	}
+
+	return color;
+}
+
+vec2 linearstep(vec2 edge0, vec2 edge1, vec2 x) {
+	return clamp((x - (edge0)) / (edge1 - (edge0)), 0.0, 1.0);
+}
+
+vec4 antialiased_edge(vec2 uv, vec4 color) {
+	vec2 half_uv_pixel = fwidth(uv.xy) / 2.0;
+	vec2 line_antialias = linearstep(vec2(0.5), vec2(0.5 + half_uv_pixel.y, 0.5 - half_uv_pixel.y), uv.yy);
+	color.a *= (1.0 - line_antialias.y) * (1.0 - line_antialias.x);
+	return color;
+}
+
+vec4 linear_gradient(vec2 uv) {
+	vec4 color = vec4(1.0, 1.0, 1.0, 1.0);
+	vec2 bearing = gradient_end_center - gradient_start_center;
+	float grad = dot(uv.xy - gradient_start_center, bearing) / dot(bearing, bearing);
+	if (gradient_repeat == 1) { // GradientTexture2D.REPEAT
+		color = sample_gradient(fract(grad));
+	} else if (gradient_repeat == 2) { // GradientTexture2D.REPEAT_MIRROR
+		bool is_mirror = mod(grad, 2.0) < 1.0;
+		if (is_mirror) {
+			color = sample_gradient(fract(grad));
+		} else {
+			color = sample_gradient(1.0 - fract(grad));
+		}
+	} else { // GradientTexture2D.REPEAT_NONE
+		color = sample_gradient(grad);
+	}
+	return color;
+}
+
+vec4 radial_gradient(vec2 uv) {
+	vec4 color = vec4(1.0, 1.0, 1.0, 1.0);
+	
+	vec2 center = gradient_end_center;
+	vec2 end_point = center + gradient_end_radius;
+	vec2 focus = gradient_start_center;
+	vec2 coord = uv;
+	float radius = (gradient_end_radius.y - gradient_start_radius.y);
+	float start_radius_applied = gradient_start_radius.y;
+	float ellipse_ratio = 1.0;
+	vec2 container_aspect = vec2(1.0, gradient_end_radius.x / gradient_end_radius.y);
+	
+	vec2 axis = end_point - center;
+	float l2 = dot(axis, axis);
+	if (abs(l2) < 0.0001) { // l2 == 0.0
+		float d = dot(coord - center, axis) / l2;
+		vec2 proj = center + d * axis;
+		coord = proj - (proj - coord) * ellipse_ratio;
+		
+		float d2 = dot(focus - center, axis) / l2;
+		vec2 proj2 = center + d2 * axis;
+		focus = proj2 - (proj2 - focus) * ellipse_ratio;
+	}
+	
+	float grad_length = 1.0;
+	vec2 diff = focus - center;
+	vec2 ray_dir = normalize(coord - focus);
+	float a = dot(ray_dir, ray_dir);
+	float b = 2.0 * dot(ray_dir, diff);
+	float c = dot(diff, diff) - radius * radius;
+	float disc = b * b - 4.0 * a * c;
+	if (disc >= 0.0) {
+		float t = (-b + sqrt(abs(disc))) / (2.0 * a);
+		vec2 projection = focus + ray_dir * t;
+		grad_length = distance(projection, focus);
+	}
+	else {
+		// Gradient is undefined for this coordinate
+	}
+	
+	float grad = (distance(coord * container_aspect, focus * container_aspect) - start_radius_applied) / grad_length * GRADIENT_TILING_RATIO;
+	if (gradient_repeat == 1) { // GradientTexture2D.REPEAT
+		color = sample_gradient(fract(grad));
+	} else if (gradient_repeat == 2) { // GradientTexture2D.REPEAT_MIRROR
+		bool is_mirror = mod(grad, 2.0) < 1.0;
+		if (is_mirror) {
+			color = sample_gradient(fract(grad));
+		} else {
+			color = sample_gradient(1.0 - fract(grad));
+		}
+	} else { // GradientTexture2D.REPEAT_NONE
+		color = sample_gradient(grad);
+	}
+	return color;
+}
+
+void vertex() {
+	implicit_coordinates = CUSTOM0;
+}
+
+void fragment() {
+	float alpha = ALPHA;
+	vec4 color = vec4(ALBEDO.rgb, 1.0);
+	mat3 container_uv_transform = mat3(
+		vec3(uv_transform_column_1.x, uv_transform_column_2.x, 0.0),
+		vec3(uv_transform_column_1.y, uv_transform_column_2.y, 0.0),
+		vec3(uv_transform_column_1.z, uv_transform_column_2.z, 0.0)
+	);
+	vec2 container_viewport_uv = vec2(
+		(UV.x * uv_size_in_container.x) + uv_position_in_container.x,
+		(UV.y * uv_size_in_container.y) + uv_position_in_container.y
+	);
+	vec4 gradient_color = vec4(1.0, 1.0, 1.0, 1.0);
+	vec2 transform_applied_uv = (container_uv_transform * vec3(container_viewport_uv.xy, 1.0)).xy;
+	if (gradient_type == 1) {
+		gradient_color = linear_gradient(transform_applied_uv);
+	} else if (gradient_type == 2) {
+		gradient_color = radial_gradient(transform_applied_uv);
+	}
+	vec4 blend_color = texture(fill_texture, transform_applied_uv) * fill_color * gradient_color * vec4(1.0, 1.0, 1.0, alpha);
+	if (implicit_coordinates.a < 0.3) {
+		color = quadratic_ps(implicit_coordinates.rg, 2.0 * (0.5 - step(implicit_coordinates.a, 0.15)), blend_color);
+	} else if (implicit_coordinates.a < 0.6) {
+		color = cubic_ps(implicit_coordinates.rgb, 2.0 * (0.5 - step(implicit_coordinates.a, 0.45)), blend_color);
+	} else if (implicit_coordinates.a < 0.8) {
+		color = blend_color;
+	} else {
+		if (antialiased) {
+			color = antialiased_edge(implicit_coordinates.rg, blend_color);
+		} else {
+			color = vec4(0.0, 0.0, 0.0, 0.0);
+		}
+	}
+	ALBEDO = color.rgb;
+	ALPHA = color.a;
+	
+	// Fix backfaces
+	if (!FRONT_FACING) {
+		NORMAL = -normalize(NORMAL);
+	}
+	
+}
+"

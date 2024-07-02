@@ -541,4 +541,7 @@ static func apply_shader_params(reference_controller, store_name: String, shape_
 	else:
 		needs_reset_params = true
 	if needs_reset_params:
-		shape_node.material.set_shader_parameter("gradient_type", 0)
+		if shape_node is MeshInstance2D:
+			shape_node.material.set_shader_parameter("gradient_type", 0)
+		else:
+			pass # TODO - 3D counterpart?

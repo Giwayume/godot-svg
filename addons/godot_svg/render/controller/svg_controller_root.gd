@@ -187,6 +187,8 @@ func _generate_from_scratch_deferred():
 
 # Recursively generate the node/controller structure.
 func _generate_node_controller_structure(s_parent_node, s_children, s_render_props = {}):
+	var render_order = 0.0
+	var renderable_nodes = ["circle", "ellipse", "image", "line", "path", "polygon", "polyline", "rect", "text"]
 	var generation_stack = [
 		{
 			"children": s_children,
@@ -224,6 +226,8 @@ func _generate_node_controller_structure(s_parent_node, s_children, s_render_pro
 	
 		var parent_controller = stack_frame.parent_node.controller if "controller" in stack_frame.parent_node and stack_frame.parent_node.controller is SVGControllerElement else null
 		
+		var node_name_counter = {}
+		
 		var is_child_stack_completed = true
 		for child_index in range(stack_frame.child_evaluate_index, children.size()):
 			var child = children[child_index]
@@ -233,6 +237,9 @@ func _generate_node_controller_structure(s_parent_node, s_children, s_render_pro
 				root_element_controller = controller
 			if stack_frame.parent_node == s_parent_node:
 				generation_result.top_level_controllers.push_back(controller)
+			if not node_name_counter.has(child.node_name):
+				node_name_counter[child.node_name] = 0
+			node_name_counter[child.node_name] += 1
 			controlled_node.node_name = child.node_name
 			controlled_node.controller = controller
 			controller.node_name = child.node_name
@@ -245,6 +252,9 @@ func _generate_node_controller_structure(s_parent_node, s_children, s_render_pro
 			controller.is_in_root_viewport = is_in_root_viewport
 			controller.is_in_clip_path = is_in_clip_path
 			controller.render_cache_id = render_props.cache_id + "." + str(child_index)
+			if renderable_nodes.has(controller.node_name):
+				controller.render_order = render_order
+				render_order += 1.0
 			if not is_cacheable:
 				controller.is_cacheable = false
 			if view_box == null:
@@ -253,6 +263,9 @@ func _generate_node_controller_structure(s_parent_node, s_children, s_render_pro
 			if inherited_props.size() > 0:
 				controller._on_inherited_properties_updated(inherited_props)
 			stack_frame.parent_node.add_child(controlled_node)
+			controlled_node.name = child.node_name + "#" + str(node_name_counter[child.node_name])
+			if parent_controller != null:
+				parent_controller._child_list.push_back(controlled_node)
 			_element_resource_to_controller_map[child] = controller
 			
 			if controller is SVGControllerViewport:

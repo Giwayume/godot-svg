@@ -7,7 +7,7 @@ uniform sampler2D mask;
 uniform sampler2D clip_path;
 
 void fragment() {
-	vec4 diffuse_color = texture(TEXTURE, UV).rgba;
+	vec4 diffuse_color = vec4(texture(TEXTURE, UV).rgb, COLOR.a);
 	
 	// Mask
 	vec4 mask_color = texture(mask, UV).rgba;
