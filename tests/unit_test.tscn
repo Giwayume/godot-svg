@@ -1,0 +1,127 @@
+[gd_scene load_steps=2 format=3 uid="uid://cgbp740alvbu2"]
+
+[ext_resource type="Script" path="res://tests/scripts/unit_test.gd" id="1_65nmv"]
+
+[node name="UnitTest" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_65nmv")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+z_index = -1
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.329158, 0.329158, 0.329158, 1)
+
+[node name="HSplitContainer" type="HSplitContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+split_offset = 300
+
+[node name="TestListPanel" type="Panel" parent="HSplitContainer"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="HSplitContainer/TestListPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HSplitContainer/TestListPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="HSplitContainer/TestListPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="StartButton" type="Button" parent="HSplitContainer/TestListPanel/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Run"
+
+[node name="StopButton" type="Button" parent="HSplitContainer/TestListPanel/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Stop"
+
+[node name="ScrollContainer" type="ScrollContainer" parent="HSplitContainer/TestListPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+follow_focus = true
+horizontal_scroll_mode = 0
+
+[node name="TestListTree" type="Tree" parent="HSplitContainer/TestListPanel/MarginContainer/VBoxContainer/ScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="TestPreviewPanel" type="Panel" parent="HSplitContainer"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="HSplitContainer/TestPreviewPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HSplitContainer/TestPreviewPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="TestPreviewActionsContainer" type="MarginContainer" parent="HSplitContainer/TestPreviewPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="CenterContainer" type="CenterContainer" parent="HSplitContainer/TestPreviewPanel/MarginContainer/VBoxContainer/TestPreviewActionsContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="HSplitContainer/TestPreviewPanel/MarginContainer/VBoxContainer/TestPreviewActionsContainer/CenterContainer"]
+layout_mode = 2
+
+[node name="MarkCorrectButton" type="Button" parent="HSplitContainer/TestPreviewPanel/MarginContainer/VBoxContainer/TestPreviewActionsContainer/CenterContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Mark as Correct"
+
+[node name="TestPreviewMarginContainer" type="MarginContainer" parent="HSplitContainer/TestPreviewPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ColorRect" type="ColorRect" parent="HSplitContainer/TestPreviewPanel/MarginContainer/VBoxContainer/TestPreviewMarginContainer"]
+layout_mode = 2
+
+[node name="TestPreviewSubViewportContainer" type="SubViewportContainer" parent="HSplitContainer/TestPreviewPanel/MarginContainer/VBoxContainer/TestPreviewMarginContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="TestPreviewSubViewport" type="SubViewport" parent="HSplitContainer/TestPreviewPanel/MarginContainer/VBoxContainer/TestPreviewMarginContainer/TestPreviewSubViewportContainer"]
+unique_name_in_owner = true
+disable_3d = true
+transparent_bg = true
+handle_input_locally = false
+render_target_update_mode = 4
+
+[node name="TestPreviewBackground" type="ColorRect" parent="HSplitContainer/TestPreviewPanel/MarginContainer/VBoxContainer/TestPreviewMarginContainer/TestPreviewSubViewportContainer/TestPreviewSubViewport"]
+unique_name_in_owner = true
+size_flags_horizontal = 0
+size_flags_vertical = 0

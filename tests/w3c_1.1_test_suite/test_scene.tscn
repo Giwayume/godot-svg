@@ -6,7 +6,7 @@
 [ext_resource type="Texture2D" uid="uid://cqxm71u330ydg" path="res://tests/w3c_1.1_test_suite/svg/pservers/pservers-grad-03-b.svg" id="4"]
 [ext_resource type="Texture2D" uid="uid://bg6ccmncgwr1" path="res://tests/w3c_1.1_test_suite/svg/pservers/pservers-grad-02-b.svg" id="5"]
 [ext_resource type="Resource" uid="uid://chpm0mtnp62jn" path="res://tests/w3c_1.1_test_suite/svg/custom/firefox_logo_2019.svg" id="6"]
-[ext_resource type="Texture2D" uid="uid://jtcxrftb15rr" path="res://tests/w3c_1.1_test_suite/svg/custom/color_interpolation_gradient_pure.svg" id="7"]
+[ext_resource type="Resource" uid="uid://jtcxrftb15rr" path="res://tests/w3c_1.1_test_suite/svg/custom/color_interpolation_gradient_pure.svg" id="7"]
 
 [node name="SVGTestScene" type="Node2D"]
 script = ExtResource("2")
@@ -28,7 +28,7 @@ antialiased = true
 triangulation_method = 0
 assume_no_self_intersections = false
 assume_no_holes = false
-disable_render_cache = false
+disable_render_cache = true
 
 [node name="Gradient06SVG" type="Node2D" parent="."]
 visible = false

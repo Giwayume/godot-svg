@@ -35,9 +35,9 @@ vec4 sample_gradient(float position) {
 vec4 quadratic_ps(vec2 p, float inside_sign, vec4 color) {
 	float u = p.x;
 	float v = p.y;
-	
+
 	float antialias_divisor = 1.0;
-	
+
 	if (antialiased) {
 		// Gradients
 		vec2 dpdx = dFdx(p);
@@ -46,41 +46,41 @@ vec4 quadratic_ps(vec2 p, float inside_sign, vec4 color) {
 		// Chain rule
 		float fx = (2.0 * u) * dpdx.x - dpdx.y;
 		float fy = (2.0 * u) * dpdy.x - dpdy.y;
-		
+
 		antialias_divisor = sqrt(fx * fx + fy * fy);
 	}
-	
+
 	// Linear algebra
 	float sd = inside_sign * (u * u - v) / antialias_divisor;
-	
+
 	if (antialiased) {
 		color.a = clamp(sd, 0.0, 1.0) * color.a;
 	} else {
 		color.a = step(sd, 0.0) * color.a;
 	}
-	
+
 	return color;
 }
 
 vec4 cubic_ps(vec3 klm, float inside_sign, vec4 color) {
-	
+
 	float antialias_divisor = 1.0;
-	
+
 	if (antialiased) {
 		// Gradients
 		vec3 dpdx = dFdx(klm);
 		vec3 dpdy = dFdy(klm);
-		
+
 		// Chain rule
 		vec3 dfdp = vec3(3.0 * klm.x * klm.x, -klm.z, -klm.y);
 		vec2 f = vec2(dot(dfdp, dpdx), dot(dfdp, dpdy));
-		
+
 		antialias_divisor = length(f);
 	}
-	
+
 	// Linear algebra
 	float sd = inside_sign * (klm.x * klm.x * klm.x - klm.y * klm.z) / antialias_divisor;
-	
+
 	if (antialiased) {
 		sd = 0.5 - sd;
 		color.a = clamp(sd, 0.0, 1.0) * color.a;
@@ -123,7 +123,7 @@ vec4 linear_gradient(vec2 uv) {
 
 vec4 radial_gradient(vec2 uv) {
 	vec4 color = vec4(1.0, 1.0, 1.0, 1.0);
-	
+
 	vec2 center = gradient_end_center;
 	vec2 end_point = center + gradient_end_radius;
 	vec2 focus = gradient_start_center;
@@ -132,19 +132,19 @@ vec4 radial_gradient(vec2 uv) {
 	float start_radius_applied = gradient_start_radius.y;
 	float ellipse_ratio = 1.0;
 	vec2 container_aspect = vec2(1.0, gradient_end_radius.x / gradient_end_radius.y);
-	
+
 	vec2 axis = end_point - center;
 	float l2 = dot(axis, axis);
 	if (abs(l2) < 0.0001) { // l2 == 0.0
 		float d = dot(coord - center, axis) / l2;
 		vec2 proj = center + d * axis;
 		coord = proj - (proj - coord) * ellipse_ratio;
-		
+
 		float d2 = dot(focus - center, axis) / l2;
 		vec2 proj2 = center + d2 * axis;
 		focus = proj2 - (proj2 - focus) * ellipse_ratio;
 	}
-	
+
 	float grad_length = 1.0;
 	vec2 diff = focus - center;
 	vec2 ray_dir = normalize(coord - focus);
@@ -160,7 +160,7 @@ vec4 radial_gradient(vec2 uv) {
 	else {
 		// Gradient is undefined for this coordinate
 	}
-	
+
 	float grad = (distance(coord * container_aspect, focus * container_aspect) - start_radius_applied) / grad_length * GRADIENT_TILING_RATIO;
 	if (gradient_repeat == 1) { // GradientTexture2D.REPEAT
 		color = sample_gradient(fract(grad));

@@ -1,5 +1,6 @@
 @tool
 extends Node3D
+class_name SVG3D
 
 #---------#
 # Signals #
@@ -223,14 +224,6 @@ func _get_configuration_warning():
 		elif controller.is_gles2 and controller.antialiased:
 			return "\"antialiased\" is enabled, but GLES2 does not support the antialiasing technique used by this plugin. Use the GLES3 renderer instead."
 	return ""
-
-func _get_item_rect():
-	var edit_rect = Rect2()
-	if controller.svg is SVGResource and controller.svg.viewport != null:
-		var viewport_controller = controller._element_resource_to_controller_map[controller.svg.viewport]
-		if viewport_controller != null:
-			edit_rect = viewport_controller.calculate_view_box()
-	return edit_rect
 
 func _on_svg_plugin_scripts_changed():
 	var children = get_children()
