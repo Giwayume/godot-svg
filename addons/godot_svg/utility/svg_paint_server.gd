@@ -44,9 +44,9 @@ static func generate_gradient_texture_1d(
 	var next_offset_index = 0
 	if offset_count > 1:
 		next_offset_index = current_offset_index + 1
-	var next_offset = gradient.offsets[next_offset_index]
-	var current_color = gradient.colors[0]
-	var next_color = gradient.colors[next_offset_index]
+	var next_offset = gradient.offsets[next_offset_index] if next_offset_index < offset_count else current_offset
+	var current_color = gradient.colors[0] if gradient.colors.size() > 0 else Color.BLACK
+	var next_color = gradient.colors[next_offset_index] if next_offset_index < offset_count else current_color
 	var color = Color()
 	if color_interpolation == SVGValueConstant.LINEAR_RGB:
 		current_color = srgb_to_linear_srgb(current_color)
@@ -102,14 +102,14 @@ static func generate_linear_gradient_shader_params(
 
 	# OBJECT_BOUNDING_BOX
 	if gradient_controller.attr_gradient_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
-		start_center = gradient_transform.xform(Vector2(
+		start_center = Vector2(
 			gradient_controller.attr_x1.get_length(1),
 			gradient_controller.attr_y1.get_length(1)
-		))
-		end_center = gradient_transform.xform(Vector2(
+		) * gradient_transform
+		end_center = Vector2(
 			gradient_controller.attr_x2.get_length(1),
 			gradient_controller.attr_y2.get_length(1)
-		))
+		) * gradient_transform
 	
 	# USER_SPACE_ON_USE
 	else:
@@ -185,16 +185,16 @@ static func generate_radial_gradient_shader_params(
 
 	# OBJECT_BOUNDING_BOX
 	if gradient_controller.attr_gradient_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
-		start_center = gradient_transform.xform(Vector2(
+		start_center = Vector2(
 			gradient_controller.attr_cx.get_length(1),
 			gradient_controller.attr_cy.get_length(1)
-		))
+		) * gradient_transform
 		var attr_fx = gradient_controller.attr_cx if gradient_controller.attr_fx is String else gradient_controller.attr_fx
 		var attr_fy = gradient_controller.attr_cy if gradient_controller.attr_fy is String else gradient_controller.attr_fy
-		end_center = gradient_transform.xform(Vector2(
+		end_center = Vector2(
 			attr_fx.get_length(1),
 			attr_fy.get_length(1)
-		))
+		) * gradient_transform
 		start_radius = gradient_controller.attr_fr.get_length(1)
 		end_radius = gradient_controller.attr_r.get_length(1)
 	
@@ -270,7 +270,7 @@ static func generate_pattern_server(
 ) -> Dictionary:
 	var viewport = pattern_controller._baking_viewport
 	viewport.size = Vector2(2.0, 2.0)
-	viewport.hdr = false
+	viewport.use_hdr_2d = false
 	viewport.transparent_bg = true
 	# TODO - wait for delayed resources such as mask/other paint servers to draw?
 	var viewport_texture = viewport.get_texture()
@@ -364,7 +364,7 @@ static func resolve_paint(reference_controller, attr_paint, server_name: String)
 				gradient.offsets = []
 				for stop in stops:
 					var offset = stop.controller.attr_offset.get_length(1)
-					var color = stop.controller.attr_stop_color
+					var color = stop.controller.attr_stop_color if stop.controller.attr_stop_color else Color.BLACK
 					var opacity = stop.controller.attr_stop_opacity
 					if opacity < 1.0:
 						color.a = opacity
@@ -389,25 +389,25 @@ static func resolve_paint(reference_controller, attr_paint, server_name: String)
 					# gradient_texture.fill = GradientTexture2D.FILL_LINEAR
 					# gradient_texture.repeat = texture_repeat_mode
 					# if controller.attr_gradient_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
-					# 	gradient_texture.fill_from = gradient_transform.xform(Vector2(
+					# 	gradient_texture.fill_from = Vector2(
 					# 		controller.attr_x1.get_length(1),
 					# 		controller.attr_y1.get_length(1)
-					# 	))
-					# 	gradient_texture.fill_to = gradient_transform.xform(Vector2(
+					# 	) * gradient_transform
+					# 	gradient_texture.fill_to = Vector2(
 					# 		controller.attr_x2.get_length(1),
 					# 		controller.attr_y2.get_length(1)
-					# 	))
+					# 	) * gradient_transform
 					# else: # USER_SPACE_ON_USE
-					# 	var transformed_fill_from = gradient_transform.xform(
+					# 	var transformed_fill_from = (
 					# 		Vector2(controller.attr_x1.get_length(1), controller.attr_y1.get_length(1))
-					# 	)
+					# 	) * gradient_transform
 					# 	gradient_texture.fill_from = Vector2(
 					# 		SVGLengthPercentage.calculate_normalized_length(transformed_fill_from.x, inherited_view_box.size.x, inherited_view_box.position.x),
 					# 		SVGLengthPercentage.calculate_normalized_length(transformed_fill_from.y, inherited_view_box.size.y, inherited_view_box.position.y)
 					# 	)
-					# 	var transformed_fill_to = gradient_transform.xform(
+					# 	var transformed_fill_to = (
 					# 		Vector2(controller.attr_x2.get_length(1), controller.attr_y2.get_length(1))
-					# 	)
+					# 	) * gradient_transform
 					# 	gradient_texture.fill_to = Vector2(
 					# 		SVGLengthPercentage.calculate_normalized_length(transformed_fill_to.x, inherited_view_box.size.x, inherited_view_box.position.x),
 					# 		SVGLengthPercentage.calculate_normalized_length(transformed_fill_to.y, inherited_view_box.size.y, inherited_view_box.position.y)

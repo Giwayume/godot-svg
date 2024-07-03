@@ -1137,8 +1137,8 @@ func _get_parent_viewport_sort_offset_position():
 			transform_list.push_front(check_controller.controlled_node.transform)
 		check_controller = check_controller.parent_controller
 	var transform = Transform3D()
-	for xform in transform_list:
-		transform *= xform
+	for element_transform in transform_list:
+		transform *= element_transform
 	return Vector3.ZERO * transform
 
 #------------------#

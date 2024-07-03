@@ -116,7 +116,8 @@ func update_as_user(user_view_box):
 	_baking_viewport.size = Vector2(width, height)
 	_baking_viewport.canvas_transform = Transform2D().scaled(scale_factor)
 	_baking_viewport.canvas_transform.origin += (-Vector2(content_reference_x, content_reference_y)) * scale_factor
-	_baking_viewport.update_worlds()
+	# TODO - is this needed? Removed in 4.
+	# _baking_viewport.update_worlds()
 	_baking_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 #-------------------#
@@ -200,9 +201,9 @@ func _set_attr_view_box(view_box):
 		else:
 			var split = view_box.split(" ", false)
 			attr_view_box = Rect2(
-				split[0] if split.size() > 0 else 0,
-				split[1] if split.size() > 1 else 0,
-				split[2] if split.size() > 2 else 0,
-				split[3] if split.size() > 3 else 0
+				float(split[0]) if split.size() > 0 else 0.0,
+				float(split[1]) if split.size() > 1 else 0.0,
+				float(split[2]) if split.size() > 2 else 0.0,
+				float(split[3]) if split.size() > 3 else 0.0
 			)
 	apply_props("view_box")
