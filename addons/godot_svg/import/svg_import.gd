@@ -28,6 +28,9 @@ func _get_preset_name(preset_index):
 		_:
 			return "Unknown"
 
+func _get_priority():
+	return 1
+
 func _get_import_options(path, preset_index):
 	match preset_index:
 		Presets.DEFAULT:
@@ -51,5 +54,3 @@ func _import(source_file, save_path, options, r_platform_variants, r_gen_files):
 	
 	var save_error = ResourceSaver.save(svg_resource, "%s.%s" % [save_path, _get_save_extension()])
 	return OK
-
-
