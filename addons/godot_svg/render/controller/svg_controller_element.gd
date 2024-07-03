@@ -1173,10 +1173,13 @@ func _on_viewport_scale_changed(new_viewport_scale):
 func add_child(new_child, legible_unique_name = true):
 	if not _child_list.has(new_child):
 		_child_list.push_back(new_child)
-	if _child_container == controlled_node:
-		controlled_node.add_child_to_root(new_child, legible_unique_name)
+	if _child_container != null:
+		if _child_container == controlled_node:
+			_child_container.add_child_to_root(new_child, legible_unique_name)
+		else:
+			_child_container.add_child(new_child, legible_unique_name)
 	else:
-		_child_container.add_child(new_child, legible_unique_name)
+		controlled_node.add_child_to_root(new_child, legible_unique_name)
 
 # Call after updating any SVG attribute
 func apply_props(changed_prop_name):

@@ -34,6 +34,8 @@ func _init():
 	_mask_background = ColorRect.new()
 	_mask_background.color = Color(0, 0, 0, 1)
 	_mask_viewport.add_child(_mask_background)
+
+func _ready():
 	super.add_child(_mask_viewport)
 
 func _process(_delta):
@@ -88,7 +90,7 @@ func _prepare_viewport_for_draw():
 
 			_mask_background.position = -_mask_viewport.canvas_transform.origin / scale_factor
 			if attr_mask_content_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
-				_mask_background.size = _mask_viewport.size * _mask_viewport.canvas_transform.get_scale()
+				_mask_background.size = Vector2(_mask_viewport.size) * _mask_viewport.canvas_transform.get_scale()
 			else:
 				_mask_background.size = mask_content_unit_bounding_box.size
 			_update_view_box_recursive(mask_content_unit_bounding_box, element_resource)
@@ -101,7 +103,7 @@ func _update_view_box_recursive(new_view_box, parent = null):
 			if controller.node_name != "viewport":
 				controller.inherited_view_box = new_view_box
 				_update_view_box_recursive(new_view_box, child)
-			controller.queue_redraw()
+			controller.controlled_node.queue_redraw()
 
 #----------------#
 # Public Methods #

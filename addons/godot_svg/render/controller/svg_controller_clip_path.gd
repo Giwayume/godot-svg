@@ -28,6 +28,8 @@ func _init():
 	_clip_path_background = ColorRect.new()
 	_clip_path_background.color = Color(0, 0, 0, 1)
 	_clip_path_viewport.add_child(_clip_path_background)
+
+func _ready():
 	super.add_child(_clip_path_viewport)
 
 func _process(_delta):
@@ -88,7 +90,7 @@ func _prepare_viewport_for_draw():
 			
 			_clip_path_background.position = (-_clip_path_viewport.canvas_transform.origin / scale_factor) + Vector2(-5.0, -5.0)
 			if attr_clip_path_units == SVGValueConstant.OBJECT_BOUNDING_BOX:
-				_clip_path_background.size = (_clip_path_viewport.size * _clip_path_viewport.canvas_transform.get_scale()) + Vector2(10.0, 10.0)
+				_clip_path_background.size = (Vector2(_clip_path_viewport.size) * _clip_path_viewport.canvas_transform.get_scale()) + Vector2(10.0, 10.0)
 			else:
 				_clip_path_background.size = clip_path_content_unit_bounding_box.size + Vector2(10.0, 10.0)
 			_update_view_box_recursive(clip_path_content_unit_bounding_box, element_resource)
