@@ -57,6 +57,9 @@ static func parse_css_style(style):
 # https://www.w3.org/TR/css-color-4/
 static func parse_css_color(attribute):
 	var color = null
+	var comma_space_regex = RegEx.new()
+	comma_space_regex.compile("\\s{0,},\\s{0,}")
+	attribute = comma_space_regex.sub(attribute, ",", true)
 	var color_strings = attribute.split(" ", false)
 	color_strings.reverse()
 	for color_string in color_strings:

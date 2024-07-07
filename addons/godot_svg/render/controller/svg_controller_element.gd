@@ -621,10 +621,14 @@ func _create_mesh_from_triangulation(fill_definition):
 		])
 	uv.append_array(fill_definition.antialias_edge_uv)
 	# Create the mesh
-	surface[ArrayMesh.ARRAY_VERTEX] = vertices
-	surface[ArrayMesh.ARRAY_CUSTOM0] = implicit_coordinates
-	surface[ArrayMesh.ARRAY_TEX_UV] = uv
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, surface, [], {}, Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM0_SHIFT)
+	var max_vertex_length = floor(len(vertices) / 3) * 3
+	if len(vertices) == max_vertex_length:
+		surface[ArrayMesh.ARRAY_VERTEX] = vertices
+		surface[ArrayMesh.ARRAY_CUSTOM0] = implicit_coordinates
+		surface[ArrayMesh.ARRAY_TEX_UV] = uv
+		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, surface, [], {}, Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM0_SHIFT)
+	else:
+		print("[godot-svg] Triangulation of a surface returned an unexpected amount of vertices ", len(vertices))
 	return mesh
 
 # Pass props down to child controllers

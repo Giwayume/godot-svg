@@ -2,12 +2,17 @@ extends Node2D
 
 const PathCommand = SVGValueConstant.PathCommand
 
-var test_svg_path = "res://tests/w3c_1.1_test_suite/svg/painting/painting-fill-03-t.svg"
+var TEST_SVG_PATH = "res://tests/w3c_1.1_test_suite/svg/paths/paths-data-01-t.svg"
+var ZOOM = 4.0
+var PAN = Vector2(0.0, 0.0)
+
 var test_svg = null
+var background = null
 var draw_timer: Timer = Timer.new()
 var shape_debugs = []
 var current_shape_debug_index = -1
 var current_shape_debug_log_index = 0
+var is_skip_next_draw_timer_timeout = false
 
 var end_point = null
 var intersection_points = []
@@ -17,12 +22,19 @@ var draw_turn_direction = []
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
+	get_viewport().canvas_transform = Transform2D().translated(PAN).scaled(Vector2(ZOOM, ZOOM)) * get_viewport().canvas_transform
+	
 	test_svg = Node2D.new()
 	test_svg.set_script(preload("res://addons/godot_svg/node/svg_2d.gd"))
 	test_svg.disable_render_cache = true
-	test_svg.svg = load(test_svg_path)
+	test_svg.svg = load(TEST_SVG_PATH)
 	test_svg.controller.connect("node_structure_generated", Callable(self, "_svg_ready"))
-	add_child(test_svg)
+	
+	call_deferred("_place_test_svg")
+	
+	background = ColorRect.new()
+	background.size = get_viewport().size
+	background.color = Color(0.25, 0.25, 0.25, 0.75)
 	
 	draw_timer.autostart = true
 	draw_timer.wait_time = 0.5
@@ -30,20 +42,35 @@ func _ready() -> void:
 	draw_timer.connect("timeout", Callable(self, "_draw_timer_timeout"))
 	add_child(draw_timer)
 
+func _place_test_svg():
+	var parent = get_parent()
+	var current_index = parent.get_children().find(self)
+	parent.add_child(background)
+	parent.move_child(background, current_index)
+	parent.add_child(test_svg)
+	parent.move_child(test_svg, current_index)
+
 func _svg_ready():
 	call_deferred("_svg_ready_deferred")
 
 func _svg_ready_deferred():
-	#test_svg.modulate.a = 0.5
-	test_svg.hide()
 	var paths = test_svg.get_elements_by_name("path")
 	for path in paths:
 		var controller = path.controller
 		shape_debugs = controller._path_solver_debug
 		current_shape_debug_index = 0
 		current_shape_debug_log_index = 0
+	print_debug(JSON.stringify(shape_debugs[current_shape_debug_index], "  "))
 
 func _draw_timer_timeout():
+	if is_skip_next_draw_timer_timeout:
+		is_skip_next_draw_timer_timeout = false
+		draw_path = []
+		old_draw_path = []
+		draw_timer.stop()
+		draw_timer.start(0.5)
+		return
+	
 	if current_shape_debug_index < 0:
 		return
 	var shape_debug = shape_debugs[current_shape_debug_index]
@@ -81,6 +108,7 @@ func _draw_timer_timeout():
 		draw_shape = path_shapes[log.current_shape_index]
 		draw_shape_slice = log.shape_slice
 		end_point = draw_shape.find_point_at(log.shape_slice[1])
+		is_skip_next_draw_timer_timeout = true
 	else:
 		draw_timer.wait_time = 0.01
 	
@@ -183,14 +211,14 @@ func _process(delta: float) -> void:
 
 func _draw():
 	for point in intersection_points:
-		draw_circle(point, 2, Color.RED)
+		draw_circle(point, 2.0 / ZOOM, Color.RED)
 	if end_point != null:
-		draw_circle(end_point, 2, Color.YELLOW)
+		draw_circle(end_point, 2.0 / ZOOM, Color.YELLOW)
 	for line_segment in old_draw_path:
-		draw_line(line_segment[0], line_segment[1], Color.GRAY, 2)
+		draw_line(line_segment[0], line_segment[1], Color.GRAY, 2.0 / ZOOM)
 	var i = 0.0
 	for line_segment in draw_path:
-		draw_line(line_segment[0], line_segment[1], Color.BLACK, 2)
+		draw_line(line_segment[0], line_segment[1], Color.BLACK, 2.0 / ZOOM)
 		i += 1.0
 		if (
 			len(draw_turn_direction) == 0 and
@@ -198,4 +226,4 @@ func _draw():
 		):
 			break
 	for line_segment in draw_turn_direction:
-		draw_line(line_segment[0], line_segment[1], Color.GREEN, 2)
+		draw_line(line_segment[0], line_segment[1], Color.GREEN, 2.0 / ZOOM)

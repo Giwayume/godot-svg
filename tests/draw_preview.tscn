@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://addons/godot_svg/node/svg_2d.gd" id="1"]
 [ext_resource type="Script" path="res://tests/scripts/test_scene_control.gd" id="2"]
-[ext_resource type="Resource" uid="uid://dublctfbn035w" path="res://icon.svg" id="3_jc1sg"]
+[ext_resource type="Resource" uid="uid://cfpevsbpsnak3" path="res://tests/w3c_1.1_test_suite/svg/paths/paths-data-01-t.svg" id="3_smaqe"]
 
 [node name="SVGTestScene" type="Node2D"]
 script = ExtResource("2")
@@ -14,9 +14,9 @@ position = Vector2(511, 299)
 offset_right = 1066.0
 offset_bottom = 622.0
 
-[node name="OutlineSVG" type="Node2D" parent="."]
+[node name="SVG" type="Node2D" parent="."]
 script = ExtResource("1")
-svg = ExtResource("3_jc1sg")
+svg = ExtResource("3_smaqe")
 fixed_scaling_ratio = 0
 antialiased = true
 triangulation_method = 1

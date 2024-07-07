@@ -33,7 +33,7 @@ class PathShape:
 	var pend
 	var path_end_is_close = false # This shape closes the path, special handling needed here to prevent intersection artifacts
 	
-	func intersect_with(other_shape, is_include_self_start_point = false, is_include_other_start_point = false, skip_bounding_box_check = false):
+	func intersect_with(other_shape, is_include_self_start_point = false, is_include_other_start_point = false, skip_bounding_box_check = false, is_debug = false):
 		var new_intersections = []
 		if (
 			not skip_bounding_box_check and (
@@ -107,14 +107,14 @@ class PathShape:
 		return self_intersections
 	
 	func find_next_intersection(t, traverse_direction = 1):
-		var closest_t = INF
+		var closest_t_delta = INF
 		var closest_intersection = null
 		for intersection in intersections:
 			if (
-				(traverse_direction > 0 and intersection.self_t > t and intersection.self_t - t < closest_t) or
-				(traverse_direction < 0 and intersection.self_t < t and t - intersection.self_t < closest_t)
+				(traverse_direction > 0 and intersection.self_t > t and intersection.self_t - t < closest_t_delta) or
+				(traverse_direction < 0 and intersection.self_t < t and t - intersection.self_t < closest_t_delta)
 			):
-				closest_t = intersection.self_t
+				closest_t_delta = abs(intersection.self_t - t)
 				closest_intersection = intersection
 		return closest_intersection
 	
@@ -187,7 +187,7 @@ class PathSegment extends PathShape:
 		return [p0, p1]
 	
 	func to_string():
-		return "segment(" + JSON.stringify(to_array()) + ")"
+		return "segment(" + JSON.stringify(to_array()).replace("\"", '').replace("[", " ").replace("]", " ").replace("),(", ") (") + ")"
 	
 	func get_inside_check_point(rotation_direction):
 		return (
@@ -265,7 +265,7 @@ class PathQuadraticBezier extends PathShape:
 		return [p0, p1, p2]
 	
 	func to_string():
-		return "quadratic(" + JSON.stringify(to_array()) + ")"
+		return "quadratic(" + JSON.stringify(to_array()).replace("\"", '').replace("[", " ").replace("]", " ").replace("),(", ") (") + ")"
 	
 	func get_inside_check_point(rotation_direction):
 		var inside_point = (
@@ -349,7 +349,7 @@ class PathCubicBezier extends PathShape:
 		return [p0, p1, p2, p3]
 	
 	func to_string():
-		return "cubic(" + JSON.stringify(to_array()) + ")"
+		return "cubic(" + JSON.stringify(to_array()).replace("\"", '').replace("[", " ").replace("]", " ").replace("),(", ") (") + ")"
 	
 	func get_inside_check_point(rotation_direction):
 		return (
@@ -646,7 +646,7 @@ static func dash_array(path_reference: Array, dash_array: Array, dash_offset: fl
 # ...splitting one path into multiple shapes at the intersections.
 # Paths is an array of command dictionaries.
 static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self_intersections = false, assume_no_holes = false):
-
+	
 	var intersections = []
 	var intersections_at_positions = {}
 	var solved_paths = []
@@ -723,6 +723,15 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 	var path_shapes_size = path_shapes.size()
 	var current_path_bounding_box = create_new_bounding_box()
 	
+	if is_debug:
+		var shape_debug = []
+		for i in range(0, path_shapes_size):
+			shape_debug.push_back(str(i) + ": " + path_shapes[i].to_string())
+		simplify_debug.push_back({
+			"type": "intersection_shapes",
+			"shapes": shape_debug,
+		})
+	
 	var loop_range_intersection_indices: Array = []
 	for i in shape_loop_ranges.size():
 		loop_range_intersection_indices.push_back([])
@@ -734,10 +743,15 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 		var next_path_shape = path_shapes[i + 1 if i < path_shapes_size - 1 else 0]
 		var current_loop_range = shape_loop_ranges[current_loop_range_index]
 		current_path_bounding_box = apply_shape_to_bounding_box(current_path_bounding_box, path_shape)
-		if not assume_no_self_intersections and i >= current_loop_range.start + 1:
-			for j in range(current_loop_range.start, i):
+		if not assume_no_self_intersections: # and i >= current_loop_range.start + 1:
+			for j in range(0, i): # i = current_loop_range.start
 				var other_path_shape = path_shapes[j]
-				var new_intersections = path_shape.intersect_with(other_path_shape, j != i - 1, true)
+				var new_intersections = path_shape.intersect_with(
+					other_path_shape,
+					j != i - 1,
+					true,
+					false,
+				)
 				if new_intersections.size() > 0:
 					for new_intersection in new_intersections:
 						current_loop_range_intersection_count += 1
@@ -1173,6 +1187,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 	var hole_paths = []
 	var hole_candidates = []
 	var current_solved_path_index = 0
+	
 	for solved_path_info in solved_paths:
 		#print_debug(SVGAttributeParser.serialize_d(convert_path_shapes_to_instructions(solved_path_info.path)))
 		var is_insideness_even = true
