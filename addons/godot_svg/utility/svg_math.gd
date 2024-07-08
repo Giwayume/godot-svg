@@ -120,14 +120,27 @@ static func slice_quadratic_bezier(p0: Vector2, p1: Vector2, p2: Vector2, start_
 		else:
 			return [right_split[0], right_split[1], right_split[2]]
 
+# Return the roots of the quadratic bezier, given its coefficients
+static func solve_quadratic_bezier_roots(a: float, b: float, c: float):
+	var discriminant = pow(b, 2.0) - 4.0 * a * c
+	if discriminant < 0.0:
+		return []
+	elif discriminant == 0.0:
+		return [-b / (2.0 * a)]
+	else:
+		return [
+			(-b + sqrt(discriminant)) / (2.0 * a),
+			(-b - sqrt(discriminant)) / (2.0 * a)
+		]
+
 # Gives a position vector for 4 points and timestamp that form a cubic bezier curve
 # p0 - start, p1 - start control, p2 - end control, p3 - end, t - timestamp from 0 to 1
 # https://en.wikipedia.org/wiki/B%C3%A9zier_curve
 static func cubic_bezier_at(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2, t: float):
-	var q0 = pow(1 - t, 3) * p0
-	var q1 = 3 * pow(1 - t, 2) * t * p1
-	var q2 = 3 * (1 - t) * pow(t, 2) * p2
-	var q3 = pow(t, 3) * p3
+	var q0 = pow(1.0 - t, 3.0) * p0
+	var q1 = 3.0 * pow(1.0 - t, 2.0) * t * p1
+	var q2 = 3.0 * (1.0 - t) * pow(t, 2.0) * p2
+	var q3 = pow(t, 3.0) * p3
 	return q0 + q1 + q2 + q3
 
 # Works like cubic_bezier_at except for only x or y axis, for performance sake
@@ -264,6 +277,203 @@ static func slice_cubic_bezier(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector
 			return [right_split[3], right_split[2], right_split[1], right_split[0]]
 		else:
 			return [right_split[0], right_split[1], right_split[2], right_split[3]]
+
+# Return the roots of the cubic bezier, given its coefficients.
+static func solve_cubic_bezier_roots(a: float, b: float, c: float, d: float):
+	if abs(a) < 1e-8:
+		return solve_quadratic_bezier_roots(b, c, d)
+
+	b /= a
+	c /= a
+	d /= a
+
+	var discriminant = 18.0 * b * c * d - 4.0 * pow(b, 3.0) * d + pow(b, 2.0) * pow(c, 2.0) - 4.0 * pow(c, 3.0) - 27.0 * pow(d, 2.0)
+
+	if discriminant > 0.0:
+		var q = ((pow(b, 2.0) - 3.0 * c) / 9.0)
+		var r = ((2.0 * pow(b, 3.0) - 9.0 * b * c + 27.0 * d) / 54.0)
+		var cos_theta = r / sqrt(pow(q, 3))
+		var theta = acos(cos_theta)
+		var sqrt_q = sqrt(q)
+
+		return [
+			-2.0 * sqrt_q * cos(theta / 3.0) - b / 3.0,
+			-2.0 * sqrt_q * cos((theta + 2.0 * PI) / 3.0) - b / 3.0,
+			-2.0 * sqrt_q * cos((theta + 4.0 * PI) / 3.0) - b / 3.0
+		]
+	elif discriminant == 0.0:
+		var k = (3.0 * d - b * c) / (3.0 * b ** 2.0 - 9.0 * c)
+		return [k, k]
+	else:
+		var t1 = (9.0 * a * d - b * c) / (2.0 * discriminant)
+		var t2 = (4.0 * a * b * c - 9.0 * pow(a, 2.0) * d - pow(b, 3.0)) / discriminant
+		return [t1, t2]
+
+static func cubic_bezier_coefficients(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2):
+	var c3 = Vector2(-p0.x + 3.0 * p1.x - 3.0 * p2.x + p3.x, -p0.y + 3.0 * p1.y - 3.0 * p2.y + p3.y)
+	var c2 = Vector2(3.0 * p0.x - 6.0 * p1.x + 3.0 * p2.x, 3.0 * p0.y - 6.0 * p1.y + 3.0 * p2.y)
+	var c1 = Vector2(-3.0 * p0.x + 3.0 * p1.x, -3.0 * p0.y + 3.0 * p1.y)
+	var c0 = Vector2(p0.x, p0.y)
+	return [c3, c2, c1, c0]
+
+static func intersect_cubic_bezier_with_cubic_bezier(
+	p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2,
+	q0: Vector2, q1: Vector2, q2: Vector2, q3: Vector2
+):
+	var ca = cubic_bezier_coefficients(p0, p1, p2, p3)
+	var cb = cubic_bezier_coefficients(q0, q1, q2, q3)
+	var c3a = ca[0]
+	var c2a = ca[1]
+	var c1a = ca[2]
+	var c0a = ca[3]
+	var c3b = cb[0]
+	var c2b = cb[1]
+	var c1b = cb[2]
+	var c0b = cb[3]
+	
+	var coefficients = [
+		c3a.x * c3b.y - c3a.y * c3b.x,
+		c2a.x * c3b.y + c3a.x * c2b.y - c2a.y * c3b.x - c3a.y * c2b.x,
+		c1a.x * c3b.y + c2a.x * c2b.y + c3a.x * c1b.y - c1a.y * c3b.x - c2a.y * c2b.x - c3a.y * c1b.x,
+		c0a.x * c3b.y + c1a.x * c2b.y + c2a.x * c1b.y + c3a.x * c0b.y - c0a.y * c3b.x - c1a.y * c2b.x - c2a.y * c1b.x - c3a.y * c0b.x,
+		c0a.x * c2b.y + c1a.x * c1b.y + c2a.x * c0b.y - c0a.y * c2b.x - c1a.y * c1b.x - c2a.y * c0b.x,
+		c0a.x * c1b.y + c1a.x * c0b.y - c0a.y * c1b.x - c1a.y * c0b.x,
+		c0a.x * c0b.y - c0a.y * c0b.x
+	]
+	
+	var roots = solve_cubic_bezier_roots(coefficients[0], coefficients[1], coefficients[2], coefficients[3])
+	var intersections = []
+	
+	for t in roots:
+		if t >= 0.0 && t <= 1.0:
+			var pt_a = cubic_bezier_at(p0, p1, p2, p3, t)
+			var pt_b = cubic_bezier_at(q0, q1, q2, q3, t)
+			if abs(pt_a.x - pt_b.x) < 1e-6 && abs(pt_a.y - pt_b.y) < 1e-6:
+				intersections.push_back(t)
+
+	return intersections
+	
+#// Define a point structure
+#class Point {
+	#constructor(x, y) {
+		#this.x = x;
+		#this.y = y;
+	#}
+#}
+#
+#// Function to calculate a point on the cubic Bézier curve
+#function bezierPoint(t, p0, p1, p2, p3) {
+	#const x = (1 - t) ** 3 * p0.x + 3 * (1 - t) ** 2 * t * p1.x + 3 * (1 - t) * t ** 2 * p2.x + t ** 3 * p3.x;
+	#const y = (1 - t) ** 3 * p0.y + 3 * (1 - t) ** 2 * t * p1.y + 3 * (1 - t) * t ** 2 * p2.y + t ** 3 * p3.y;
+	#return new Point(x, y);
+#}
+#
+#// Function to calculate the coefficients of the cubic polynomial
+#function bezierCoefficients(p0, p1, p2, p3) {
+	#const c3 = new Point(-p0.x + 3 * p1.x - 3 * p2.x + p3.x, -p0.y + 3 * p1.y - 3 * p2.y + p3.y);
+	#const c2 = new Point(3 * p0.x - 6 * p1.x + 3 * p2.x, 3 * p0.y - 6 * p1.y + 3 * p2.y);
+	#const c1 = new Point(-3 * p0.x + 3 * p1.x, -3 * p0.y + 3 * p1.y);
+	#const c0 = new Point(p0.x, p0.y);
+	#return [c3, c2, c1, c0];
+#}
+#
+#// Function to find the roots of the cubic polynomial
+#function solveCubic(a, b, c, d) {
+	#if (Math.abs(a) < 1e-8) { // Handle quadratic case
+		#return solveQuadratic(b, c, d);
+	#}
+#
+	#// Normalize the coefficients
+	#b /= a;
+	#c /= a;
+	#d /= a;
+#
+	#const discriminant = 18 * b * c * d - 4 * b ** 3 * d + b ** 2 * c ** 2 - 4 * c ** 3 - 27 * d ** 2;
+#
+	#if (discriminant > 0) {
+		#const q = ((b ** 2 - 3 * c) / 9);
+		#const r = ((2 * b ** 3 - 9 * b * c + 27 * d) / 54);
+		#const cosTheta = r / Math.sqrt(q ** 3);
+		#const theta = Math.acos(cosTheta);
+		#const sqrtQ = Math.sqrt(q);
+#
+		#return [
+			#-2 * sqrtQ * Math.cos(theta / 3) - b / 3,
+			#-2 * sqrtQ * Math.cos((theta + 2 * Math.PI) / 3) - b / 3,
+			#-2 * sqrtQ * Math.cos((theta + 4 * Math.PI) / 3) - b / 3
+		#];
+	#} else if (discriminant === 0) {
+		#const k = (3 * d - b * c) / (3 * b ** 2 - 9 * c);
+		#return [k, k];
+	#} else {
+		#const t1 = (9 * a * d - b * c) / (2 * discriminant);
+		#const t2 = (4 * a * b * c - 9 * a ** 2 * d - b ** 3) / discriminant;
+		#return [t1, t2];
+	#}
+#}
+#
+#// Function to find the roots of the quadratic polynomial
+#function solveQuadratic(a, b, c) {
+	#const discriminant = b ** 2 - 4 * a * c;
+#
+	#if (discriminant < 0) {
+		#return [];
+	#} else if (discriminant === 0) {
+		#return [-b / (2 * a)];
+	#} else {
+		#return [
+			#(-b + Math.sqrt(discriminant)) / (2 * a),
+			#(-b - Math.sqrt(discriminant)) / (2 * a)
+		#];
+	#}
+#}
+#
+#// Function to find all intersection t values between two cubic Bézier curves
+#function findAllIntersections(p0, p1, p2, p3, q0, q1, q2, q3) {
+	#const [c3a, c2a, c1a, c0a] = bezierCoefficients(p0, p1, p2, p3);
+	#const [c3b, c2b, c1b, c0b] = bezierCoefficients(q0, q1, q2, q3);
+#
+	#const coefficients = [
+		#c3a.x * c3b.y - c3a.y * c3b.x,
+		#c2a.x * c3b.y + c3a.x * c2b.y - c2a.y * c3b.x - c3a.y * c2b.x,
+		#c1a.x * c3b.y + c2a.x * c2b.y + c3a.x * c1b.y - c1a.y * c3b.x - c2a.y * c2b.x - c3a.y * c1b.x,
+		#c0a.x * c3b.y + c1a.x * c2b.y + c2a.x * c1b.y + c3a.x * c0b.y - c0a.y * c3b.x - c1a.y * c2b.x - c2a.y * c1b.x - c3a.y * c0b.x,
+		#c0a.x * c2b.y + c1a.x * c1b.y + c2a.x * c0b.y - c0a.y * c2b.x - c1a.y * c1b.x - c2a.y * c0b.x,
+		#c0a.x * c1b.y + c1a.x * c0b.y - c0a.y * c1b.x - c1a.y * c0b.x,
+		#c0a.x * c0b.y - c0a.y * c0b.x
+	#];
+#
+	#const roots = solveCubic(coefficients[0], coefficients[1], coefficients[2], coefficients[3]);
+	#const intersections = [];
+#
+	#roots.forEach(t => {
+		#if (t >= 0 && t <= 1) {
+			#const ptA = bezierPoint(t, p0, p1, p2, p3);
+			#const ptB = bezierPoint(t, q0, q1, q2, q3);
+			#if (Math.abs(ptA.x - ptB.x) < 1e-6 && Math.abs(ptA.y - ptB.y) < 1e-6) {
+				#intersections.push({ t1: t, t2: t });
+			#}
+		#}
+	#});
+#
+	#return intersections;
+#}
+#
+#// Example usage:
+#const p0 = new Point(0, 0);
+#const p1 = new Point(1, 2);
+#const p2 = new Point(3, 3);
+#const p3 = new Point(4, 0);
+#
+#const q0 = new Point(0, 4);
+#const q1 = new Point(1, 3);
+#const q2 = new Point(3, 2);
+#const q3 = new Point(4, 4);
+#
+#const intersections = findAllIntersections(p0, p1, p2, p3, q0, q1, q2, q3);
+#intersections.forEach((intersection, index) => {
+	#console.log(`Intersection ${index + 1}: t1=${intersection.t1}, t2=${intersection.t2}`);
+#});
 
 # Find which side of a segment a point is on, left or right. Assuming straight is the direction from start to end.
 static func is_point_right_of_segment(segment_start: Vector2, segment_end: Vector2, point: Vector2):

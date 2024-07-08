@@ -3,8 +3,8 @@ extends Node2D
 const PathCommand = SVGValueConstant.PathCommand
 
 var TEST_SVG_PATH = "res://tests/w3c_1.1_test_suite/svg/paths/paths-data-01-t.svg"
-var ZOOM = 4.0
-var PAN = Vector2(0.0, 0.0)
+var ZOOM = 8.0
+var PAN = Vector2(-40.0, -40.0)
 
 var test_svg = null
 var background = null
@@ -60,15 +60,16 @@ func _svg_ready_deferred():
 		shape_debugs = controller._path_solver_debug
 		current_shape_debug_index = 0
 		current_shape_debug_log_index = 0
-	print_debug(JSON.stringify(shape_debugs[current_shape_debug_index], "  "))
+	#print_debug(JSON.stringify(shape_debugs[current_shape_debug_index], "  "))
 
 func _draw_timer_timeout():
 	if is_skip_next_draw_timer_timeout:
 		is_skip_next_draw_timer_timeout = false
 		draw_path = []
 		old_draw_path = []
+		draw_timer.wait_time = 0.5
 		draw_timer.stop()
-		draw_timer.start(0.5)
+		draw_timer.start()
 		return
 	
 	if current_shape_debug_index < 0:
@@ -111,7 +112,7 @@ func _draw_timer_timeout():
 		is_skip_next_draw_timer_timeout = true
 	else:
 		draw_timer.wait_time = 0.01
-	
+		
 	if draw_shape != null:
 		draw_path = []
 		var range_length = 8.0
@@ -131,7 +132,7 @@ func _draw_timer_timeout():
 	
 	draw_timer.stop()
 	draw_timer.start()
-	if current_shape_debug_log_index >= len(shape_debug.log):
+	if current_shape_debug_log_index >= len(shape_debug.log) or is_skip_next_draw_timer_timeout:
 		draw_timer.stop()
 
 #func _create_shape(paths, index):

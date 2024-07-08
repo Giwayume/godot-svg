@@ -1,5 +1,8 @@
 class_name SVGCubics
 
+# The goal of this class is to calculate the implicit coordinates
+# of a curve, so it may be rendered in a shader on the GPU.
+
 class Matrix:
 	var rows = []
 	

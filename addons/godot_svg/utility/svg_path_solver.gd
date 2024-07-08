@@ -45,37 +45,108 @@ class PathShape:
 		):
 			return new_intersections
 		
-		var self_segment_range = segments.size() - 1
-		var a_length = 0.0
-		for i in range(0, self_segment_range):
-			var a0 = segments[i]
-			var a1 = segments[i + 1]
-			var other_segment_range = other_shape.segments.size() - 1
-			var b_length = 0.0
-			for j in range(0, other_segment_range):
-				var b0 = other_shape.segments[j]
-				var b1 = other_shape.segments[j + 1]
-				var intersection = Geometry2D.segment_intersects_segment(a0, a1, b0, b1)
+		#var self_segment_range = segments.size() - 1
+		#var a_length = 0.0
+		#var a_size_increment = segments.size() / intersection_check_length
+		#for i in range(0, self_segment_range):
+			#var a0 = segments[i]
+			#var a1 = segments[i + 1]
+			#var other_segment_range = other_shape.segments.size() - 1
+			#var b_length = 0.0
+			#var b_size_increment = other_shape.segments.size() / other_shape.intersection_check_length
+			#for j in range(0, other_segment_range):
+				#var b0 = other_shape.segments[j]
+				#var b1 = other_shape.segments[j + 1]
+				#var intersection = Geometry2D.segment_intersects_segment(a0, a1, b0, b1)
+				#if (
+					#intersection != null and
+					#((is_include_self_start_point and i == 0) or not intersection.is_equal_approx(a0)) and
+					#((is_include_other_start_point and j == 0) or not intersection.is_equal_approx(b0)) and
+					#not (path_end_is_close and intersection.is_equal_approx(a1))
+				#):
+					#var new_intersection = {
+						#"point": intersection,
+						#"self_t": (a_length / intersection_check_length) + SVGMath.point_distance_along_segment(a0, a1, intersection) / intersection_check_length,
+						#"other_t": (b_length / other_shape.intersection_check_length) + SVGMath.point_distance_along_segment(b0, b1, intersection) / other_shape.intersection_check_length,
+					#}
+					#new_intersections.push_back(new_intersection)
+					#intersections.push_back(new_intersection)
+					#other_shape.intersections.push_back({
+						#"point": intersection,
+						#"self_t": new_intersection.other_t,
+						#"other_t": new_intersection.self_t,
+					#})
+				#b_length += b0.distance_to(b1)
+			#a_length += a0.distance_to(a1)
+		#
+		var intersect_result = null
+		var is_t_reversed = false
+		if self is PathSegment:
+			if other_shape is PathSegment:
+				intersect_result = SVGIntersection.intersect_segment_with_segment(
+					self.p0, self.p1, other_shape.p0, other_shape.p1
+				)
+			elif other_shape is PathQuadraticBezier:
+				intersect_result = SVGIntersection.intersect_quadratic_bezier_with_line(
+					other_shape.p0, other_shape.p1, other_shape.p2, self.p0, self.p1
+				)
+				is_t_reversed = true
+			elif other_shape is PathCubicBezier:
+				intersect_result = SVGIntersection.intersect_cubic_bezier_with_line(
+					other_shape.p0, other_shape.p1, other_shape.p2, other_shape.p3, self.p0, self.p1
+				)
+				is_t_reversed = true
+		elif self is PathQuadraticBezier:
+			if other_shape is PathCubicBezier:
+				intersect_result = SVGIntersection.intersect_quadratic_bezier_with_cubic_bezier(
+					self.p0, self.p1, self.p2, other_shape.p0, other_shape.p1, other_shape.p2, other_shape.p3
+				)
+			elif other_shape is PathQuadraticBezier:
+				intersect_result = SVGIntersection.intersect_quadratic_bezier_with_quadratic_bezier(
+					self.p0, self.p1, self.p2, other_shape.p0, other_shape.p1, other_shape.p2
+				)
+			elif other_shape is PathSegment:
+				intersect_result = SVGIntersection.intersect_quadratic_bezier_with_line(
+					self.p0, self.p1, self.p2, other_shape.p0, other_shape.p1
+				)
+		elif self is PathCubicBezier:
+			if other_shape is PathSegment:
+				intersect_result = SVGIntersection.intersect_cubic_bezier_with_line(
+					self.p0, self.p1, self.p2, self.p3, other_shape.p0, other_shape.p1
+				)
+			elif other_shape is PathQuadraticBezier:
+				intersect_result = SVGIntersection.intersect_quadratic_bezier_with_cubic_bezier(
+					other_shape.p0, other_shape.p1, other_shape.p2, self.p0, self.p1, self.p2, self.p3
+				)
+				is_t_reversed = true
+			elif other_shape is PathCubicBezier:
+				intersect_result = SVGIntersection.intersect_cubic_bezier_with_cubic_bezier(
+					self.p0, self.p1, self.p2, self.p3,
+					other_shape.p0, other_shape.p1, other_shape.p2, other_shape.p3
+				)
+		
+		if intersect_result != null and len(intersect_result) > 0:
+			for intersection in intersect_result:
+				var self_t = intersection.t1 if is_t_reversed else intersection.t0
+				var other_t = intersection.t0 if is_t_reversed else intersection.t1
 				if (
-					intersection != null and
-					((is_include_self_start_point and i == 0) or not intersection.is_equal_approx(a0)) and
-					((is_include_other_start_point and j == 0) or not intersection.is_equal_approx(b0)) and
-					not (path_end_is_close and intersection.is_equal_approx(a1))
+					(is_include_self_start_point or not is_zero_approx(self_t)) and
+					(is_include_other_start_point or not is_zero_approx(other_t)) and
+					not (path_end_is_close and is_equal_approx(self_t, 1.0))
 				):
 					var new_intersection = {
-						"point": intersection,
-						"self_t": (a_length / intersection_check_length) + SVGMath.point_distance_along_segment(a0, a1, intersection) / intersection_check_length,
-						"other_t": (b_length / other_shape.intersection_check_length) + SVGMath.point_distance_along_segment(b0, b1, intersection) / other_shape.intersection_check_length,
+						"point": intersection.point,
+						"self_t": self_t,
+						"other_t": other_t,
 					}
 					new_intersections.push_back(new_intersection)
 					intersections.push_back(new_intersection)
 					other_shape.intersections.push_back({
-						"point": intersection,
-						"self_t": new_intersection.other_t,
-						"other_t": new_intersection.self_t,
+						"point": intersection.point,
+						"self_t": other_t,
+						"other_t": self_t,
 					})
-				b_length += b0.distance_to(b1)
-			a_length += a0.distance_to(a1)
+		
 		return new_intersections
 	
 	func remove_intersection(point, self_t, other_t):
