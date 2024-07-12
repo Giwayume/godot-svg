@@ -130,8 +130,8 @@ class PathShape:
 				var self_t = intersection.t1 if is_t_reversed else intersection.t0
 				var other_t = intersection.t0 if is_t_reversed else intersection.t1
 				if (
-					(is_include_self_start_point or not is_zero_approx(self_t)) and
-					(is_include_other_start_point or not is_zero_approx(other_t)) and
+					(is_include_self_start_point or not is_equal_approx(self_t, 0.0)) and
+					(is_include_other_start_point or not is_equal_approx(other_t, 0.0)) and
 					not (path_end_is_close and is_equal_approx(self_t, 1.0))
 				):
 					var new_intersection = {
@@ -139,14 +139,31 @@ class PathShape:
 						"self_t": self_t,
 						"other_t": other_t,
 					}
-					new_intersections.push_back(new_intersection)
-					intersections.push_back(new_intersection)
-					other_shape.intersections.push_back({
-						"point": intersection.point,
-						"self_t": other_t,
-						"other_t": self_t,
-					})
-		
+					var intersection_exists_in_self: bool = false
+					var intersection_exists_in_other: bool = false
+					for existing_intersection in intersections:
+						if (
+							is_equal_approx(new_intersection.self_t, existing_intersection.self_t) and
+							new_intersection.point.is_equal_approx(existing_intersection.point)
+						):
+							intersection_exists_in_self = true
+							break
+					if intersection_exists_in_self:
+						for existing_intersection in other_shape.intersections:
+							if (
+								is_equal_approx(new_intersection.other_t, existing_intersection.self_t) and
+								new_intersection.point.is_equal_approx(existing_intersection.point)
+							):
+								intersection_exists_in_other = true
+								break
+					if not intersection_exists_in_other:
+						new_intersections.push_back(new_intersection)
+						intersections.push_back(new_intersection)
+						other_shape.intersections.push_back({
+							"point": intersection.point,
+							"self_t": other_t,
+							"other_t": self_t,
+						})
 		return new_intersections
 	
 	func remove_intersection(point, self_t, other_t):
@@ -182,8 +199,10 @@ class PathShape:
 		var closest_intersection = null
 		for intersection in intersections:
 			if (
-				(traverse_direction > 0 and intersection.self_t > t and intersection.self_t - t < closest_t_delta) or
-				(traverse_direction < 0 and intersection.self_t < t and t - intersection.self_t < closest_t_delta)
+				not is_equal_approx(intersection.self_t, t) and (
+					(traverse_direction > 0 and intersection.self_t > t and intersection.self_t - t < closest_t_delta) or
+					(traverse_direction < 0 and intersection.self_t < t and t - intersection.self_t < closest_t_delta)
+				)
 			):
 				closest_t_delta = abs(intersection.self_t - t)
 				closest_intersection = intersection
@@ -994,231 +1013,268 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 						shape_start_index = shape_start_loop_range.start
 					shape_start_t = 0.0
 				
-				var last_passed_intersection = intersection
-				var last_passed_intersection_start_shape_index = shape_start_index
-				var has_looped_from_beginning = false
-				var traverse_direction = 1
-				var check_t = shape_start_t
-				var current_shape_index = shape_start_index
-				var new_path = []
-				var new_path_ranges = []
-				var new_path_current_range = [current_shape_index, -1]
-				var final_rotation = 0.0
-				var infinite_loop_iterator = 0
 				var existing_solutions = []
-				var encountered_intersections = [intersection]
-				var did_path_return_to_start = false
 				
-				while infinite_loop_iterator < 1000: # If you need paths with 1000+ instructions open an issue. Performance is bad.
-					infinite_loop_iterator += 1
-					if infinite_loop_iterator == 1000:
-						print("[godot-svg] Infinite loop encountered during path solving. This is likely a bug.")
+				var left_path = []
+				var left_path_ranges = []
+				var right_path = []
+				var right_path_ranges = []
+				
+				# -1 is right turn; 1 is left turn
+				for turn_direction in range(-1, 1, 2):
 					
-					var next_intersection = null
-					var next_intersection_t = 0.0
+					var last_passed_intersection = intersection
+					var last_passed_intersection_start_shape_index = shape_start_index
+					var has_looped_from_beginning = false
+					var traverse_direction = 1
+					var check_t = shape_start_t
+					var current_shape_index = shape_start_index
+					var new_path = []
+					var new_path_ranges = []
+					var new_path_current_range = [current_shape_index, -1]
+					var final_rotation = 0.0
+					var infinite_loop_iterator = 0
+					var encountered_intersections = [intersection]
+					var did_path_return_to_start = false
 					
-					# Gather information about the current path traced position in the current shape
-					var current_shape = path_shapes[current_shape_index]
-					
-					# Find the next intersection at the current path segment, if applicable
-					if intersections_at_positions.has(current_shape_index):
-						var next_intersection_info = current_shape.find_next_intersection(check_t, traverse_direction)
-						if next_intersection_info != null:
-							for check_intersection in intersections_at_positions[current_shape_index]:
-								if check_intersection.point.is_equal_approx(next_intersection_info.point):
-									next_intersection = check_intersection
-									next_intersection_t = next_intersection_info.self_t
-									break
-					
-					# Normalize check_t range overflow caused by no intersection found code below
-					if check_t < 0.0:
-						check_t = 0.0
-					elif check_t > 1.0:
-						check_t = 1.0
-					
-					# If next intersection is our starting intersection, we're done
-					if encountered_intersections.has(next_intersection):
-					
-						if is_debug:
-							simplify_debug.push_back({
-								"type": "loop_reached_back_to_start",
-								"current_shape_index": current_shape_index,
-								"shape_slice": [check_t, next_intersection_t],
-							})
+					while infinite_loop_iterator < 1000: # If you need paths with 1000+ instructions open an issue. Performance is bad.
+						infinite_loop_iterator += 1
+						if infinite_loop_iterator == 1000:
+							print("[godot-svg] Infinite loop encountered during path solving. This is likely a bug.")
 						
-						if next_intersection == intersection:
-							# Add the rest of the shape to the path
-							if next_intersection_t != check_t:
-								new_path.push_back(
-									current_shape.slice(
-										check_t,
-										next_intersection_t
-									)
-								)
-								if is_debug:
-									simplify_debug.push_back({
-										"type": "loop_add_rest_of_shape_to_path",
-										"current_shape_index": current_shape_index,
-										"shape_slice": [check_t, next_intersection_t],
-									})
-								
-							# Update path ranges
-							did_path_return_to_start = true
-							new_path_current_range[1] = current_shape_index
-							new_path_ranges.push_back(new_path_current_range)
-						break
-					
-					# Find which path at the intersection is the closest right turn, and take it
-					elif next_intersection:
-						new_path.push_back(
-							current_shape.slice(
-								check_t,
-								next_intersection_t
-							)
-						)
-						encountered_intersections.push_back(next_intersection)
+						var next_intersection = null
+						var next_intersection_t = 0.0
 						
-						var debug_check_angles = []
-						if is_debug:
-							simplify_debug.push_back({
-								"type": "loop_found_next_intersection",
-								"current_shape_index": current_shape_index,
-								"shape_slice": [check_t, next_intersection_t],
-							})
+						# Gather information about the current path traced position in the current shape
+						var current_shape = path_shapes[current_shape_index]
 						
-						var entry_angle = traverse_direction * current_shape.find_direction_at(next_intersection_t)
-						var closest_angle = INF
-						var winning_index = -1
-						var winning_t = 0.0
-						for check_shape_array_index in range(0, next_intersection.intersected_shape_indices.size()):
-							var check_shape_index = next_intersection.intersected_shape_indices[check_shape_array_index]
-							var current_check_t = next_intersection.intersected_shape_t[check_shape_array_index]
-							var check_angle = path_shapes[check_shape_index].find_direction_at(current_check_t)
-							var check_loop_range = get_path_loop_range(shape_loop_ranges, check_shape_index)
-							# TODO - I don't know what this logic was fixing. It breaks the simple star in painting-fill-03-t.svg
-							#var is_check_positive_angle = not (current_check_t < 1.0 and check_shape_index == check_loop_range.end)
-							#var is_check_negative_angle = not (current_check_t > 0.0 and check_shape_index == check_loop_range.start)
-							
-							# The is_check_positive_angle and is_check_negative_angle variables ensure we don't go back from where we came.
-							var is_check_positive_angle = not (current_shape_index == check_shape_index and traverse_direction == -1)
-							var is_check_negative_angle = not (current_shape_index == check_shape_index and traverse_direction == 1)
-							var positive_angle = check_angle.angle_to(-entry_angle)
-							var negative_angle = -check_angle.angle_to(-entry_angle)
-							if positive_angle < 0.0:
-								positive_angle = PI + abs(positive_angle)
-							if negative_angle < 0.0:
-								negative_angle = PI + abs(negative_angle)
-							if is_debug:
-								debug_check_angles.push_back({
-									"current_shape_index": current_shape_index,
-									"check_shape_index": check_shape_index,
-									"current_check_t": current_check_t,
-									"check_angle": check_angle,
-									"positive_angle": positive_angle,
-									"negative_angle": negative_angle,
-									"is_check_positive_angle": is_check_positive_angle,
-									"is_check_negative_angle": is_check_negative_angle,
-								})
-							if is_check_positive_angle and positive_angle > 0 and positive_angle < closest_angle:
-								closest_angle = positive_angle
-								winning_index = check_shape_index
-								winning_t = current_check_t
-								traverse_direction = 1
-							if is_check_negative_angle and negative_angle > 0 and negative_angle < closest_angle:
-								closest_angle = negative_angle
-								winning_index = check_shape_index
-								winning_t = current_check_t
-								traverse_direction = -1
-						if winning_index > -1:
-							current_path_bounding_box = apply_shape_to_bounding_box(current_path_bounding_box, current_shape)
-							final_rotation += sign(closest_angle) * (PI - abs(closest_angle))
-							new_path_current_range[1] = current_shape_index
-							new_path_ranges.push_back(new_path_current_range)
-							current_shape_index = winning_index
-							new_path_current_range = [winning_index, -1]
-							check_t = winning_t
-							has_looped_from_beginning = false
-							last_passed_intersection = next_intersection
-							last_passed_intersection_start_shape_index = winning_index
-							
+						# Find the next intersection at the current path segment, if applicable
+						if intersections_at_positions.has(current_shape_index):
+							var next_intersection_info = current_shape.find_next_intersection(check_t, traverse_direction)
+							if next_intersection_info != null:
+								for check_intersection in intersections_at_positions[current_shape_index]:
+									if check_intersection.point.is_equal_approx(next_intersection_info.point):
+										next_intersection = check_intersection
+										next_intersection_t = next_intersection_info.self_t
+										break
+						
+						# Normalize check_t range overflow caused by no intersection found code below
+						if check_t < 0.0:
+							check_t = 0.0
+						elif check_t > 1.0:
+							check_t = 1.0
+						
+						# If next intersection is our starting intersection, we're done
+						if encountered_intersections.has(next_intersection):
+						
 							if is_debug:
 								simplify_debug.push_back({
-									"type": "loop_found_right_turn",
-									"new_shape_index": current_shape_index,
-									"new_t": check_t,
-									"traverse_direction": traverse_direction,
-									"closest_angle": closest_angle,
-									"entry_angle": entry_angle,
-									"check_angles": debug_check_angles,
+									"type": "loop_reached_back_to_start",
+									"current_shape_index": current_shape_index,
+									"shape_slice": [check_t, next_intersection_t],
 								})
 							
-							if (
-								traverse_direction > 0 and last_passed_intersection.solved.has(
-									str(last_passed_intersection_start_shape_index) + "_" + str(winning_t)
+							if next_intersection == intersection:
+								# Add the rest of the shape to the path
+								if next_intersection_t != check_t:
+									new_path.push_back(
+										current_shape.slice(
+											check_t,
+											next_intersection_t
+										)
+									)
+									if is_debug:
+										simplify_debug.push_back({
+											"type": "loop_add_rest_of_shape_to_path",
+											"current_shape_index": current_shape_index,
+											"shape_slice": [check_t, next_intersection_t],
+										})
+									
+								# Update path ranges
+								did_path_return_to_start = true
+								new_path_current_range[1] = current_shape_index
+								new_path_ranges.push_back(new_path_current_range)
+							
+							# Update the counter/clockwise rotation angle
+							var next_shape = path_shapes[shape_start_index]
+							var next_shape_start_t = (0.0 if traverse_direction > 0.0 else 1.0)
+							var current_shape_end_direction = traverse_direction * current_shape.find_direction_at(next_intersection_t)
+							var next_shape_start_direction = traverse_direction * next_shape.find_direction_at(next_shape_start_t)
+							final_rotation += current_shape_end_direction.angle_to(next_shape_start_direction)
+							break
+						
+						# Find which path at the intersection is the closest right turn, and take it
+						elif next_intersection:
+							new_path.push_back(
+								current_shape.slice(
+									check_t,
+									next_intersection_t
 								)
-							):
-								existing_solutions.push_back({
-									"intersection": last_passed_intersection,
-									"shape_index": last_passed_intersection_start_shape_index,
-									"shape_t": winning_t,
+							)
+							encountered_intersections.push_back(next_intersection)
+							
+							var debug_check_angles = []
+							if is_debug:
+								simplify_debug.push_back({
+									"type": "loop_found_next_intersection",
+									"current_shape_index": current_shape_index,
+									"shape_slice": [check_t, next_intersection_t],
 								})
+							
+							var path_trace_start_direction = traverse_direction * current_shape.find_direction_at(check_t)
+							var entry_direction = traverse_direction * current_shape.find_direction_at(next_intersection_t)
+							var closest_angle = INF
+							var winning_index = -1
+							var winning_t = 0.0
+							var winning_turn_angle = 0.0
+							for check_shape_array_index in range(0, next_intersection.intersected_shape_indices.size()):
+								var check_shape_index = next_intersection.intersected_shape_indices[check_shape_array_index]
+								var current_check_t = next_intersection.intersected_shape_t[check_shape_array_index]
+								var check_direction = path_shapes[check_shape_index].find_direction_at(current_check_t)
+								var check_loop_range = get_path_loop_range(shape_loop_ranges, check_shape_index)
+								# TODO - I don't know what this logic was fixing. It breaks the simple star in painting-fill-03-t.svg
+								#var is_check_positive_angle = not (current_check_t < 1.0 and check_shape_index == check_loop_range.end)
+								#var is_check_negative_angle = not (current_check_t > 0.0 and check_shape_index == check_loop_range.start)
+								
+								# The is_check_positive_angle and is_check_negative_angle variables ensure we don't go back from where we came.
+								var is_check_positive_angle = not (current_shape_index == check_shape_index and traverse_direction == -1)
+								var is_check_negative_angle = not (current_shape_index == check_shape_index and traverse_direction == 1)
+								var positive_angle = check_direction.angle_to(float(turn_direction) * entry_direction)
+								var negative_angle = -check_direction.angle_to(float(turn_direction) * entry_direction)
+								if positive_angle < 0.0:
+									positive_angle = PI + abs(positive_angle)
+								if negative_angle < 0.0:
+									negative_angle = PI + abs(negative_angle)
+								if is_debug:
+									debug_check_angles.push_back({
+										"current_shape_index": current_shape_index,
+										"check_shape_index": check_shape_index,
+										"current_check_t": current_check_t,
+										"check_direction": check_direction,
+										"positive_angle": positive_angle,
+										"negative_angle": negative_angle,
+										"is_check_positive_angle": is_check_positive_angle,
+										"is_check_negative_angle": is_check_negative_angle,
+									})
+								if is_check_positive_angle and positive_angle > 0 and positive_angle < closest_angle:
+									closest_angle = positive_angle
+									winning_index = check_shape_index
+									winning_t = current_check_t
+									traverse_direction = 1
+									winning_turn_angle = entry_direction.angle_to(check_direction)
+								if is_check_negative_angle and negative_angle > 0 and negative_angle < closest_angle:
+									closest_angle = negative_angle
+									winning_index = check_shape_index
+									winning_t = current_check_t
+									traverse_direction = -1
+									winning_turn_angle = entry_direction.angle_to(-check_direction)
+							if winning_index > -1:
+								current_path_bounding_box = apply_shape_to_bounding_box(current_path_bounding_box, current_shape)
+								final_rotation += path_trace_start_direction.angle_to(entry_direction) + winning_turn_angle
+								new_path_current_range[1] = current_shape_index
+								new_path_ranges.push_back(new_path_current_range)
+								current_shape_index = winning_index
+								new_path_current_range = [winning_index, -1]
+								check_t = winning_t
+								has_looped_from_beginning = false
+								last_passed_intersection = next_intersection
+								last_passed_intersection_start_shape_index = winning_index
+								
 								if is_debug:
 									simplify_debug.push_back({
-										"type": "loop_found_right_turn_add_existing_solution",
+										"type": "loop_found_right_turn",
+										"new_shape_index": current_shape_index,
+										"new_t": check_t,
+										"traverse_direction": traverse_direction,
+										"closest_angle": closest_angle,
+										"entry_direction": entry_direction,
+										"winning_turn_angle": winning_turn_angle,
+										"check_angles": debug_check_angles,
+									})
+								
+								if (
+									traverse_direction > 0 and last_passed_intersection.solved.has(
+										str(last_passed_intersection_start_shape_index) + "_" + str(winning_t)
+									)
+								):
+									existing_solutions.push_back({
+										"intersection": last_passed_intersection,
 										"shape_index": last_passed_intersection_start_shape_index,
 										"shape_t": winning_t,
 									})
+									if is_debug:
+										simplify_debug.push_back({
+											"type": "loop_found_right_turn_add_existing_solution",
+											"shape_index": last_passed_intersection_start_shape_index,
+											"shape_t": winning_t,
+										})
+							else:
+								print("[godot-svg] Error solving simple shape: no valid direction found")
+								break
+						
+						# No intersection found, keep looping through current path segments
 						else:
-							print("[godot-svg] Error solving simple shape: no valid direction found")
-							break
+							var new_sliced_shape = current_shape.slice(
+								check_t,
+								(1.0 if traverse_direction > 0.0 else 0.0)
+							)
+							new_path.push_back(new_sliced_shape)
+							
+							if is_debug:
+								simplify_debug.push_back({
+									"type": "loop_no_intersection_found",
+									"current_shape_index": current_shape_index,
+									"shape_slice": [check_t, (1.0 if traverse_direction > 0.0 else 0.0)],
+									"intersections": path_shapes[current_shape_index].intersections,
+								})
+							
+							current_path_bounding_box = apply_shape_to_bounding_box(current_path_bounding_box, current_shape)
+							
+							var path_loop_range = get_path_loop_range(shape_loop_ranges, current_shape_index)
+							current_shape_index += traverse_direction
+							if current_shape_index > path_loop_range.end:
+								current_shape_index = path_loop_range.start
+								has_looped_from_beginning = true
+							elif current_shape_index < path_loop_range.start:
+								current_shape_index = path_loop_range.end
+								has_looped_from_beginning = true
+							
+							# Update the counter/clockwise rotation angle
+							var next_shape = path_shapes[current_shape_index]
+							var current_shape_end_t = (1.0 if traverse_direction > 0.0 else 0.0)
+							var next_shape_start_t = (0.0 if traverse_direction > 0.0 else 1.0)
+							var current_shape_start_direction = traverse_direction * current_shape.find_direction_at(check_t)
+							var current_shape_end_direction = traverse_direction * current_shape.find_direction_at(current_shape_end_t)
+							var next_shape_start_direction = traverse_direction * next_shape.find_direction_at(next_shape_start_t)
+							final_rotation += (
+								current_shape_start_direction.angle_to(current_shape_end_direction) +
+								current_shape_end_direction.angle_to(next_shape_start_direction)
+							)
+							
+							# Put the check_t slightly out of 0.0 - 1.0 range in case the next intersection is exactly at the edges
+							check_t = -0.1 if traverse_direction > 0.0 else 1.1
 					
-					# No intersection found, keep looping through current path segments
-					else:
-						var new_sliced_shape = current_shape.slice(
-							check_t,
-							(1.0 if traverse_direction > 0.0 else 0.0)
-						)
-						new_path.push_back(new_sliced_shape)
-						
-						if is_debug:
-							simplify_debug.push_back({
-								"type": "loop_no_intersection_found",
-								"current_shape_index": current_shape_index,
-								"shape_slice": [check_t, (1.0 if traverse_direction > 0.0 else 0.0)],
-							})
-						
-						current_path_bounding_box = apply_shape_to_bounding_box(current_path_bounding_box, current_shape)
-						
-						var path_loop_range = get_path_loop_range(shape_loop_ranges, current_shape_index)
-						current_shape_index += traverse_direction
-						if current_shape_index > path_loop_range.end:
-							current_shape_index = path_loop_range.start
-							has_looped_from_beginning = true
-						elif current_shape_index < path_loop_range.start:
-							current_shape_index = path_loop_range.end
-							has_looped_from_beginning = true
-						
-						var next_shape = path_shapes[current_shape_index]
-						var check_t_half_to_end = ((1.0 if traverse_direction > 0.0 else 0.0) + check_t) / 2.0
-						final_rotation += current_shape.find_direction_at(check_t).angle_to(
-							current_shape.find_direction_at(check_t_half_to_end)
-						)
-						final_rotation += current_shape.find_direction_at(1.0 if traverse_direction > 0.0 else 0.0).angle_to(
-							traverse_direction * next_shape.find_direction_at(0.0 if traverse_direction > 0.0 else 1.0)
-						)
-						final_rotation += current_shape.find_direction_at(1.0 if traverse_direction > 0.0 else 0.0).angle_to(
-							traverse_direction * next_shape.find_direction_at(0.0 if traverse_direction > 0.0 else 1.0)
-						)
-						# Put the check_t slightly out of 0.0 - 1.0 range in case the next intersection is exactly at the edges
-						check_t = -0.1 if traverse_direction > 0.0 else 1.1
+					if did_path_return_to_start:
+						if turn_direction < 0:
+							right_path = new_path
+							right_path_ranges = new_path_ranges
+						else:
+							left_path = new_path
+							left_path_ranges = new_path_ranges
 				
-				if did_path_return_to_start:
+				var left_path_length = len(left_path) if len(left_path) > 0 else INF
+				var right_path_length = len(right_path) if len(right_path) > 0 else INF
+				var use_left_path = left_path_length < right_path_length
+				var new_path = left_path if use_left_path else right_path
+				var new_path_ranges = left_path_ranges if use_left_path else right_path_ranges
+				if len(new_path) > 0:
 					var trumps_all_existing_solutions = true
 					if existing_solutions.size() > 0:
 						for existing_solution in existing_solutions:
+							# Keep the simplest path
 							if not is_path_subset_of_path(
 								existing_solution.intersection.solved[str(existing_solution.shape_index) + "_" + str(existing_solution.shape_t)].path,
-								new_path
+								new_path,
 							):
 								trumps_all_existing_solutions = false
 								break
@@ -1246,7 +1302,7 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 								"type": "solution_discarded",
 								"path_ranges": new_path_ranges,
 							})
-		
+
 		for intersection in intersections:
 			for solved_key in intersection.solved:
 				solved_paths.push_back(intersection.solved[solved_key])

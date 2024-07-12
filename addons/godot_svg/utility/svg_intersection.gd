@@ -1,8 +1,12 @@
 class_name SVGIntersection
 
 # SVG path segment intersection utilities.
+
 # These functions have been adapted from:
 # http://www.kevlindev.com/gui/math/intersection/Intersection.js
+# License: BSD 3 Clause
+# Copyright (c) 2000-2004, Kevin Lindsey
+# All rights reserved.
 
 const LN10 = 2.302585092994046
 const LN2 = 0.6931471805599453
@@ -16,7 +20,7 @@ class Polynomial:
 	var _s: float = 0.0
 	
 	func _init(new_coefficients):
-		coefficients = PackedFloat64Array()
+		coefficients = []
 		coefficients.resize(len(new_coefficients))
 		for i in range(0, len(new_coefficients)):
 			coefficients[i] = new_coefficients[len(new_coefficients) - 1 - i]
@@ -59,15 +63,15 @@ class Polynomial:
 			derivative.coefficients.push_back(i * coefficients[i])
 		return derivative
 	
-	func get_roots_in_interval(min: float, max: float) -> PackedFloat64Array:
-		var roots: PackedFloat64Array = []
+	func get_roots_in_interval(min: float, max: float) -> PackedFloat32Array:
+		var roots: PackedFloat32Array = []
 		var root = null
 		if get_degree() == 1:
 			root = bisection(min, max)
 			if root != null: roots.push_back(root)
 		else:
 			var deriv = get_derivative()
-			var droots: PackedFloat64Array = deriv.get_roots_in_interval(min, max)
+			var droots: PackedFloat32Array = deriv.get_roots_in_interval(min, max)
 			if len(droots) > 0:
 				root = bisection(min, droots[0])
 				if root != null: roots.push_back(root)
@@ -88,14 +92,14 @@ class Polynomial:
 			else:
 				break
 	
-	func get_linear_root() -> Array:
-		var result: Array = PackedFloat64Array()
+	func get_linear_root() -> PackedFloat32Array:
+		var result: PackedFloat32Array = PackedFloat32Array()
 		var a = coefficients[1]
 		if not is_zero_approx(a): result.push_back(-coefficients[0] / a)
 		return result
 	
-	func get_quadratic_roots() -> Array:
-		var results: Array = PackedFloat64Array()
+	func get_quadratic_roots() -> PackedFloat32Array:
+		var results: PackedFloat32Array = PackedFloat32Array()
 		if get_degree() == 2:
 			var a: float = coefficients[2]
 			if is_zero_approx(a):
@@ -111,8 +115,8 @@ class Polynomial:
 				results.push_back(0.5 * (-b - e))
 		return results
 	
-	func get_cubic_roots() -> Array:
-		var results: Array = PackedFloat64Array()
+	func get_cubic_roots() -> PackedFloat32Array:
+		var results: PackedFloat32Array = PackedFloat32Array()
 		if get_degree() == 3:
 			var c3: float = coefficients[3]
 			if is_zero_approx(c3):
@@ -155,14 +159,14 @@ class Polynomial:
 		return results
 	
 	func get_roots():
-		var result: PackedFloat64Array
+		var result: PackedFloat32Array
 		simplify()
 		match get_degree():
-			0: result = PackedFloat64Array()
+			0: result = PackedFloat32Array()
 			1: result = get_linear_root()
 			2: result = get_quadratic_roots()
 			3: result = get_cubic_roots()
-			_: result = PackedFloat64Array()
+			_: result = PackedFloat32Array()
 		return result
 
 static func intersect_cubic_bezier_with_cubic_bezier(

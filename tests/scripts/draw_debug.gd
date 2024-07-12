@@ -2,9 +2,11 @@ extends Node2D
 
 const PathCommand = SVGValueConstant.PathCommand
 
-var TEST_SVG_PATH = "res://tests/w3c_1.1_test_suite/svg/paths/paths-data-01-t.svg"
-var ZOOM = 8.0
-var PAN = Vector2(-40.0, -40.0)
+var TEST_SVG_PATH = "res://tests/w3c_1.1_test_suite/svg/painting/painting-fill-03-t.svg"
+#var TEST_SVG_PATH = "res://tests/w3c_1.1_test_suite/svg/paths/paths-data-01-t.svg"
+var ZOOM = 1.0
+var PAN = Vector2(0.0, 0.0)
+var SKIP_LOOP_COUNT = 0
 
 var test_svg = null
 var background = null
@@ -89,9 +91,10 @@ func _draw_timer_timeout():
 	if log.type == "intersection":
 		intersection_points.push_back(log.point)
 		draw_timer.wait_time = 0.05
-	#elif log.type == "loop_add_rest_of_shape_to_path":
-		#draw_shape = path_shapes[log.current_shape_index]
-		#draw_shape_slice = log.shape_slice
+	elif SKIP_LOOP_COUNT > 0:
+		draw_timer.wait_time = 0.01
+		if log.type == "loop_reached_back_to_start":
+			SKIP_LOOP_COUNT -= 1
 	elif log.type == "loop_found_next_intersection":
 		draw_shape = path_shapes[log.current_shape_index]
 		draw_shape_slice = log.shape_slice
@@ -112,7 +115,7 @@ func _draw_timer_timeout():
 		is_skip_next_draw_timer_timeout = true
 	else:
 		draw_timer.wait_time = 0.01
-		
+	
 	if draw_shape != null:
 		draw_path = []
 		var range_length = 8.0
@@ -132,7 +135,7 @@ func _draw_timer_timeout():
 	
 	draw_timer.stop()
 	draw_timer.start()
-	if current_shape_debug_log_index >= len(shape_debug.log) or is_skip_next_draw_timer_timeout:
+	if current_shape_debug_log_index >= len(shape_debug.log):
 		draw_timer.stop()
 
 #func _create_shape(paths, index):
