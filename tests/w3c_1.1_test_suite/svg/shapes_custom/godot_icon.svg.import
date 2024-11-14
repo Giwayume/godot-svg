@@ -1,0 +1,14 @@
+[remap]
+
+importer="giwayume.godotsvg"
+type="Resource"
+uid="uid://cj3b6yxm7jx6x"
+path="res://.godot/imported/godot_icon.svg-4a4fdcf6de29072d55dc31e0a295aa09.gdsvg"
+
+[deps]
+
+source_file="res://tests/w3c_1.1_test_suite/svg/shapes_custom/godot_icon.svg"
+dest_files=["res://.godot/imported/godot_icon.svg-4a4fdcf6de29072d55dc31e0a295aa09.gdsvg"]
+
+[params]
+

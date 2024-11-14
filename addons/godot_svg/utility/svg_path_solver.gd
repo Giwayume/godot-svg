@@ -1317,9 +1317,11 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 							check_t = -0.1 if traverse_direction > 0.0 else 1.1
 
 		solved_paths = []
+		var potential_solutions_length = len(potential_solutions)
 		for solution in potential_solutions:
 			# Don't include solution if it looks like it's the outline of the entire shape
 			if (
+				potential_solutions_length <= 4 or # Hack. Need a better way to determine if shape traces the entire bounds.
 				solution.bounding_box.left != full_shape_bounding_box.left or
 				solution.bounding_box.right != full_shape_bounding_box.right or
 				solution.bounding_box.top != full_shape_bounding_box.top or
