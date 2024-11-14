@@ -170,6 +170,7 @@ func _load_svg(filepath):
 	test_svg = SVG2D.new()
 	test_svg.controller.connect("node_structure_generated", Callable(self, "_on_svg_loaded"))
 	test_svg.disable_render_cache = true
+	test_svg.triangulation_method = SVGValueConstant.TriangulationMethod.DELAUNAY
 	test_svg.svg = load(filepath)
 	test_preview_sub_viewport.add_child(test_svg)
 

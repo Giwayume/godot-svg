@@ -33,7 +33,7 @@ class PathShape:
 	var pend
 	var path_end_is_close = false # This shape closes the path, special handling needed here to prevent intersection artifacts
 	
-	func intersect_with(other_shape, is_include_self_start_point = false, is_include_other_start_point = false, skip_bounding_box_check = false, is_debug = false):
+	func intersect_with_segmentized(other_shape, is_include_self_start_point = false, is_include_other_start_point = false, skip_bounding_box_check = false, is_debug = false):
 		var new_intersections = []
 		if (
 			not skip_bounding_box_check and (
@@ -45,40 +45,54 @@ class PathShape:
 		):
 			return new_intersections
 		
-		#var self_segment_range = segments.size() - 1
-		#var a_length = 0.0
-		#var a_size_increment = segments.size() / intersection_check_length
-		#for i in range(0, self_segment_range):
-			#var a0 = segments[i]
-			#var a1 = segments[i + 1]
-			#var other_segment_range = other_shape.segments.size() - 1
-			#var b_length = 0.0
-			#var b_size_increment = other_shape.segments.size() / other_shape.intersection_check_length
-			#for j in range(0, other_segment_range):
-				#var b0 = other_shape.segments[j]
-				#var b1 = other_shape.segments[j + 1]
-				#var intersection = Geometry2D.segment_intersects_segment(a0, a1, b0, b1)
-				#if (
-					#intersection != null and
-					#((is_include_self_start_point and i == 0) or not intersection.is_equal_approx(a0)) and
-					#((is_include_other_start_point and j == 0) or not intersection.is_equal_approx(b0)) and
-					#not (path_end_is_close and intersection.is_equal_approx(a1))
-				#):
-					#var new_intersection = {
-						#"point": intersection,
-						#"self_t": (a_length / intersection_check_length) + SVGMath.point_distance_along_segment(a0, a1, intersection) / intersection_check_length,
-						#"other_t": (b_length / other_shape.intersection_check_length) + SVGMath.point_distance_along_segment(b0, b1, intersection) / other_shape.intersection_check_length,
-					#}
-					#new_intersections.push_back(new_intersection)
-					#intersections.push_back(new_intersection)
-					#other_shape.intersections.push_back({
-						#"point": intersection,
-						#"self_t": new_intersection.other_t,
-						#"other_t": new_intersection.self_t,
-					#})
-				#b_length += b0.distance_to(b1)
-			#a_length += a0.distance_to(a1)
-		#
+		var self_segment_range = segments.size() - 1
+		var a_length = 0.0
+		for i in range(0, self_segment_range):
+			var a0 = segments[i]
+			var a1 = segments[i + 1]
+			var other_segment_range = other_shape.segments.size() - 1
+			var b_length = 0.0
+			for j in range(0, other_segment_range):
+				var b0 = other_shape.segments[j]
+				var b1 = other_shape.segments[j + 1]
+				var intersection = Geometry2D.segment_intersects_segment(a0, a1, b0, b1)
+				if (
+					intersection != null and
+					((is_include_self_start_point and i == 0) or not intersection.is_equal_approx(a0)) and
+					((is_include_other_start_point and j == 0) or not intersection.is_equal_approx(b0)) and
+					not (path_end_is_close and intersection.is_equal_approx(a1))
+				):
+					var new_intersection = {
+						"point": intersection,
+						"self_t": (a_length / intersection_check_length) + SVGMath.point_distance_along_segment(a0, a1, intersection) / intersection_check_length,
+						"other_t": (b_length / other_shape.intersection_check_length) + SVGMath.point_distance_along_segment(b0, b1, intersection) / other_shape.intersection_check_length,
+					}
+					new_intersections.push_back(new_intersection)
+					intersections.push_back(new_intersection)
+					other_shape.intersections.push_back({
+						"point": intersection,
+						"self_t": new_intersection.other_t,
+						"other_t": new_intersection.self_t,
+					})
+				b_length += b0.distance_to(b1)
+			a_length += a0.distance_to(a1)
+		return new_intersections
+		
+
+	func intersect_with(other_shape, is_include_self_start_point = false, is_include_other_start_point = false, skip_bounding_box_check = false, is_debug = false):
+		const theta = 5.0
+
+		var new_intersections = []
+		if (
+			not skip_bounding_box_check and (
+				bounding_box.position.x + bounding_box.size.x < other_shape.bounding_box.position.x or
+				bounding_box.position.x > other_shape.bounding_box.position.x + other_shape.bounding_box.size.x or
+				bounding_box.position.y + bounding_box.size.y < other_shape.bounding_box.position.y or
+				bounding_box.position.y > other_shape.bounding_box.position.y + other_shape.bounding_box.size.y
+			)
+		):
+			return new_intersections
+		
 		var intersect_result = null
 		var is_t_reversed = false
 		if self is PathSegment:
@@ -125,7 +139,13 @@ class PathShape:
 					other_shape.p0, other_shape.p1, other_shape.p2, other_shape.p3
 				)
 		
-		if intersect_result != null and len(intersect_result) > 0:
+		if intersect_result == null:
+			intersect_result = []
+		
+		if len(intersect_result) == 0:
+			return intersect_with_segmentized(other_shape, is_include_self_start_point, is_include_other_start_point, true, is_debug)
+
+		if len(intersect_result) > 0:
 			for intersection in intersect_result:
 				var self_t = intersection.t1 if is_t_reversed else intersection.t0
 				var other_t = intersection.t0 if is_t_reversed else intersection.t1
@@ -164,6 +184,7 @@ class PathShape:
 							"self_t": other_t,
 							"other_t": self_t,
 						})
+		
 		return new_intersections
 	
 	func remove_intersection(point, self_t, other_t):
@@ -208,6 +229,9 @@ class PathShape:
 				closest_intersection = intersection
 		return closest_intersection
 	
+	func find_direction_at(_t):
+		return Vector2(1.0, 0.0)
+
 	static func sum_over_edges(shapes):
 		var sum = 0.0
 		if shapes.size() > 0:
@@ -868,9 +892,9 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 				var other_path_shape = path_shapes[j]
 				var new_intersections = path_shape.intersect_with(
 					other_path_shape,
-					j != i - 1,
-					true,
-					false,
+					j != i - 1, # is_include_self_start_point
+					true, # is_include_other_start_point
+					false, # skip_bounding_box_check
 				)
 				if new_intersections.size() > 0:
 					for new_intersection in new_intersections:
@@ -1160,7 +1184,6 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 								
 								# Add as a new potential solution
 								if not is_current_solution_a_superset:
-									# print_debug(traversal_ids)
 									potential_solutions.push_back({
 										"path": new_path,
 										"path_ranges": new_path_ranges,
