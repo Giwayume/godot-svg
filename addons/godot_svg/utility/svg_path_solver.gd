@@ -508,6 +508,36 @@ static func is_path_subset_of_path(find, in_path):
 				break
 	return is_subset
 
+# Checks if traversal_ids (argument 1) is a subset of traversal_ids (argument 2), for use in throwing out superpaths or duplicates
+static func is_traversal_ids_subset_of_traversal_ids(check_ids, potential_superset_ids) -> bool:
+	var check_ids_length = len(check_ids)
+	if check_ids_length > len(potential_superset_ids):
+		return false
+	var found_path_size = 0
+	var start_indices = [0, -1]
+	var check_i = 0
+	for start_i in range(0, 2):
+		if start_indices[start_i] < 0:
+			break
+		var end_index = check_ids_length if start_i == 0 else start_indices[start_i]
+		for i in range(0, end_index, 2):
+			if (
+				check_ids[check_i] == potential_superset_ids[i] and
+				is_equal_approx(check_ids[check_i + 1], potential_superset_ids[i + 1])
+			):
+				if start_indices[1] < 0:
+					start_indices[1] = i
+				check_i += 2
+				found_path_size += 1
+			else:
+				if check_i == check_ids_length:
+					return true
+				check_i = 0
+				found_path_size = 0
+	if check_i == check_ids_length:
+		return true
+	return false
+
 static func generate_loop_ranges(paths: Array):
 	var loop_ranges = []
 	var current_loop_start = 0
@@ -992,18 +1022,30 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 		intersections.remove_at(index_to_remove)
 	
 	# These arrays no longer needed.
-	intersection_indices_to_remove.clear()
-	no_intersection_solved_paths.clear()
-	loop_range_intersection_indices.clear()
-	path_start_end_intersection_indices.clear()
+	intersection_indices_to_remove = []
+	no_intersection_solved_paths = []
+	loop_range_intersection_indices = []
+	path_start_end_intersection_indices = []
 	
 	# For each intersection point, follow the intersection lines forward, then take right turns until it comes back to the initial point
 	if intersections.size() > 0:
-		current_path_bounding_box = create_new_bounding_box()
+		
+		# Determine the bounding box of the entire intersected shape, so if we happen to trace the exterior of the shape we can toss it
+		var full_shape_bounding_box = create_new_bounding_box()
+
+		# Each array item is a dictionary with keys:
+		# - path: Array<Shape> - The list of shape objects that form the path
+		# - path_ranges: Array<Array<number>> - This appears to only be used by the "find_filled_solved_paths_that_use_shape_index" function, can we get rid of it?
+		# - traversal_ids: Array<number, number> - This represents how the path was formed, which shapes in path_shapes were traversed and what intersections.
+		#       Every other index is a tuple of (shape_index, intersection_t), where the lowest shape_index, then intersection_t is always the first item in the array.
+		# - bounding_box: Dictionary - Contains left,right,top,bottom keys for bounding box position.
+		# - is_clockwise: bool - Whether the path rotates in a clockwise or counterclockwise direction.
+		var potential_solutions: Array = []
+
 		for intersection in intersections:
 			for shape_start_array_index in range(0, intersection.intersected_shape_indices.size()):
-				var shape_start_index = intersection.intersected_shape_indices[shape_start_array_index]
-				var shape_start_t = intersection.intersected_shape_t[shape_start_array_index]
+				var shape_start_index: int = intersection.intersected_shape_indices[shape_start_array_index]
+				var shape_start_t: float = intersection.intersected_shape_t[shape_start_array_index]
 				
 				var shape_start_loop_range = get_path_loop_range(shape_loop_ranges, shape_start_index)
 				if shape_start_t == 1.0:
@@ -1012,31 +1054,26 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 					else:
 						shape_start_index = shape_start_loop_range.start
 					shape_start_t = 0.0
-				
-				var existing_solutions = []
-				
-				var left_path = []
-				var left_path_ranges = []
-				var right_path = []
-				var right_path_ranges = []
-				
+
 				# -1 is right turn; 1 is left turn
-				for turn_direction in range(-1, 1, 2):
+				for turn_direction in range(-1, 2, 2):
+					var current_intersection_trace_bounding_box = create_new_bounding_box()
 					
 					var last_passed_intersection = intersection
-					var last_passed_intersection_start_shape_index = shape_start_index
-					var has_looped_from_beginning = false
-					var traverse_direction = 1
-					var check_t = shape_start_t
-					var current_shape_index = shape_start_index
-					var new_path = []
-					var new_path_ranges = []
-					var new_path_current_range = [current_shape_index, -1]
-					var final_rotation = 0.0
-					var infinite_loop_iterator = 0
-					var encountered_intersections = [intersection]
-					var did_path_return_to_start = false
-					
+					var last_passed_intersection_start_shape_index: int = shape_start_index
+					var has_looped_from_beginning: bool = false
+					var traverse_direction: int = 1
+					var check_t: float = shape_start_t
+					var current_shape_index: int = shape_start_index
+					var new_path: Array = []
+					var new_path_ranges: Array = []
+					var new_path_current_range: Array = [current_shape_index, -1]
+					var traversal_ids: Array = []
+					var final_rotation: float = 0.0
+					var infinite_loop_iterator: int = 0
+					var encountered_intersections: Array = [intersection]
+					var did_path_return_to_start: bool = false
+
 					while infinite_loop_iterator < 1000: # If you need paths with 1000+ instructions open an issue. Performance is bad.
 						infinite_loop_iterator += 1
 						if infinite_loop_iterator == 1000:
@@ -1064,9 +1101,15 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 						elif check_t > 1.0:
 							check_t = 1.0
 						
+						traversal_ids.push_back(current_shape_index)
+						traversal_ids.push_back(check_t)
+						if next_intersection != null:
+							traversal_ids.push_back(current_shape_index)
+							traversal_ids.push_back(next_intersection_t)
+						
 						# If next intersection is our starting intersection, we're done
 						if encountered_intersections.has(next_intersection):
-						
+
 							if is_debug:
 								simplify_debug.push_back({
 									"type": "loop_reached_back_to_start",
@@ -1089,11 +1132,42 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 											"current_shape_index": current_shape_index,
 											"shape_slice": [check_t, next_intersection_t],
 										})
-									
+								
 								# Update path ranges
 								did_path_return_to_start = true
 								new_path_current_range[1] = current_shape_index
 								new_path_ranges.push_back(new_path_current_range)
+
+								# Manipulate traversal_ids array so it can easily be used in future loops to identify sub-paths
+								if turn_direction > 0:
+									var traversal_ids_reversed = []
+									for traversal_offset in range(0, len(traversal_ids), 2):
+										traversal_ids_reversed.push_front(traversal_ids[traversal_offset + 1])
+										traversal_ids_reversed.push_front(traversal_ids[traversal_offset])
+									traversal_ids = traversal_ids_reversed
+								
+								# Keep potential solutions that have the shortest paths
+								var solution_indices_to_remove = []
+								var is_current_solution_a_superset = false
+								for potential_solution_index in range(0, len(potential_solutions)):
+									if is_traversal_ids_subset_of_traversal_ids(traversal_ids, potential_solutions[potential_solution_index].traversal_ids):
+										solution_indices_to_remove.push_front(potential_solution_index)
+									elif is_traversal_ids_subset_of_traversal_ids(potential_solutions[potential_solution_index].traversal_ids, traversal_ids):
+										is_current_solution_a_superset = true
+										break
+								for solution_index_to_remove in solution_indices_to_remove:
+									potential_solutions.remove_at(solution_index_to_remove)
+								
+								# Add as a new potential solution
+								if not is_current_solution_a_superset:
+									# print_debug(traversal_ids)
+									potential_solutions.push_back({
+										"path": new_path,
+										"path_ranges": new_path_ranges,
+										"traversal_ids": traversal_ids,
+										"bounding_box": current_intersection_trace_bounding_box,
+										"is_clockwise": PathShape.sum_over_edges(new_path) < 0.0,
+									})
 							
 							# Update the counter/clockwise rotation angle
 							var next_shape = path_shapes[shape_start_index]
@@ -1105,12 +1179,11 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 						
 						# Find which path at the intersection is the closest right turn, and take it
 						elif next_intersection:
-							new_path.push_back(
-								current_shape.slice(
-									check_t,
-									next_intersection_t
-								)
+							var new_sliced_shape = current_shape.slice(
+								check_t,
+								next_intersection_t
 							)
+							new_path.push_back(new_sliced_shape)
 							encountered_intersections.push_back(next_intersection)
 							
 							var debug_check_angles = []
@@ -1169,7 +1242,8 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 									traverse_direction = -1
 									winning_turn_angle = entry_direction.angle_to(-check_direction)
 							if winning_index > -1:
-								current_path_bounding_box = apply_shape_to_bounding_box(current_path_bounding_box, current_shape)
+								full_shape_bounding_box = apply_shape_to_bounding_box(full_shape_bounding_box, current_shape)
+								current_intersection_trace_bounding_box = apply_shape_to_bounding_box(current_intersection_trace_bounding_box, new_sliced_shape)
 								final_rotation += path_trace_start_direction.angle_to(entry_direction) + winning_turn_angle
 								new_path_current_range[1] = current_shape_index
 								new_path_ranges.push_back(new_path_current_range)
@@ -1191,34 +1265,21 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 										"winning_turn_angle": winning_turn_angle,
 										"check_angles": debug_check_angles,
 									})
-								
-								if (
-									traverse_direction > 0 and last_passed_intersection.solved.has(
-										str(last_passed_intersection_start_shape_index) + "_" + str(winning_t)
-									)
-								):
-									existing_solutions.push_back({
-										"intersection": last_passed_intersection,
-										"shape_index": last_passed_intersection_start_shape_index,
-										"shape_t": winning_t,
-									})
-									if is_debug:
-										simplify_debug.push_back({
-											"type": "loop_found_right_turn_add_existing_solution",
-											"shape_index": last_passed_intersection_start_shape_index,
-											"shape_t": winning_t,
-										})
+
 							else:
 								print("[godot-svg] Error solving simple shape: no valid direction found")
 								break
 						
 						# No intersection found, keep looping through current path segments
 						else:
+							var shape_end_t: float = (1.0 if traverse_direction > 0.0 else 0.0)
 							var new_sliced_shape = current_shape.slice(
 								check_t,
-								(1.0 if traverse_direction > 0.0 else 0.0)
+								shape_end_t
 							)
 							new_path.push_back(new_sliced_shape)
+							traversal_ids.push_back(current_shape_index)
+							traversal_ids.push_back(shape_end_t)
 							
 							if is_debug:
 								simplify_debug.push_back({
@@ -1228,7 +1289,8 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 									"intersections": path_shapes[current_shape_index].intersections,
 								})
 							
-							current_path_bounding_box = apply_shape_to_bounding_box(current_path_bounding_box, current_shape)
+							full_shape_bounding_box = apply_shape_to_bounding_box(full_shape_bounding_box, current_shape)
+							current_intersection_trace_bounding_box = apply_shape_to_bounding_box(current_intersection_trace_bounding_box, new_sliced_shape)
 							
 							var path_loop_range = get_path_loop_range(shape_loop_ranges, current_shape_index)
 							current_shape_index += traverse_direction
@@ -1250,63 +1312,21 @@ static func simplify(paths: Array, fill_rule = FillRule.EVEN_ODD, assume_no_self
 								current_shape_start_direction.angle_to(current_shape_end_direction) +
 								current_shape_end_direction.angle_to(next_shape_start_direction)
 							)
-							
+
 							# Put the check_t slightly out of 0.0 - 1.0 range in case the next intersection is exactly at the edges
 							check_t = -0.1 if traverse_direction > 0.0 else 1.1
-					
-					if did_path_return_to_start:
-						if turn_direction < 0:
-							right_path = new_path
-							right_path_ranges = new_path_ranges
-						else:
-							left_path = new_path
-							left_path_ranges = new_path_ranges
-				
-				var left_path_length = len(left_path) if len(left_path) > 0 else INF
-				var right_path_length = len(right_path) if len(right_path) > 0 else INF
-				var use_left_path = left_path_length < right_path_length
-				var new_path = left_path if use_left_path else right_path
-				var new_path_ranges = left_path_ranges if use_left_path else right_path_ranges
-				if len(new_path) > 0:
-					var trumps_all_existing_solutions = true
-					if existing_solutions.size() > 0:
-						for existing_solution in existing_solutions:
-							# Keep the simplest path
-							if not is_path_subset_of_path(
-								existing_solution.intersection.solved[str(existing_solution.shape_index) + "_" + str(existing_solution.shape_t)].path,
-								new_path,
-							):
-								trumps_all_existing_solutions = false
-								break
-						if trumps_all_existing_solutions:
-							for existing_solution in existing_solutions:
-								existing_solution.intersection.solved.erase(str(existing_solution.shape_index) + "_" + str(existing_solution.shape_t))
-					
-					if trumps_all_existing_solutions:
-						intersection.solved[str(shape_start_index) + "_" + str(shape_start_t)] = {
-							"path": new_path,
-							"path_ranges": new_path_ranges,
-							"bounding_box": current_path_bounding_box,
-							"is_clockwise": PathShape.sum_over_edges(new_path) < 0.0,
-						}
-						current_path_bounding_box = create_new_bounding_box()
-						
-						if is_debug:
-							simplify_debug.push_back({
-								"type": "found_final_solution",
-								"path_ranges": new_path_ranges,
-							})
-					else:
-						if is_debug:
-							simplify_debug.push_back({
-								"type": "solution_discarded",
-								"path_ranges": new_path_ranges,
-							})
 
-		for intersection in intersections:
-			for solved_key in intersection.solved:
-				solved_paths.push_back(intersection.solved[solved_key])
-	
+		solved_paths = []
+		for solution in potential_solutions:
+			# Don't include solution if it looks like it's the outline of the entire shape
+			if (
+				solution.bounding_box.left != full_shape_bounding_box.left or
+				solution.bounding_box.right != full_shape_bounding_box.right or
+				solution.bounding_box.top != full_shape_bounding_box.top or
+				solution.bounding_box.bottom != full_shape_bounding_box.bottom
+			):
+				solved_paths.push_back(solution)
+
 	# Apply fill rule
 	var filled_paths = []
 	var filled_paths_clockwise_checks = []
